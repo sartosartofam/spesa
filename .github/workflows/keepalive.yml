@@ -2,6 +2,11 @@ name: keepalive
 
 # Secondo ping indipendente dal Raspberry Pi (vedi docs/studio-di-progetto.md,
 # sezione 5.7 e addendum A2). La schedule è in UTC.
+#
+# ATTENZIONE: GitHub esegue le schedule solo sul branch di default del repo.
+# Se il default è 'main', questo workflow parte solo dopo il merge su main
+# (o manualmente da Actions). Alternativa consigliata: impostare 'dev' come
+# branch di default su GitHub; il branch di produzione Vercel resta 'main'.
 on:
   schedule:
     - cron: "0 3 * * *"

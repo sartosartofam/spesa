@@ -83,6 +83,8 @@ Supabase mette in pausa i progetti dopo 7 giorni di inattività. Sono attivi due
 
 Entrambi interrogano la tabella `keepalive` (`select` su `/rest/v1/keepalive`), non un endpoint di health check: solo una query reale resetta il timer. La tabella e le policy sono in `supabase/migrations/20261021120000_keepalive.sql`.
 
+Nota: GitHub esegue i workflow schedulati solo sul branch di default del repository. Se il default resta `main`, il ping da Actions non parte finché il workflow non arriva su `main` (oppure si lancia a mano da Actions). Impostare `dev` come branch di default su GitHub non cambia il branch di produzione di Vercel, che resta `main`.
+
 Esempio di crontab sul Pi:
 
 ```
