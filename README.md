@@ -2,7 +2,7 @@
 
 Webapp familiare per la lista della spesa condivisa. Fase 1: solo spesa (fase 2: faccende).
 
-Stato: **Fase 0 completata — repository pronto per gli agenti**. Lo scaffold frontend (Preact + Vite, dati mock) è su `dev`; il backend Supabase è il prossimo passo. Vedi [docs/ROADMAP.md](docs/ROADMAP.md).
+Stato: **Fase 0 — repository pronto per gli agenti**. Lo scaffold frontend (Preact + Vite, dati mock) è su `dev`; il backend Supabase è il prossimo passo. Restano le impostazioni GitHub (default branch, protezione, auto-merge) e i progetti Supabase/Vercel. Vedi [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
