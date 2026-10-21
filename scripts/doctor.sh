@@ -21,12 +21,34 @@ check_command() {
 }
 
 echo "== Node e npm =="
+current_node=""
 if command -v node >/dev/null 2>&1; then
-  node_major="$(node -p 'process.versions.node.split(".")[0]')"
-  if ((node_major >= 24)); then
-    ok "node $(node --version)"
+  current_node="$(node --version)"
+fi
+
+if command -v mise >/dev/null 2>&1 && [[ -f .mise.toml ]]; then
+  project_node="$(mise exec -- node --version 2>/dev/null || true)"
+  if [[ -n "$project_node" ]]; then
+    project_major="${project_node#v}"
+    project_major="${project_major%%.*}"
+    if ((project_major >= 24)); then
+      ok "node $project_node (mise, progetto)"
+    else
+      fail "node $project_node (mise): serve Node 24 LTS."
+    fi
+    if [[ -n "$current_node" && "$current_node" != "$project_node" ]]; then
+      warn "la shell usa $current_node; il progetto usa $project_node. Apri una nuova shell o usa 'mise exec --'."
+    fi
   else
-    warn "node $(node --version): il progetto usa Node 24 LTS. Esegui: mise install"
+    fail "Node del progetto non installato. Esegui: mise install"
+  fi
+elif [[ -n "$current_node" ]]; then
+  node_major="${current_node#v}"
+  node_major="${node_major%%.*}"
+  if ((node_major >= 24)); then
+    ok "node $current_node"
+  else
+    warn "node $current_node: il progetto usa Node 24 LTS. Esegui: mise install"
   fi
 else
   fail "node non trovato. Installa Node 24 LTS (mise)."
