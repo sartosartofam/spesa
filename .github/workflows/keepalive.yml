@@ -1,0 +1,34 @@
+name: keepalive
+
+# Secondo ping indipendente dal Raspberry Pi (vedi docs/studio-di-progetto.md,
+# sezione 5.7 e addendum A2). La schedule è in UTC.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping della tabella keepalive
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL" || { echo "Secret SUPABASE_URL mancante"; exit 1; }
+          test -n "$SUPABASE_ANON_KEY" || { echo "Secret SUPABASE_ANON_KEY mancante"; exit 1; }
+
+          # Query reale alla tabella: resetta il timer di inattività.
+          curl -fsS --retry 3 --max-time 20 \
+            "$SUPABASE_URL/rest/v1/keepalive?select=*&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
