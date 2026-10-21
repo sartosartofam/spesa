@@ -58,8 +58,7 @@ function seedItems(): Item[] {
       ...entry,
       quantity: null,
       created_at: new Date(base + index * 60_000).toISOString(),
-      bought_at:
-        entry.status === 'bought' ? new Date(base + index * 60_000).toISOString() : null,
+      bought_at: entry.status === 'bought' ? new Date(base + index * 60_000).toISOString() : null,
     }),
   )
 }

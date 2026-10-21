@@ -1,0 +1,42 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": true,
+  "instructions": ["docs/DECISIONS.md", "docs/ROADMAP.md", "docs/SETUP.md"],
+  "worktree": {
+    "directory": "../spesa-worktrees"
+  },
+  "permissions": [
+    { "action": "shell", "resource": "git push * main", "effect": "deny" },
+    { "action": "shell", "resource": "git push * main --*", "effect": "deny" },
+    { "action": "shell", "resource": "git push --force*", "effect": "deny" },
+    { "action": "shell", "resource": "supabase db push*", "effect": "ask" },
+    { "action": "shell", "resource": "npx supabase db push*", "effect": "ask" },
+    { "action": "shell", "resource": "supabase link*", "effect": "ask" },
+    { "action": "shell", "resource": "npx supabase link*", "effect": "ask" },
+    { "action": "shell", "resource": "vercel *", "effect": "ask" },
+    { "action": "shell", "resource": "npx vercel *", "effect": "ask" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "ask" },
+    { "action": "edit", "resource": "AGENTS.md", "effect": "ask" },
+    { "action": "edit", "resource": "README.md", "effect": "ask" },
+    { "action": "edit", "resource": ".github/**", "effect": "ask" },
+    { "action": "edit", "resource": "vercel.json", "effect": "ask" }
+  ],
+  "commands": {
+    "verify": {
+      "description": "Lint, typecheck, unit test e build",
+      "template": "Esegui `npm run verify`. Se fallisce, analizza l'errore, correggi solo i file di tua competenza e ripeti finché è verde. Riporta i comandi eseguiti e l'esito finale."
+    },
+    "db-check": {
+      "description": "Reset del database locale e test pgTAP/RLS",
+      "template": "Esegui `npm run db:reset` e poi `npx supabase test db`. Se un test fallisce, analizza la migrazione o la policy coinvolta e proponi la correzione. Non toccare la produzione."
+    },
+    "ship": {
+      "description": "Prepara commit, push e PR verso dev",
+      "template": "Controlla il branch corrente: deve essere un branch di lavoro, mai `main` o `dev`. Esegui `npm run verify` e, se il task tocca il database, `npx supabase test db`. Se tutto è verde, fai un commit chiaro, push del branch e apri una PR verso `dev` con `gh pr create --base dev`. Compila la PR con cosa cambia, come testare e cosa resta fuori. Se la CI è configurata, abilita l'auto-merge con `gh pr merge --auto --squash`. Non fare merge su `main`."
+    },
+    "next": {
+      "description": "Sceglie il prossimo task agent:ready",
+      "template": "Leggi `docs/ROADMAP.md` e le issue GitHub con label `agent:ready`. Scegli un solo task non assegnato, coerente con il ruolo dell'agente corrente. Se non ci sono issue, proponi il prossimo passo leggendo la roadmap. Non iniziare più task insieme."
+    }
+  }
+}

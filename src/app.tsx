@@ -1,12 +1,12 @@
 import { useState } from 'preact/hooks'
-import type { ListView } from './lib/types'
-import { isLiveData } from './lib/data'
-import { useShoppingList } from './hooks/useShoppingList'
-import { AppHeader } from './components/AppHeader'
 import { AddItemForm } from './components/AddItemForm'
-import { ListTabs } from './components/ListTabs'
+import { AppHeader } from './components/AppHeader'
 import { CategorySection } from './components/CategorySection'
 import { EmptyState } from './components/EmptyState'
+import { ListTabs } from './components/ListTabs'
+import { useShoppingList } from './hooks/useShoppingList'
+import { isLiveData } from './lib/data'
+import type { ListView } from './lib/types'
 
 export function App() {
   const [view, setView] = useState<ListView>('active')

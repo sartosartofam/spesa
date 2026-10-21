@@ -1,0 +1,9 @@
+-- Seed locale di sviluppo. Nessun dato reale della famiglia.
+--
+-- Lo schema `families` / `members` / `items` arriva nella fase backend (vedi
+-- docs/ROADMAP.md). Questo file esiste perché `supabase db reset` abbia un
+-- punto di estensione stabile: quando le migrazioni saranno mergiate qui
+-- andranno una famiglia fittizia, i membri e alcuni articoli di esempio.
+--
+-- Gli utenti di test vanno creati via `scripts/seed-auth.mjs` (auth.users non
+-- si inserisce a mano nel seed SQL).
