@@ -58,6 +58,7 @@ supabase link --project-ref <ref>
 supabase db push
 npm install && npm run dev && npm run build && npm run test
 npx supabase start
+git config core.hooksPath .githooks   # attiva il blocco push su main
 
 
 ## Divieti

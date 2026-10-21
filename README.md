@@ -66,6 +66,12 @@ Su GitHub, per il workflow keepalive, impostare i secret `SUPABASE_URL` e `SUPAB
 - Push remoto **solo** su `dev` e sui branch di lavoro: mai su `main`, salvo ordine esplicita dell'umano. I deploy gratuiti di Vercel sono limitati.
 - Ogni PR genera un Preview Deployment; il merge su `dev` non tocca la produzione.
 
+Hook locale (una volta per clone) che blocca i push su `main`:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 Dettaglio delle regole e dei ruoli: [AGENTS.md](AGENTS.md).
 
 ## Keepalive

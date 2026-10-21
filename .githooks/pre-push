@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Blocca i push diretti su main: la produzione si promuove solo a mano.
+# Attivazione (una volta per clone): git config core.hooksPath .githooks
+
+set -u
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo "✋ Push su 'main' bloccato dal hook pre-push." >&2
+      echo "   Lavora su 'dev' o su un branch feat/*, test/* e apri una PR." >&2
+      echo "   Eccezione consapevole: git push --no-verify." >&2
+      exit 1
+      ;;
+  esac
+done
+
+exit 0
