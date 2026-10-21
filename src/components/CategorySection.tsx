@@ -20,7 +20,10 @@ export function CategorySection({
 
   return (
     <section class="section" aria-labelledby={`section-${slug(title)}`}>
-      <h2 class={`section__title ${urgent ? 'section__title--urgent' : ''}`} id={`section-${slug(title)}`}>
+      <h2
+        class={`section__title ${urgent ? 'section__title--urgent' : ''}`}
+        id={`section-${slug(title)}`}
+      >
         {title}
         <span class="section__count">{items.length}</span>
       </h2>

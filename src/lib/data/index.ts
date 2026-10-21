@@ -1,5 +1,5 @@
-import type { ItemsRepository } from './repository'
 import { createMockItemsRepository } from './mock-repository'
+import type { ItemsRepository } from './repository'
 
 /**
  * Punto di composizione dell'accesso ai dati.

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks'
-import type { Item, ItemStatus, NewItem } from '../lib/types'
 import { itemsRepository } from '../lib/data'
+import type { Item, ItemStatus, NewItem } from '../lib/types'
 
 interface ShoppingListState {
   active: Item[]

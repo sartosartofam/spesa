@@ -9,6 +9,7 @@ build/
 .svelte-kit/
 .vercel/
 .output/
+*.tsbuildinfo
 
 # ambiente e segreti (solo .env.example è versionato)
 .env
@@ -29,10 +30,12 @@ pnpm-debug.log*
 coverage/
 playwright-report/
 test-results/
+.playwright/
 
 # sistema e editor
 .DS_Store
 Thumbs.db
 *.local
+.mise.local.toml
 .idea/
 .vscode/

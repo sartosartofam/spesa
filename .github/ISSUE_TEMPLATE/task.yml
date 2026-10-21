@@ -1,0 +1,60 @@
+name: Task agente
+description: Un task piccolo, con scope e criteri di accettazione verificabili.
+title: "[task] "
+labels: ["agent:ready"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Un task = un branch = una PR. Se il task è troppo grande, spezzalo.
+  - type: textarea
+    id: obiettivo
+    attributes:
+      label: Obiettivo
+      description: Cosa deve funzionare alla fine, dal punto di vista dell'utente o del sistema.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - backend
+        - frontend
+        - qa
+        - ops
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope e file
+      description: File/cartelle che l'agente può toccare. Tutto il resto è fuori scope.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Elenco verificabile. Includere i test attesi.
+      placeholder: |
+        - [ ] ...
+        - [ ] test ...
+    validations:
+      required: true
+  - type: textarea
+    id: fuori_scope
+    attributes:
+      label: Fuori scope
+      description: Cosa non va fatto in questa PR.
+  - type: checkboxes
+    id: regole
+    attributes:
+      label: Regole non negoziabili
+      options:
+        - label: Solo Supabase locale, nessuna produzione
+          required: true
+        - label: Nessun secret o dato reale
+          required: true
+        - label: RLS obbligatoria per ogni tabella nuova
+          required: true

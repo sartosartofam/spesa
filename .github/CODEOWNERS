@@ -1,0 +1,7 @@
+# Code owners: routing delle review. Non sostituisce la branch protection.
+* @sartosartofam
+
+/AGENTS.md @sartosartofam
+/README.md @sartosartofam
+/.github/ @sartosartofam
+/supabase/migrations/ @sartosartofam
