@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Spesa">
+  <rect width="512" height="512" rx="112" fill="#1f7a4d" />
+  <path
+    d="M128 176h256l-28 176a32 32 0 0 1-32 28H188a32 32 0 0 1-32-28z"
+    fill="#f6f7f5"
+  />
+  <path
+    d="M196 176v-24a60 60 0 0 1 120 0v24"
+    fill="none"
+    stroke="#f6f7f5"
+    stroke-width="28"
+    stroke-linecap="round"
+  />
+  <path
+    d="M214 268l34 34 58-64"
+    fill="none"
+    stroke="#1f7a4d"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

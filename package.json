@@ -1,0 +1,22 @@
+{
+  "name": "spesa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lista della spesa condivisa — PWA mobile-first (fase 1)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "preact": "^10.27.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Spesa",
+  "short_name": "Spesa",
+  "description": "Lista della spesa condivisa della famiglia.",
+  "lang": "it",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f7f5",
+  "theme_color": "#1f7a4d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
