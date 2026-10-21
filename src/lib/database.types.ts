@@ -173,7 +173,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_family_id: { Args: Record<PropertyKey, never>; Returns: string }
     }
     Enums: {
       item_status: 'to_buy' | 'bought'
