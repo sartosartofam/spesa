@@ -1,0 +1,38 @@
+# dipendenze
+node_modules/
+.pnp
+.pnp.js
+
+# build e output
+dist/
+build/
+.svelte-kit/
+.vercel/
+.output/
+
+# ambiente e segreti (solo .env.example è versionato)
+.env
+.env.*
+!.env.example
+
+# Supabase locale
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# log
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# test e coverage
+coverage/
+playwright-report/
+test-results/
+
+# sistema e editor
+.DS_Store
+Thumbs.db
+*.local
+.idea/
+.vscode/
