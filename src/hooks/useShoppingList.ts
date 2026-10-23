@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks'
 import { itemsRepository } from '../lib/data'
-import { categoryCounts, groupByCategory, sortHistory } from '../lib/list'
+import { sortHistory } from '../lib/list'
 import type { Item, ItemStatus, NewItem } from '../lib/types'
 
 interface ShoppingListState {
@@ -80,20 +80,6 @@ export function useShoppingList() {
     [run],
   )
 
-  const toggleUrgent = useCallback(
-    async (item: Item) => {
-      await run(async () => {
-        if (item.status === 'bought') {
-          await itemsRepository.setStatus(item.id, 'to_buy')
-          await itemsRepository.update(item.id, { urgent: true })
-          return
-        }
-        await itemsRepository.update(item.id, { urgent: !item.urgent })
-      })
-    },
-    [run],
-  )
-
   const remove = useCallback(
     async (id: string) => {
       await run(() => itemsRepository.remove(id))
@@ -109,16 +95,12 @@ export function useShoppingList() {
   )
 
   const urgent = useMemo(() => state.active.filter((item) => item.urgent), [state.active])
-  const byCategory = useMemo(() => groupByCategory(state.active), [state.active])
   const history = useMemo(() => sortHistory(state.history), [state.history])
-  const categories = useMemo(() => categoryCounts(state.active), [state.active])
 
   return {
     ...state,
     history,
     urgent,
-    byCategory,
-    categories,
     counts: {
       active: state.active.length,
       urgent: urgent.length,
@@ -128,7 +110,6 @@ export function useShoppingList() {
     add,
     update,
     setStatus,
-    toggleUrgent,
     remove,
     restore,
   }
