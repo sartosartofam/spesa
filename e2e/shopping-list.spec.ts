@@ -157,6 +157,21 @@ test('esporta i preset negozio in JSON', async ({ page }) => {
   expect(download.suggestedFilename()).toBe('spesa-preset-negozi.json')
 })
 
+test('un articolo dello storico reso urgente torna nella lista attiva', async ({ page }) => {
+  await page.getByRole('tab', { name: /Storico/ }).click()
+  await page.getByRole('button', { name: 'Modifica Caffè' }).click()
+
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Urgente').check()
+  await dialog.getByRole('button', { name: 'Salva' }).click()
+
+  await page.getByRole('tab', { name: /Da prendere/ }).click()
+  const mainList = page.getByRole('main')
+  const activeRow = mainList.getByRole('listitem').filter({ hasText: 'Caffè' })
+  await expect(activeRow).toBeVisible()
+  await expect(activeRow).toContainText('Urgente')
+})
+
 test('chiude il dialog cliccando fuori', async ({ page }) => {
   await page.getByLabel('Nuovo articolo').fill('Fuori e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()

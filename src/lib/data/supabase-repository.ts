@@ -249,6 +249,10 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
 
     async update(id, patch) {
       const current = await getById(id)
+      // Un articolo in storico reso urgente torna in lista: il vincolo
+      // `items_urgent_only_active` vieta `urgent = true` su `bought`, quindi
+      // stato e urgenza cambiano nella stessa operazione.
+      const promoting = current.status === 'bought' && patch.urgent === true
       const updated: Item = {
         ...current,
         name: patch.name?.trim() || current.name,
@@ -257,6 +261,8 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
         note: patch.note === undefined ? current.note : patch.note,
         quantity: patch.quantity === undefined ? current.quantity : patch.quantity,
         urgent: patch.urgent === undefined ? current.urgent : patch.urgent,
+        status: promoting ? 'to_buy' : current.status,
+        bought_at: promoting ? null : current.bought_at,
         updated_at: new Date().toISOString(),
       }
 
@@ -276,6 +282,7 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
             note: updated.note,
             quantity: updated.quantity,
             urgent: updated.urgent,
+            ...(promoting ? { status: 'to_buy' as const } : {}),
           })
           .eq('id', id)
           .select('*')

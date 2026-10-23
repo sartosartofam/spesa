@@ -285,6 +285,52 @@ describe('supabase items repository', () => {
     expect(api.rows[0]?.name).toBe('Fagioli')
   })
 
+  it('un articolo in storico reso urgente torna in lista in una sola operazione', async () => {
+    const { api, repository } = createFakeApi([
+      makeRow({
+        id: 'bought-1',
+        name: 'Latte',
+        status: 'bought',
+        bought_at: '2026-10-01T10:00:00.000Z',
+        quantity: '1 l',
+      }),
+    ])
+
+    const updated = await repository.update('bought-1', { urgent: true })
+
+    expect(updated.status).toBe('to_buy')
+    expect(updated.urgent).toBe(true)
+    expect(updated.bought_at).toBeNull()
+    expect(api.rows[0]?.status).toBe('to_buy')
+    expect((await repository.list('active')).map((item) => item.id)).toEqual(['bought-1'])
+    expect(await repository.list('history')).toHaveLength(0)
+  })
+
+  it('un articolo in storico reso urgente si unisce al duplicato attivo senza perdere dati', async () => {
+    const { api, repository } = createFakeApi([
+      makeRow({ id: 'active-1', name: 'Fagioli', category: 'Dispensa', quantity: '2' }),
+      makeRow({
+        id: 'bought-1',
+        name: 'fagioli',
+        category: 'Dispensa',
+        quantity: '1',
+        note: 'da finire',
+        status: 'bought',
+        bought_at: '2026-10-01T10:00:00.000Z',
+      }),
+    ])
+
+    const merged = await repository.update('bought-1', { urgent: true })
+
+    expect(merged.id).toBe('active-1')
+    expect(merged.status).toBe('to_buy')
+    expect(merged.urgent).toBe(true)
+    expect(merged.quantity).toBe('3')
+    expect(merged.note).toBe('da finire')
+    expect(api.rows).toHaveLength(1)
+    expect(api.rows[0]?.id).toBe('active-1')
+  })
+
   it('suggerisce nomi unici ordinati anche tra lista e storico', async () => {
     const { repository } = createFakeApi([
       makeRow({ id: '1', name: 'Pane' }),

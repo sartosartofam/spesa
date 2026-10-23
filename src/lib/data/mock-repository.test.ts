@@ -74,6 +74,24 @@ describe('mock items repository', () => {
     expect(active.some((candidate) => candidate.id === item.id)).toBe(true)
   })
 
+  it('un articolo preso che diventa urgente rientra in lista con una sola update', async () => {
+    const repository = createMockItemsRepository()
+    const item = await repository.add({ name: 'Pane' })
+    await repository.setStatus(item.id, 'bought')
+
+    const updated = await repository.update(item.id, { urgent: true })
+
+    expect(updated.status).toBe('to_buy')
+    expect(updated.urgent).toBe(true)
+    expect(updated.bought_at).toBeNull()
+    expect((await repository.list('history')).some((candidate) => candidate.id === item.id)).toBe(
+      false,
+    )
+    expect((await repository.list('active')).some((candidate) => candidate.id === item.id)).toBe(
+      true,
+    )
+  })
+
   it('aggiorna i dettagli di un articolo', async () => {
     const repository = createMockItemsRepository()
     const item = await repository.add({ name: 'Pane' })

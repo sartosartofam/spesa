@@ -186,6 +186,9 @@ export function createMockItemsRepository(): ItemsRepository {
     async update(id, patch) {
       await delay()
       const current = find(id)
+      // Stessa regola del repository Supabase: un articolo in storico reso
+      // urgente torna in lista, così l'update resta un'operazione sola.
+      const promoting = current.status === 'bought' && patch.urgent === true
       const updated: Item = {
         ...current,
         name: patch.name?.trim() || current.name,
@@ -194,6 +197,8 @@ export function createMockItemsRepository(): ItemsRepository {
         note: patch.note === undefined ? current.note : patch.note,
         quantity: patch.quantity === undefined ? current.quantity : patch.quantity,
         urgent: patch.urgent === undefined ? current.urgent : patch.urgent,
+        status: promoting ? 'to_buy' : current.status,
+        bought_at: promoting ? null : current.bought_at,
         updated_at: nowIso(),
       }
 
