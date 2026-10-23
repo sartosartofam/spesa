@@ -1,4 +1,4 @@
-import { type Category, DEFAULT_CATEGORY } from './categories'
+import { CATEGORIES, type Category, DEFAULT_CATEGORY } from './categories'
 
 export interface Settings {
   /** Se attivo, il campo rapido aggiunge subito senza aprire il dialog. */
@@ -20,7 +20,9 @@ export function readSettings(): Settings {
     const parsed = JSON.parse(raw) as Partial<Settings>
     return {
       quickAdd: parsed.quickAdd === true,
-      defaultCategory: parsed.defaultCategory ?? DEFAULT_CATEGORY,
+      defaultCategory: CATEGORIES.includes(parsed.defaultCategory as Category)
+        ? (parsed.defaultCategory as Category)
+        : DEFAULT_CATEGORY,
     }
   } catch {
     return DEFAULT_SETTINGS
