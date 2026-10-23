@@ -5,9 +5,16 @@ interface QuickAddProps {
   quickMode: boolean
   defaultCategory: string
   onSubmit: (name: string) => void | Promise<void>
+  onDetails: (name: string) => void
 }
 
-export function QuickAdd({ suggestions, quickMode, defaultCategory, onSubmit }: QuickAddProps) {
+export function QuickAdd({
+  suggestions,
+  quickMode,
+  defaultCategory,
+  onSubmit,
+  onDetails,
+}: QuickAddProps) {
   const [name, setName] = useState('')
   const trimmed = name.trim()
   const canSubmit = trimmed.length > 0
@@ -52,7 +59,10 @@ export function QuickAdd({ suggestions, quickMode, defaultCategory, onSubmit }: 
       </div>
       {quickMode && (
         <p class="quick-add__hint">
-          Aggiunta rapida in <strong>{defaultCategory}</strong> · si cambia dalle impostazioni
+          Aggiunta rapida in <strong>{defaultCategory}</strong> ·{' '}
+          <button class="link-button" type="button" onClick={() => onDetails(trimmed)}>
+            Dettagli
+          </button>
         </p>
       )}
     </form>

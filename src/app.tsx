@@ -71,6 +71,13 @@ export function App() {
     })
   }
 
+  function handleQuickAddDetails(name: string) {
+    setDialog({
+      mode: 'add',
+      draft: { name, category: settings.defaultCategory },
+    })
+  }
+
   async function handleSave(draft: ItemDraft) {
     const payload = {
       name: draft.name.trim(),
@@ -110,13 +117,6 @@ export function App() {
         }
       : (dialog?.draft ?? {})
 
-  function openAdd(draft: Partial<ItemDraft> = {}) {
-    setDialog({
-      mode: 'add',
-      draft: { category: settings.defaultCategory, ...draft },
-    })
-  }
-
   return (
     <div class="app">
       <AppHeader
@@ -132,6 +132,7 @@ export function App() {
             quickMode={settings.quickAdd}
             defaultCategory={settings.defaultCategory}
             onSubmit={handleQuickAdd}
+            onDetails={handleQuickAddDetails}
           />
 
           <ListTabs view={view} counts={list.counts} onChange={changeView} />
@@ -306,14 +307,6 @@ export function App() {
                 ))}
               </ul>
             )}
-          </section>
-
-          <section class="panel">
-            <h2 class="panel__title">Aggiunta</h2>
-            <p class="hint">Il campo in alto apre il dialog con categoria, quantità e urgenza.</p>
-            <button class="button button--ghost" type="button" onClick={() => openAdd()}>
-              Aggiungi con dettagli
-            </button>
           </section>
         </aside>
       </div>

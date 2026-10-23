@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
-import { CATEGORIES, type Category } from '../lib/categories'
+import { useState } from 'preact/hooks'
+import { useModalDialog } from '../hooks/useModalDialog'
+import { readCategories } from '../lib/categories'
 import type { Settings } from '../lib/settings'
 
 interface SettingsDialogProps {
@@ -9,13 +10,10 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ settings, onClose, onSave }: SettingsDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
+  const dialogRef = useModalDialog(onClose)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
-  const [defaultCategory, setDefaultCategory] = useState<Category>(settings.defaultCategory)
-
-  useEffect(() => {
-    dialogRef.current?.showModal()
-  }, [])
+  const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
+  const [categories] = useState<string[]>(() => readCategories())
 
   function submit(event: Event) {
     event.preventDefault()
@@ -62,9 +60,12 @@ export function SettingsDialog({ settings, onClose, onSave }: SettingsDialogProp
           <select
             id="settings-category"
             value={defaultCategory}
-            onChange={(event) => setDefaultCategory(event.currentTarget.value as Category)}
+            onChange={(event) => setDefaultCategory(event.currentTarget.value)}
           >
-            {CATEGORIES.map((category) => (
+            {!categories.includes(defaultCategory) && (
+              <option value={defaultCategory}>{defaultCategory}</option>
+            )}
+            {categories.map((category) => (
               <option value={category} key={category}>
                 {category}
               </option>

@@ -1,9 +1,9 @@
-import { CATEGORIES, type Category, DEFAULT_CATEGORY } from './categories'
+import { DEFAULT_CATEGORY, readCategories } from './categories'
 
 export interface Settings {
   /** Se attivo, il campo rapido aggiunge subito senza aprire il dialog. */
   quickAdd: boolean
-  defaultCategory: Category
+  defaultCategory: string
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,11 +18,13 @@ export function readSettings(): Settings {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return DEFAULT_SETTINGS
     const parsed = JSON.parse(raw) as Partial<Settings>
+    const categories = readCategories()
     return {
       quickAdd: parsed.quickAdd === true,
-      defaultCategory: CATEGORIES.includes(parsed.defaultCategory as Category)
-        ? (parsed.defaultCategory as Category)
-        : DEFAULT_CATEGORY,
+      defaultCategory:
+        typeof parsed.defaultCategory === 'string' && categories.includes(parsed.defaultCategory)
+          ? parsed.defaultCategory
+          : DEFAULT_CATEGORY,
     }
   } catch {
     return DEFAULT_SETTINGS

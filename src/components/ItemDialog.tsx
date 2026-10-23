@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
-import { CATEGORIES, type Category, normalizeCategory } from '../lib/categories'
+import { useState } from 'preact/hooks'
+import { useModalDialog } from '../hooks/useModalDialog'
+import { addCustomCategory, normalizeCategory, readCategories } from '../lib/categories'
 
 export interface ItemDraft {
   name: string
@@ -18,9 +19,10 @@ interface ItemDialogProps {
 }
 
 const QUANTITY_HINTS = ['pz', 'pacchi', 'kg', 'g', 'l', 'bottiglie', 'confezioni', 'scatolette']
+const NEW_CATEGORY = '__new__'
 
 export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
+  const dialogRef = useModalDialog(onClose)
   const [draft, setDraft] = useState<ItemDraft>({
     name: initial.name ?? '',
     quantity: initial.quantity ?? '',
@@ -28,10 +30,9 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
     note: initial.note ?? '',
     urgent: initial.urgent ?? false,
   })
-
-  useEffect(() => {
-    dialogRef.current?.showModal()
-  }, [])
+  const [categories, setCategories] = useState<string[]>(() => readCategories())
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState('')
 
   function patch<K extends keyof ItemDraft>(key: K, value: ItemDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -50,6 +51,17 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
     if (!confirm(`Rimuovere "${draft.name}"?`)) return
     await onDelete()
     onClose()
+  }
+
+  function createCategory() {
+    const name = newCategory.trim()
+    if (!name) return
+    const updated = addCustomCategory(name)
+    const canonical = updated.find((category) => category.toLowerCase() === name.toLowerCase())
+    setCategories(updated)
+    patch('category', canonical ?? name)
+    setAddingCategory(false)
+    setNewCategory('')
   }
 
   return (
@@ -115,19 +127,71 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
             <select
               id="item-dialog-category"
               value={draft.category}
-              onChange={(event) => patch('category', event.currentTarget.value)}
+              onChange={(event) => {
+                if (event.currentTarget.value === NEW_CATEGORY) {
+                  setAddingCategory(true)
+                  setNewCategory('')
+                  return
+                }
+                setAddingCategory(false)
+                patch('category', event.currentTarget.value)
+              }}
             >
-              {!CATEGORIES.includes(draft.category as Category) && (
+              {!categories.includes(draft.category) && (
                 <option value={draft.category}>{draft.category}</option>
               )}
-              {CATEGORIES.map((category) => (
+              {categories.map((category) => (
                 <option value={category} key={category}>
                   {category}
                 </option>
               ))}
+              <option value={NEW_CATEGORY}>＋ Nuova categoria…</option>
             </select>
           </div>
         </div>
+
+        {addingCategory && (
+          <div class="category-new">
+            <label class="field__label" for="item-dialog-new-category">
+              Nuova categoria
+            </label>
+            <input
+              id="item-dialog-new-category"
+              type="text"
+              value={newCategory}
+              placeholder="es. Panetteria"
+              maxLength={30}
+              autoFocus
+              onInput={(event) => setNewCategory(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  createCategory()
+                }
+              }}
+            />
+            <div class="category-new__actions">
+              <button
+                class="button button--ghost"
+                type="button"
+                onClick={() => {
+                  setAddingCategory(false)
+                  setNewCategory('')
+                }}
+              >
+                Annulla
+              </button>
+              <button
+                class="button button--primary"
+                type="button"
+                disabled={!newCategory.trim()}
+                onClick={createCategory}
+              >
+                Crea
+              </button>
+            </div>
+          </div>
+        )}
 
         <label class="checkbox">
           <input
@@ -136,8 +200,8 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
             onChange={(event) => patch('urgent', event.currentTarget.checked)}
           />
           <span>
-            <strong>È finito</strong>
-            <span class="checkbox__hint">Segnala come urgente, in cima alla lista.</span>
+            <strong>Urgente</strong>
+            <span class="checkbox__hint">Segnala che è finito: va comprato subito.</span>
           </span>
         </label>
 

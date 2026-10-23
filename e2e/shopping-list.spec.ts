@@ -14,14 +14,15 @@ test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ pag
   await dialog.getByLabel('Categoria').selectOption('Dispensa')
   await dialog.getByRole('button', { name: 'Salva' }).click()
 
-  const activeRow = page.getByRole('listitem').filter({ hasText: 'Test e2e' })
+  const mainList = page.getByRole('main')
+  const activeRow = mainList.getByRole('listitem').filter({ hasText: 'Test e2e' })
   await expect(activeRow).toBeVisible()
   await expect(activeRow).toContainText('2 pacchi')
 
-  await activeRow.getByRole('button', { name: 'Segna Test e2e come preso' }).click()
+  await activeRow.getByRole('button', { name: 'Preso', exact: true }).click()
   await page.getByRole('tab', { name: /Storico/ }).click()
 
-  await expect(page.getByRole('listitem').filter({ hasText: 'Test e2e' })).toBeVisible()
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Test e2e' })).toBeVisible()
 })
 
 test('marca un articolo come urgente e lo filtra', async ({ page }) => {
@@ -31,7 +32,7 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
 
   const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('È finito').check()
+  await dialog.getByLabel('Urgente').check()
   await dialog.getByRole('button', { name: 'Salva' }).click()
 
   const mainList = page.getByRole('main')
@@ -61,4 +62,36 @@ test('l’aggiunta rapida usa la categoria predefinita', async ({ page }) => {
   await expect(
     page.getByRole('main').getByRole('listitem').filter({ hasText: 'Sapone e2e' }),
   ).toBeVisible()
+})
+
+test('permette di creare una categoria personalizzata', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByLabel('Nuovo articolo').fill('Cornetti e2e')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Categoria').selectOption('__new__')
+  await dialog.getByLabel('Nuova categoria').fill('Panetteria')
+  await dialog.getByRole('button', { name: 'Crea' }).click()
+
+  await expect(dialog.getByLabel('Categoria')).toHaveValue('Panetteria')
+  await dialog.getByRole('button', { name: 'Salva' }).click()
+
+  await expect(
+    page.getByRole('main').getByRole('listitem').filter({ hasText: 'Cornetti e2e' }),
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Panetteria/ })).toBeVisible()
+})
+
+test('chiude il dialog cliccando fuori', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByLabel('Nuovo articolo').fill('Fuori e2e')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+
+  await page.mouse.click(8, 8)
+
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 })

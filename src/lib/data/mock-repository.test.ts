@@ -89,6 +89,51 @@ describe('mock items repository', () => {
     expect(updated.urgent).toBe(true)
   })
 
+  it('somma la quantità quando si aggiunge un articolo identico', async () => {
+    const repository = createMockItemsRepository()
+
+    const first = await repository.add({
+      name: 'Fagioli',
+      category: 'Dispensa',
+      quantity: '2 scatolette',
+    })
+    const second = await repository.add({
+      name: 'fagioli',
+      category: 'Dispensa',
+      quantity: '3 scatolette',
+    })
+
+    const active = await repository.list('active')
+    const matches = active.filter((item) => item.name.toLowerCase() === 'fagioli')
+
+    expect(matches).toHaveLength(1)
+    expect(matches[0]?.quantity).toBe('5 scatolette')
+    expect(second.id).toBe(first.id)
+  })
+
+  it('unisce due articoli quando una modifica li rende identici', async () => {
+    const repository = createMockItemsRepository()
+
+    const first = await repository.add({
+      name: 'Fagioli',
+      category: 'Dispensa',
+      quantity: '2 confezioni',
+    })
+    const second = await repository.add({
+      name: 'Ceci',
+      category: 'Dispensa',
+      quantity: '1 confezioni',
+    })
+
+    const merged = await repository.update(second.id, { name: 'fagioli' })
+    const active = await repository.list('active')
+
+    expect(merged.id).toBe(first.id)
+    expect(merged.quantity).toBe('3 confezioni')
+    expect(active.some((item) => item.id === second.id)).toBe(false)
+    expect(active.filter((item) => item.name.toLowerCase() === 'fagioli')).toHaveLength(1)
+  })
+
   it('suggerisce i nomi già usati', async () => {
     const repository = createMockItemsRepository()
     await repository.add({ name: 'Caffè' })

@@ -71,7 +71,7 @@ export function ItemRow({
             type="button"
             onClick={() => void onToggleUrgent(item)}
           >
-            È finito
+            Urgente
           </button>
         ) : (
           <button
@@ -80,7 +80,7 @@ export function ItemRow({
             aria-pressed={item.urgent}
             onClick={() => void onToggleUrgent(item)}
           >
-            {item.urgent ? 'Non urgente' : 'È finito'}
+            {item.urgent ? 'Non urgente' : 'Urgente'}
           </button>
         )}
         {isHistory ? (

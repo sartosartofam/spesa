@@ -1,4 +1,5 @@
 import { categoryRank, normalizeCategory } from '../categories'
+import { mergeQuantities } from '../quantity'
 import type { Item, ItemStatus, ListView, NewItem } from '../types'
 import type { ItemsRepository } from './repository'
 
@@ -109,6 +110,32 @@ function delay(ms = 90): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Due articoli sono lo stesso prodotto se hanno tutti gli attributi uguali
+ * tranne la quantità (che viene sommata). L'id e i timestamp non contano.
+ *
+ * Nota backend: quando arriverà l'implementazione Supabase, lo stesso merge
+ * andrà garantito con un trigger/unique index su famiglia, stato, nome,
+ * categoria, urgenza e nota (la quantità resta il valore da sommare).
+ */
+function identityKey(item: Item): string {
+  return JSON.stringify([
+    item.status,
+    item.name.trim().toLocaleLowerCase('it'),
+    normalizeCategory(item.category).toLocaleLowerCase('it'),
+    (item.note ?? '').trim().toLocaleLowerCase('it'),
+    item.urgent,
+  ])
+}
+
+function mergeInto(target: Item, source: Item): Item {
+  return {
+    ...target,
+    quantity: mergeQuantities(target.quantity, source.quantity),
+    updated_at: nowIso(),
+  }
+}
+
 function sortForView(items: Item[], view: ListView): Item[] {
   const visible = items.filter((item) =>
     view === 'active' ? item.status !== 'bought' : item.status === 'bought',
@@ -157,6 +184,15 @@ export function createMockItemsRepository(): ItemsRepository {
         note: input.note?.trim() || null,
         quantity: input.quantity?.trim() || null,
       })
+
+      const duplicate = items.find((candidate) => identityKey(candidate) === identityKey(item))
+      if (duplicate) {
+        const merged = mergeInto(duplicate, item)
+        items = items.map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
+        persist()
+        return merged
+      }
+
       items = [item, ...items]
       persist()
       return item
@@ -172,6 +208,19 @@ export function createMockItemsRepository(): ItemsRepository {
         updated_at: nowIso(),
         bought_at: status === 'bought' ? nowIso() : null,
       }
+
+      const duplicate = items.find(
+        (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
+      )
+      if (duplicate) {
+        const merged = mergeInto(duplicate, updated)
+        items = items
+          .filter((candidate) => candidate.id !== id)
+          .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
+        persist()
+        return merged
+      }
+
       items = items.map((item) => (item.id === id ? updated : item))
       persist()
       return updated
@@ -190,6 +239,19 @@ export function createMockItemsRepository(): ItemsRepository {
         urgent: patch.urgent === undefined ? current.urgent : patch.urgent,
         updated_at: nowIso(),
       }
+
+      const duplicate = items.find(
+        (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
+      )
+      if (duplicate) {
+        const merged = mergeInto(duplicate, updated)
+        items = items
+          .filter((candidate) => candidate.id !== id)
+          .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
+        persist()
+        return merged
+      }
+
       items = items.map((item) => (item.id === id ? updated : item))
       persist()
       return updated
