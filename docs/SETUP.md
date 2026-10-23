@@ -100,6 +100,17 @@ npm run db:types
 
 `npm run db:types` legge dallo stack locale, sovrascrive `src/lib/database.types.ts` e lo formatta con Biome. La generazione è riproducibile.
 
+### Modalità dati (mock / Supabase)
+
+Il repository viene scelto in `src/lib/data/index.ts`:
+
+- con `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` presenti l'app usa Supabase (locale o cloud);
+- `VITE_DATA_MODE=mock npm run dev` forza i dati locali in `localStorage`, senza rete;
+- gli e2e usano sempre `VITE_DATA_MODE=mock` (vedi `playwright.config.ts`) e non chiamano REST;
+- senza variabili la landing parte comunque e la UI usa il mock.
+
+Il client e il repository sono creati in modo lazy: un ambiente non configurato non fa crashare la landing. Il merge dei duplicati è applicato lato client; il vincolo/trigger equivalente lato database resta un follow-up backend.
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.

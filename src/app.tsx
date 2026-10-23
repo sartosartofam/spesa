@@ -128,9 +128,6 @@ export function App({ userEmail, authError, onLogout }: AppProps) {
     }
     if (dialog?.mode === 'edit') {
       await list.update(dialog.item.id, payload)
-      if (dialog.item.status === 'bought' && payload.urgent) {
-        await list.setStatus(dialog.item.id, 'to_buy')
-      }
     } else {
       await list.add(payload)
     }

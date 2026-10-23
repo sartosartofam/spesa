@@ -3,10 +3,9 @@ import type { Item, ItemStatus, ListView, NewItem } from '../types'
 /**
  * Contratto di accesso ai dati della lista.
  *
- * Lo scaffold espone solo l'implementazione mock (`mock-repository.ts`).
- * Quando lo schema backend sarà collegato, si aggiunge un'implementazione
- * Supabase e si cambia solo il punto di composizione in `data/index.ts`:
- * componenti e hook restano invariati.
+ * Implementazioni: `mock-repository.ts` (dati locali, test e demo) e
+ * `supabase-repository.ts` (database reale, filtrato dalla RLS). Il punto di
+ * composizione è `data/index.ts`: componenti e hook restano invariati.
  */
 export interface ItemsRepository {
   /** Articoli di una vista: lista attiva oppure storico. */
