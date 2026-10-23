@@ -65,6 +65,33 @@ npm run db:reset     # applica migrazioni + seed
 
 Le chiavi locali sono pubbliche e rigenerabili: non sono secret di produzione. `npm run env:local` evita di copiarle a mano.
 
+### Seed e utenti di test
+
+`npm run db:reset` applica migrazioni e `supabase/seed.sql`, poi crea gli utenti Auth demo con `scripts/seed-auth.mjs`. I dati sono fittizi e valgono solo per lo stack locale.
+
+| Utente               | Password         | Ruolo  |
+| -------------------- | ---------------- | ------ |
+| `demo@spesa.test`    | `spesa-demo-123` | owner  |
+| `partner@spesa.test` | `spesa-demo-123` | member |
+
+La famiglia demo si chiama `Famiglia Demo` e contiene articoli in lista, urgenti e nello storico. Per ricreare solo gli utenti Auth dopo un `supabase db reset` eseguito senza lo script npm:
+
+```bash
+npm run db:seed
+```
+
+Lo script usa la `service_role` locale, rifiuta URL non locali e non stampa la chiave. Non usarlo mai contro la produzione.
+
+### Tipi TypeScript
+
+Dopo una modifica a schema, policy o funzioni SQL:
+
+```bash
+npm run db:types
+```
+
+`npm run db:types` legge dallo stack locale, sovrascrive `src/lib/database.types.ts` e lo formatta con Biome. La generazione è riproducibile.
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.
