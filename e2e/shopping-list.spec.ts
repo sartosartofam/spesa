@@ -1,8 +1,12 @@
 import { expect, test } from '@playwright/test'
+import { mockAuth, signInAsDemo } from './support/auth'
+
+test.beforeEach(async ({ page }) => {
+  await mockAuth(page)
+  await signInAsDemo(page)
+})
 
 test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ page }) => {
-  await page.goto('/')
-
   await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
 
   await page.getByLabel('Nuovo articolo').fill('Test e2e')
@@ -26,8 +30,6 @@ test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ pag
 })
 
 test('marca un articolo come urgente e lo filtra', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByLabel('Nuovo articolo').fill('Urgente e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
 
@@ -55,8 +57,6 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
 })
 
 test('filtra per più categorie contemporaneamente', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByLabel('Nuovo articolo').fill('Casa e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
   let dialog = page.getByRole('dialog')
@@ -85,8 +85,6 @@ test('filtra per più categorie contemporaneamente', async ({ page }) => {
 })
 
 test('l’aggiunta rapida usa la categoria predefinita', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   const settings = page.getByRole('dialog')
   await settings.getByLabel('Aggiunta rapida').check()
@@ -105,8 +103,6 @@ test('l’aggiunta rapida usa la categoria predefinita', async ({ page }) => {
 })
 
 test('permette di creare una categoria personalizzata', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByLabel('Nuovo articolo').fill('Cornetti e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
 
@@ -125,8 +121,6 @@ test('permette di creare una categoria personalizzata', async ({ page }) => {
 })
 
 test('importa un preset negozio da JSON', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   const settings = page.getByRole('dialog')
   await settings.locator('input[type="file"]').setInputFiles({
@@ -154,8 +148,6 @@ test('importa un preset negozio da JSON', async ({ page }) => {
 })
 
 test('esporta i preset negozio in JSON', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   const settings = page.getByRole('dialog')
   const downloadPromise = page.waitForEvent('download')
@@ -166,8 +158,6 @@ test('esporta i preset negozio in JSON', async ({ page }) => {
 })
 
 test('chiude il dialog cliccando fuori', async ({ page }) => {
-  await page.goto('/')
-
   await page.getByLabel('Nuovo articolo').fill('Fuori e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
   await expect(page.getByRole('dialog')).toBeVisible()

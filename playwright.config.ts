@@ -11,7 +11,10 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
+    // Gli e2e non avviano Supabase: il client Auth viene configurato con un URL
+    // fittizio e le chiamate vengono intercettate dai test (vedi e2e/support/auth.ts).
+    command:
+      'VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_PUBLISHABLE_KEY=e2e-anon-key npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

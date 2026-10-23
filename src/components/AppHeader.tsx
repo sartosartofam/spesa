@@ -1,12 +1,20 @@
-import { SettingsIcon } from './Icons'
+import { LogOutIcon, SettingsIcon } from './Icons'
 
 interface AppHeaderProps {
   counts: { active: number; urgent: number; history: number }
   isMockData: boolean
+  userEmail: string
   onOpenSettings: () => void
+  onLogout: () => void
 }
 
-export function AppHeader({ counts, isMockData, onOpenSettings }: AppHeaderProps) {
+export function AppHeader({
+  counts,
+  isMockData,
+  userEmail,
+  onOpenSettings,
+  onLogout,
+}: AppHeaderProps) {
   const urgentLabel = counts.urgent === 1 ? 'urgente' : 'urgenti'
 
   return (
@@ -23,17 +31,23 @@ export function AppHeader({ counts, isMockData, onOpenSettings }: AppHeaderProps
             </span>
           )}
           {isMockData && <span class="chip">dati demo</span>}
+          {userEmail && <span class="chip">{userEmail}</span>}
         </div>
       </div>
-      <button
-        class="icon-button"
-        type="button"
-        aria-label="Impostazioni"
-        title="Impostazioni"
-        onClick={onOpenSettings}
-      >
-        <SettingsIcon />
-      </button>
+      <div class="app-header__actions">
+        <button class="icon-button" type="button" aria-label="Esci" title="Esci" onClick={onLogout}>
+          <LogOutIcon />
+        </button>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label="Impostazioni"
+          title="Impostazioni"
+          onClick={onOpenSettings}
+        >
+          <SettingsIcon />
+        </button>
+      </div>
     </header>
   )
 }

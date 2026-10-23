@@ -1,10 +1,10 @@
 {
   "name": "Spesa",
   "short_name": "Spesa",
-  "description": "Lista della spesa condivisa della famiglia.",
+  "description": "Lista della spesa condivisa per famiglie, gratuita e senza pubblicità.",
   "lang": "it",
   "dir": "ltr",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
