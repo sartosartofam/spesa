@@ -17,7 +17,13 @@ import type { Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
 
-export function App() {
+interface AppProps {
+  userEmail: string
+  authError: string | null
+  onLogout: () => void
+}
+
+export function App({ userEmail, authError, onLogout }: AppProps) {
   const list = useShoppingList()
   const [view, setView] = useState<ListView>('active')
   const [query, setQuery] = useState('')
@@ -156,7 +162,9 @@ export function App() {
       <AppHeader
         counts={list.counts}
         isMockData={!isLiveData}
+        userEmail={userEmail}
         onOpenSettings={() => setSettingsOpen(true)}
+        onLogout={onLogout}
       />
 
       <div class="layout">
@@ -229,6 +237,11 @@ export function App() {
           )}
 
           <div class="app__feedback" role="status" aria-live="polite">
+            {authError && (
+              <p class="alert" role="alert">
+                {authError}
+              </p>
+            )}
             {list.error && <p class="alert">{list.error}</p>}
             {list.loading && <p class="hint">Carico la lista…</p>}
           </div>

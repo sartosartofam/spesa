@@ -82,6 +82,14 @@ npm run db:seed
 
 Lo script usa la `service_role` locale, rifiuta URL non locali e non stampa la chiave. Non usarlo mai contro la produzione.
 
+Con `npm run dev`:
+
+- `/` è la landing pubblica;
+- `/login` è la pagina di accesso, senza registrazione pubblica;
+- `/app` è l’area riservata e richiede una sessione attiva.
+
+Per provare il login usa uno degli utenti demo qui sopra.
+
 ### Tipi TypeScript
 
 Dopo una modifica a schema, policy o funzioni SQL:
