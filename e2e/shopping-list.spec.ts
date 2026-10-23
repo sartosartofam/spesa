@@ -42,10 +42,16 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   await page.getByRole('button', { name: /Filtri/ }).click()
   const filters = page.getByRole('dialog')
   await filters.getByRole('checkbox', { name: /Solo urgenti/ }).check()
-  await filters.getByRole('button', { name: 'Applica' }).click()
+  await filters.getByRole('button', { name: 'Chiudi filtri' }).click()
 
   await expect(activeRow).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: /Filtri/ }).click()
+  await expect(
+    page.getByRole('dialog').getByRole('checkbox', { name: /Solo urgenti/ }),
+  ).toBeChecked()
+  await page.getByRole('dialog').getByRole('button', { name: 'Chiudi filtri' }).click()
 })
 
 test('filtra per più categorie contemporaneamente', async ({ page }) => {
@@ -70,7 +76,7 @@ test('filtra per più categorie contemporaneamente', async ({ page }) => {
   const filters = page.getByRole('dialog')
   await filters.getByRole('checkbox', { name: /Casa/ }).check()
   await filters.getByRole('checkbox', { name: /Dispensa/ }).check()
-  await filters.getByRole('button', { name: 'Applica' }).click()
+  await filters.getByRole('button', { name: 'Chiudi filtri' }).click()
 
   const mainList = page.getByRole('main')
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toBeVisible()
@@ -116,6 +122,47 @@ test('permette di creare una categoria personalizzata', async ({ page }) => {
     page.getByRole('main').getByRole('listitem').filter({ hasText: 'Cornetti e2e' }),
   ).toBeVisible()
   await expect(page.getByRole('heading', { name: /Panetteria/ })).toBeVisible()
+})
+
+test('importa un preset negozio da JSON', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  const settings = page.getByRole('dialog')
+  await settings.locator('input[type="file"]').setInputFiles({
+    name: 'negozi.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        presets: [{ name: 'Esselunga e2e', order: ['Casa', 'Dispensa'] }],
+      }),
+    ),
+  })
+
+  await expect(settings.getByText(/Preset importati/)).toBeVisible()
+  await settings.getByRole('button', { name: 'Salva' }).click()
+
+  const imported = await page.evaluate(() => {
+    const raw = localStorage.getItem('spesa.settings.v1')
+    const parsed = raw
+      ? (JSON.parse(raw) as { presets?: Array<{ name?: string }> })
+      : { presets: [] }
+    return parsed.presets?.some((preset) => preset.name === 'Esselunga e2e') ?? false
+  })
+
+  expect(imported).toBe(true)
+})
+
+test('esporta i preset negozio in JSON', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  const settings = page.getByRole('dialog')
+  const downloadPromise = page.waitForEvent('download')
+  await settings.getByRole('button', { name: 'Esporta JSON' }).click()
+
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe('spesa-preset-negozi.json')
 })
 
 test('chiude il dialog cliccando fuori', async ({ page }) => {

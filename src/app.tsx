@@ -12,7 +12,7 @@ import { useShoppingList } from './hooks/useShoppingList'
 import { categoryRank, normalizeCategory } from './lib/categories'
 import { isLiveData } from './lib/data'
 import { categoryCounts, groupByCategory, matchesQuery, sortActive, sortHistory } from './lib/list'
-import { readSettings, type Settings, writeSettings } from './lib/settings'
+import { activeCategoryOrder, readSettings, type Settings, writeSettings } from './lib/settings'
 import type { Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
@@ -27,6 +27,7 @@ export function App() {
   const [dialog, setDialog] = useState<DialogState>(null)
   const [settings, setSettings] = useState<Settings>(() => readSettings())
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const categoryOrder = activeCategoryOrder(settings)
 
   const categoryFilter = useMemo(() => new Set(selectedCategories), [selectedCategories])
   const activeItems = useMemo(
@@ -41,8 +42,8 @@ export function App() {
   )
 
   const activeGroups = useMemo(
-    () => groupByCategory(activeItems, settings.categoryOrder),
-    [activeItems, settings.categoryOrder],
+    () => groupByCategory(activeItems, categoryOrder),
+    [activeItems, categoryOrder],
   )
   const urgentItems = useMemo(
     () => sortActive(activeItems.filter((item) => item.urgent)),
@@ -62,16 +63,15 @@ export function App() {
 
   const filterCategories = useMemo(() => {
     const source = view === 'active' ? list.active : list.history
-    const counts = new Map(categoryCounts(source, settings.categoryOrder))
+    const counts = new Map(categoryCounts(source, categoryOrder))
     for (const category of selectedCategories) {
       if (!counts.has(category)) counts.set(category, 0)
     }
     return [...counts.entries()].sort(
       ([a], [b]) =>
-        categoryRank(a, settings.categoryOrder) - categoryRank(b, settings.categoryOrder) ||
-        a.localeCompare(b, 'it'),
+        categoryRank(a, categoryOrder) - categoryRank(b, categoryOrder) || a.localeCompare(b, 'it'),
     )
-  }, [view, list.active, list.history, selectedCategories, settings.categoryOrder])
+  }, [view, list.active, list.history, selectedCategories, categoryOrder])
 
   const activeFilterCount = selectedCategories.length + (urgentOnly ? 1 : 0)
   const hasFilters = query.trim().length > 0 || activeFilterCount > 0
@@ -92,11 +92,6 @@ export function App() {
   function clearFilters() {
     setUrgentOnly(false)
     setSelectedCategories([])
-  }
-
-  function applyFilters(nextUrgentOnly: boolean, nextCategories: string[]) {
-    setUrgentOnly(nextUrgentOnly)
-    setSelectedCategories(nextCategories)
   }
 
   async function handleQuickAdd(name: string) {
@@ -206,7 +201,7 @@ export function App() {
             <div class="active-filters">
               {urgentOnly && (
                 <button
-                  class="filter-chip filter-chip--active"
+                  class="filter-chip filter-chip--active filter-chip--urgent"
                   type="button"
                   aria-label="Togli il filtro Solo urgenti"
                   onClick={() => setUrgentOnly(false)}
@@ -333,30 +328,31 @@ export function App() {
                 <span class="filter-option__count">{list.counts.urgent}</span>
               </label>
             )}
+            <p class="field__label">Categorie</p>
+            {filterCategories.length === 0 ? (
+              <p class="hint">Nessuna categoria disponibile.</p>
+            ) : (
+              <ul class="filter-options">
+                {filterCategories.map(([category, count]) => (
+                  <li key={category}>
+                    <label class="filter-option">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => toggleCategory(category)}
+                      />
+                      <span>{category}</span>
+                      <span class="filter-option__count">{count}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
             {activeFilterCount > 0 && (
               <button class="link-button" type="button" onClick={clearFilters}>
                 Azzera filtri
               </button>
             )}
-          </section>
-
-          <section class="panel">
-            <h2 class="panel__title">Categorie</h2>
-            <ul class="filter-options">
-              {filterCategories.map(([category, count]) => (
-                <li key={category}>
-                  <label class="filter-option">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(category)}
-                      onChange={() => toggleCategory(category)}
-                    />
-                    <span>{category}</span>
-                    <span class="filter-option__count">{count}</span>
-                  </label>
-                </li>
-              ))}
-            </ul>
           </section>
 
           <section class="panel">
@@ -413,7 +409,9 @@ export function App() {
           selectedCategories={selectedCategories}
           urgentOnly={urgentOnly}
           showUrgent={view === 'active'}
-          onApply={applyFilters}
+          onToggleUrgent={(next) => setUrgentOnly(next)}
+          onToggleCategory={toggleCategory}
+          onClear={clearFilters}
           onClose={() => setFiltersOpen(false)}
         />
       )}

@@ -389,6 +389,11 @@ select {
 
 .filter-chip--active {
   border-color: transparent;
+  background: var(--surface-muted);
+  color: var(--brand-strong);
+}
+
+.filter-chip--urgent {
   background: var(--urgent-surface);
   color: var(--urgent);
 }
@@ -638,44 +643,6 @@ select {
   color: var(--urgent);
 }
 
-.category-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.category-list button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 36px;
-  padding: 0.3rem 0.45rem;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text);
-  font-size: 0.86rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.category-list button:hover {
-  background: var(--surface-muted);
-}
-
-.category-list button[aria-pressed="true"] {
-  background: var(--surface-muted);
-  font-weight: 650;
-}
-
-.category-list__count {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .filter-options {
   display: flex;
   flex-direction: column;
@@ -890,6 +857,10 @@ select {
   cursor: pointer;
 }
 
+.panel > .link-button {
+  align-self: flex-start;
+}
+
 .alert {
   padding: 0.6rem 0.8rem;
   border-radius: var(--radius-sm);
@@ -967,6 +938,60 @@ select {
     max-height: min(85dvh, 42rem);
     padding: 1.1rem;
   }
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.settings-section:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.settings-section__title {
+  font-size: 0.95rem;
+}
+
+.preset-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.field--grow {
+  flex: 1 1 12rem;
+}
+
+.preset-toolbar__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.preset-toolbar__actions .button--danger-ghost {
+  align-self: stretch;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.preset-toolbar__actions .button--danger-ghost:hover {
+  background: var(--urgent-surface);
+}
+
+code {
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+  background: var(--surface-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
 }
 
 .field {

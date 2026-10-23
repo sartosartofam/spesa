@@ -1,4 +1,3 @@
-import { useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
 import { CloseIcon } from './Icons'
 
@@ -7,7 +6,9 @@ interface FiltersDialogProps {
   selectedCategories: string[]
   urgentOnly: boolean
   showUrgent: boolean
-  onApply: (urgentOnly: boolean, categories: string[]) => void
+  onToggleUrgent: (urgentOnly: boolean) => void
+  onToggleCategory: (category: string) => void
+  onClear: () => void
   onClose: () => void
 }
 
@@ -16,31 +17,12 @@ export function FiltersDialog({
   selectedCategories,
   urgentOnly,
   showUrgent,
-  onApply,
+  onToggleUrgent,
+  onToggleCategory,
+  onClear,
   onClose,
 }: FiltersDialogProps) {
   const dialogRef = useModalDialog(onClose)
-  const [urgent, setUrgent] = useState(urgentOnly)
-  const [selected, setSelected] = useState<string[]>(() => [...selectedCategories])
-
-  function toggleCategory(category: string) {
-    setSelected((current) =>
-      current.includes(category)
-        ? current.filter((candidate) => candidate !== category)
-        : [...current, category],
-    )
-  }
-
-  function submit(event: Event) {
-    event.preventDefault()
-    onApply(urgent, selected)
-    onClose()
-  }
-
-  function clear() {
-    setUrgent(false)
-    setSelected([])
-  }
 
   return (
     <dialog
@@ -52,20 +34,22 @@ export function FiltersDialog({
         onClose()
       }}
     >
-      <form class="sheet__body" onSubmit={submit}>
+      <div class="sheet__body">
         <header class="sheet__header">
           <h2 id="filters-dialog-title">Filtri</h2>
-          <button class="icon-button" type="button" aria-label="Chiudi" onClick={onClose}>
+          <button class="icon-button" type="button" aria-label="Chiudi filtri" onClick={onClose}>
             <CloseIcon />
           </button>
         </header>
+
+        <p class="hint">Le scelte si applicano subito alla lista.</p>
 
         {showUrgent && (
           <label class="filter-option filter-option--urgent">
             <input
               type="checkbox"
-              checked={urgent}
-              onChange={(event) => setUrgent(event.currentTarget.checked)}
+              checked={urgentOnly}
+              onChange={(event) => onToggleUrgent(event.currentTarget.checked)}
             />
             <span>Solo urgenti</span>
           </label>
@@ -82,8 +66,8 @@ export function FiltersDialog({
                   <label class="filter-option">
                     <input
                       type="checkbox"
-                      checked={selected.includes(category)}
-                      onChange={() => toggleCategory(category)}
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => onToggleCategory(category)}
                     />
                     <span>{category}</span>
                     <span class="filter-option__count">{count}</span>
@@ -95,14 +79,14 @@ export function FiltersDialog({
         </div>
 
         <div class="dialog-actions">
-          <button class="button button--ghost" type="button" onClick={clear}>
+          <button class="button button--ghost" type="button" onClick={onClear}>
             Azzera
           </button>
-          <button class="button button--primary" type="submit">
-            Applica
+          <button class="button button--primary" type="button" onClick={onClose}>
+            Chiudi
           </button>
         </div>
-      </form>
+      </div>
     </dialog>
   )
 }
