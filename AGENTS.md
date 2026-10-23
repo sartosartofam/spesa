@@ -37,6 +37,15 @@ Una PR è pronta solo se:
 - La PR descrive cosa cambia, come testarlo e cosa resta fuori.
 - La CI è verde.
 
+## Lavoro atomico e limiti di contesto
+
+- Una issue alla volta, un branch alla volta. Non iniziare una seconda issue nello stesso branch.
+- Ogni issue completata deve avere almeno un commit dedicato, pushato su `origin`.
+- Lavorare a fette piccole e verticali: commit appena una parte è coerente e testata, senza aspettare la fine di tutto.
+- Prima di esaurire il contesto, fermarsi su uno stato stabile: `npm run verify` verde, branch pushato, PR/issue aggiornata con ciò che resta.
+- Non lasciare file a metà o branch solo locali: meglio una PR piccola e dichiarata incompleta che lavoro non recuperabile.
+- Se una issue è troppo grande, spezzarla in sotto-task o PR più piccole invece di tenere un branch unico gigante.
+
 ## Ruoli
 
 - **Backend**: schema DB, migrazioni, RLS, Edge Functions, script. Branch `feat/backend-*`.
