@@ -1,6 +1,6 @@
-import { categoryRank, normalizeCategory } from '../categories'
-import { mergeQuantities } from '../quantity'
-import type { Item, ItemStatus, ListView, NewItem } from '../types'
+import { normalizeCategory } from '../categories'
+import type { Item, ItemStatus, NewItem } from '../types'
+import { identityKey, mergeItem, sortForView } from './item-merge'
 import type { ItemsRepository } from './repository'
 
 /**
@@ -110,50 +110,6 @@ function delay(ms = 90): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/**
- * Due articoli sono lo stesso prodotto se hanno lo stesso nome e la stessa
- * categoria nella stessa vista (attiva o storico). Note e urgenza non creano
- * righe separate: la nota viene conservata e l'urgenza si somma con OR.
- *
- * Nota backend: quando arriverà l'implementazione Supabase, lo stesso merge
- * andrà garantito con un trigger/unique index su famiglia, stato, nome e
- * categoria; quantità, nota e urgenza vanno unite.
- */
-function identityKey(item: Item): string {
-  return JSON.stringify([
-    item.status,
-    item.name.trim().toLocaleLowerCase('it'),
-    normalizeCategory(item.category).toLocaleLowerCase('it'),
-  ])
-}
-
-function mergeInto(target: Item, source: Item): Item {
-  return {
-    ...target,
-    quantity: mergeQuantities(target.quantity, source.quantity),
-    note: target.note?.trim() ? target.note : source.note,
-    urgent: target.urgent || source.urgent,
-    updated_at: nowIso(),
-  }
-}
-
-function sortForView(items: Item[], view: ListView): Item[] {
-  const visible = items.filter((item) =>
-    view === 'active' ? item.status !== 'bought' : item.status === 'bought',
-  )
-  if (view === 'history') {
-    return visible.sort((a, b) =>
-      (b.bought_at ?? b.updated_at).localeCompare(a.bought_at ?? a.updated_at),
-    )
-  }
-  return visible.sort(
-    (a, b) =>
-      Number(b.urgent) - Number(a.urgent) ||
-      categoryRank(normalizeCategory(a.category)) - categoryRank(normalizeCategory(b.category)) ||
-      a.name.localeCompare(b.name, 'it'),
-  )
-}
-
 export function createMockItemsRepository(): ItemsRepository {
   let items = read()
 
@@ -188,7 +144,7 @@ export function createMockItemsRepository(): ItemsRepository {
 
       const duplicate = items.find((candidate) => identityKey(candidate) === identityKey(item))
       if (duplicate) {
-        const merged = mergeInto(duplicate, item)
+        const merged = mergeItem(duplicate, item)
         items = items.map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
         persist()
         return merged
@@ -214,7 +170,7 @@ export function createMockItemsRepository(): ItemsRepository {
         (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
       )
       if (duplicate) {
-        const merged = mergeInto(duplicate, updated)
+        const merged = mergeItem(duplicate, updated)
         items = items
           .filter((candidate) => candidate.id !== id)
           .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
@@ -245,7 +201,7 @@ export function createMockItemsRepository(): ItemsRepository {
         (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
       )
       if (duplicate) {
-        const merged = mergeInto(duplicate, updated)
+        const merged = mergeItem(duplicate, updated)
         items = items
           .filter((candidate) => candidate.id !== id)
           .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
