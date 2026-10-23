@@ -103,6 +103,7 @@ git config core.hooksPath .githooks   # una volta per clone
 ## Divieti
 
 - **Mai `git push` o merge su `main`.** La produzione Vercel si deploya da `main` e i deploy gratuiti sono limitati. Il lavoro viaggia su `dev` e sui branch `feat/*`, `test/*`, `chore/*`.
+- **Niente emoji nell'interfaccia.** Usare icone SVG stilizzate e coerenti, con `aria-hidden` sull'icona e una label accessibile sul bottone.
 - Niente commit diretti su `main`; niente chiavi/token/`.env` committati.
 - Non disabilitare RLS per "far funzionare le cose".
 - Non usare `service_role` nel frontend.

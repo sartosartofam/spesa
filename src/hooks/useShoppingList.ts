@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks'
 import { itemsRepository } from '../lib/data'
+import { categoryCounts, groupByCategory, sortHistory } from '../lib/list'
 import type { Item, ItemStatus, NewItem } from '../lib/types'
 
 interface ShoppingListState {
@@ -43,55 +44,93 @@ export function useShoppingList() {
     void refresh()
   }, [refresh])
 
-  const add = useCallback(
-    async (input: NewItem) => {
+  const run = useCallback(
+    async (action: () => Promise<unknown>) => {
       try {
-        await itemsRepository.add(input)
+        await action()
         await refresh()
       } catch (error) {
         setState((current) => ({ ...current, error: messageOf(error) }))
       }
     },
     [refresh],
+  )
+
+  const add = useCallback(
+    async (input: NewItem) => {
+      await run(() => itemsRepository.add(input))
+    },
+    [run],
+  )
+
+  const update = useCallback(
+    async (
+      id: string,
+      patch: Partial<Pick<Item, 'name' | 'category' | 'note' | 'quantity' | 'urgent'>>,
+    ) => {
+      await run(() => itemsRepository.update(id, patch))
+    },
+    [run],
   )
 
   const setStatus = useCallback(
     async (id: string, status: ItemStatus) => {
-      try {
-        await itemsRepository.setStatus(id, status)
-        await refresh()
-      } catch (error) {
-        setState((current) => ({ ...current, error: messageOf(error) }))
-      }
+      await run(() => itemsRepository.setStatus(id, status))
     },
-    [refresh],
+    [run],
   )
 
-  const urgent = useMemo(
-    () => state.active.filter((item) => item.status === 'finished'),
-    [state.active],
+  const toggleUrgent = useCallback(
+    async (item: Item) => {
+      await run(async () => {
+        if (item.status === 'bought') {
+          await itemsRepository.setStatus(item.id, 'to_buy')
+          await itemsRepository.update(item.id, { urgent: true })
+          return
+        }
+        await itemsRepository.update(item.id, { urgent: !item.urgent })
+      })
+    },
+    [run],
   )
 
-  const toBuyByCategory = useMemo(() => {
-    const groups = new Map<string, Item[]>()
-    for (const item of state.active) {
-      if (item.status !== 'to_buy') continue
-      const category = item.category ?? 'Altro'
-      const bucket = groups.get(category)
-      if (bucket) bucket.push(item)
-      else groups.set(category, [item])
-    }
-    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, 'it'))
-  }, [state.active])
+  const remove = useCallback(
+    async (id: string) => {
+      await run(() => itemsRepository.remove(id))
+    },
+    [run],
+  )
+
+  const restore = useCallback(
+    async (id: string) => {
+      await run(() => itemsRepository.setStatus(id, 'to_buy'))
+    },
+    [run],
+  )
+
+  const urgent = useMemo(() => state.active.filter((item) => item.urgent), [state.active])
+  const byCategory = useMemo(() => groupByCategory(state.active), [state.active])
+  const history = useMemo(() => sortHistory(state.history), [state.history])
+  const categories = useMemo(() => categoryCounts(state.active), [state.active])
 
   return {
     ...state,
+    history,
     urgent,
-    toBuyByCategory,
-    counts: { active: state.active.length, history: state.history.length },
+    byCategory,
+    categories,
+    counts: {
+      active: state.active.length,
+      urgent: urgent.length,
+      history: state.history.length,
+    },
     refresh,
     add,
+    update,
     setStatus,
+    toggleUrgent,
+    remove,
+    restore,
   }
 }
 

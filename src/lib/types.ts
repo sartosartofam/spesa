@@ -1,12 +1,9 @@
 /**
- * Tipi provvisori allineati allo schema in AGENTS.md ("Schema dati — fase 1").
- *
- * ATTENZIONE: lo schema backend non è ancora mergiato su `dev`. Questi tipi sono
- * un contratto di lavoro per lo scaffold e vanno riallineati alla migrazione
- * reale (e ai tipi generati da Supabase) prima di collegare il database.
+ * Tipi della lista, allineati allo schema reale su `dev` (ADR-0001):
+ * `status` ha due soli valori e l'urgenza è il flag booleano `urgent`.
  */
 
-export type ItemStatus = 'to_buy' | 'bought' | 'finished'
+export type ItemStatus = 'to_buy' | 'bought'
 
 export interface Family {
   id: string
@@ -19,7 +16,7 @@ export interface Member {
   family_id: string
   email: string
   display_name: string
-  /** Valori non ancora fissati dallo schema: per l'MVP si usa `owner` | `member`. */
+  /** `owner` | `member` nello schema attuale. */
   role: string
   created_at: string
 }
@@ -30,8 +27,10 @@ export interface Item {
   name: string
   category: string | null
   status: ItemStatus
+  /** "È finito": l'articolo va comprato subito. */
+  urgent: boolean
   note: string | null
-  /** Formato non ancora deciso (§A3): per ora testo libero, può essere null. */
+  /** Testo libero, es. "2 pacchi", "500 g". */
   quantity: string | null
   created_by: string | null
   created_at: string
@@ -39,14 +38,15 @@ export interface Item {
   bought_at: string | null
 }
 
-/** Campi minimi per aggiungere un articolo alla lista. */
+/** Campi per aggiungere un articolo alla lista. */
 export interface NewItem {
   name: string
   category?: string | null
   note?: string | null
   quantity?: string | null
-  status?: Extract<ItemStatus, 'to_buy' | 'finished'>
+  urgent?: boolean
+  status?: Extract<ItemStatus, 'to_buy'>
 }
 
-/** Vista della UI: lista attiva (da comprare + finito) oppure storico (comprato). */
+/** Vista della UI: lista attiva oppure storico. */
 export type ListView = 'active' | 'history'
