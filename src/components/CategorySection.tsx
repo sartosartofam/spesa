@@ -1,12 +1,16 @@
-import type { Item, ItemStatus } from '../lib/types'
+import type { Item, ListView } from '../lib/types'
 import { ItemRow } from './ItemRow'
 
 interface CategorySectionProps {
   title: string
   items: Item[]
-  variant: 'active' | 'history'
+  variant: ListView
   urgent?: boolean
-  onStatus: (id: string, status: ItemStatus) => void | Promise<void>
+  showCategory?: boolean
+  onMarkBought: (item: Item) => void | Promise<void>
+  onRestore: (item: Item) => void | Promise<void>
+  onToggleUrgent: (item: Item) => void | Promise<void>
+  onEdit: (item: Item) => void
 }
 
 export function CategorySection({
@@ -14,7 +18,11 @@ export function CategorySection({
   items,
   variant,
   urgent = false,
-  onStatus,
+  showCategory = false,
+  onMarkBought,
+  onRestore,
+  onToggleUrgent,
+  onEdit,
 }: CategorySectionProps) {
   if (items.length === 0) return null
 
@@ -29,7 +37,16 @@ export function CategorySection({
       </h2>
       <ul class="list">
         {items.map((item) => (
-          <ItemRow key={item.id} item={item} variant={variant} onStatus={onStatus} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            variant={variant}
+            showCategory={showCategory}
+            onMarkBought={onMarkBought}
+            onRestore={onRestore}
+            onToggleUrgent={onToggleUrgent}
+            onEdit={onEdit}
+          />
         ))}
       </ul>
     </section>

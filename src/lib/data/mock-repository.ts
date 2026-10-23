@@ -1,25 +1,46 @@
+import { categoryRank, normalizeCategory } from '../categories'
 import type { Item, ItemStatus, ListView, NewItem } from '../types'
 import type { ItemsRepository } from './repository'
 
 /**
  * Implementazione mock: nessuna rete, dati fittizi, persistenza in localStorage.
- * Serve a sviluppare e validare la UI prima che lo schema backend esista.
+ * Serve a sviluppare e validare la UI prima del collegamento a Supabase.
  * Non contiene dati reali della famiglia (AGENTS.md §Sicurezza, punto 6).
  */
 
-const STORAGE_KEY = 'spesa.mock.items.v1'
+const STORAGE_KEY = 'spesa.mock.items.v2'
 const MOCK_FAMILY_ID = '00000000-0000-4000-8000-000000000000'
 
-const SEED: ReadonlyArray<Pick<Item, 'name' | 'category' | 'status' | 'note'>> = [
-  { name: 'Latte', category: 'Freschi', status: 'to_buy', note: null },
-  { name: 'Pane', category: 'Freschi', status: 'to_buy', note: null },
-  { name: 'Detersivo piatti', category: 'Casa', status: 'finished', note: 'è finito' },
-  { name: 'Pasta', category: 'Dispensa', status: 'to_buy', note: null },
-  { name: 'Caffè', category: 'Dispensa', status: 'bought', note: null },
-  { name: 'Piselli', category: 'Surgelati', status: 'bought', note: null },
-]
+interface SeedItem {
+  name: string
+  category: string
+  status: ItemStatus
+  urgent?: boolean
+  note?: string | null
+  quantity?: string | null
+}
 
-const CATEGORIES = ['Dispensa', 'Freschi', 'Surgelati', 'Casa', 'Altro'] as const
+const SEED: ReadonlyArray<SeedItem> = [
+  {
+    name: 'Latte',
+    category: 'Freschi',
+    status: 'to_buy',
+    quantity: '2 l',
+    note: 'parzialmente scremato',
+  },
+  { name: 'Pane', category: 'Freschi', status: 'to_buy', quantity: '1' },
+  {
+    name: 'Detersivo piatti',
+    category: 'Casa',
+    status: 'to_buy',
+    urgent: true,
+    note: 'è finito',
+  },
+  { name: 'Pasta', category: 'Dispensa', status: 'to_buy', quantity: '3 pacchi' },
+  { name: 'Mele', category: 'Frutta e verdura', status: 'to_buy', quantity: '1 kg' },
+  { name: 'Caffè', category: 'Dispensa', status: 'bought', quantity: '1 confezione' },
+  { name: 'Piselli', category: 'Surgelati', status: 'bought', quantity: '2' },
+]
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -29,8 +50,9 @@ function makeItem(input: {
   name: string
   category: string | null
   status: ItemStatus
-  note: string | null
-  quantity: string | null
+  urgent?: boolean
+  note?: string | null
+  quantity?: string | null
   created_at?: string
   bought_at?: string | null
 }): Item {
@@ -41,8 +63,9 @@ function makeItem(input: {
     name: input.name,
     category: input.category,
     status: input.status,
-    note: input.note,
-    quantity: input.quantity,
+    urgent: input.status === 'bought' ? false : Boolean(input.urgent),
+    note: input.note ?? null,
+    quantity: input.quantity ?? null,
     created_by: null,
     created_at,
     updated_at: created_at,
@@ -56,7 +79,6 @@ function seedItems(): Item[] {
   return SEED.map((entry, index) =>
     makeItem({
       ...entry,
-      quantity: null,
       created_at: new Date(base + index * 60_000).toISOString(),
       bought_at: entry.status === 'bought' ? new Date(base + index * 60_000).toISOString() : null,
     }),
@@ -87,27 +109,22 @@ function delay(ms = 90): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const STATUS_ORDER: Record<ItemStatus, number> = {
-  finished: 0,
-  to_buy: 1,
-  bought: 2,
-}
-
 function sortForView(items: Item[], view: ListView): Item[] {
   const visible = items.filter((item) =>
     view === 'active' ? item.status !== 'bought' : item.status === 'bought',
   )
-  return visible.sort((a, b) => {
-    if (view === 'history') {
-      return (b.bought_at ?? b.updated_at).localeCompare(a.bought_at ?? a.updated_at)
-    }
-    const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-    if (byStatus !== 0) return byStatus
-    return a.name.localeCompare(b.name, 'it')
-  })
+  if (view === 'history') {
+    return visible.sort((a, b) =>
+      (b.bought_at ?? b.updated_at).localeCompare(a.bought_at ?? a.updated_at),
+    )
+  }
+  return visible.sort(
+    (a, b) =>
+      Number(b.urgent) - Number(a.urgent) ||
+      categoryRank(normalizeCategory(a.category)) - categoryRank(normalizeCategory(b.category)) ||
+      a.name.localeCompare(b.name, 'it'),
+  )
 }
-
-export const CATEGORY_OPTIONS = CATEGORIES
 
 export function createMockItemsRepository(): ItemsRepository {
   let items = read()
@@ -134,8 +151,9 @@ export function createMockItemsRepository(): ItemsRepository {
       if (!name) throw new Error("Il nome dell'articolo è obbligatorio.")
       const item = makeItem({
         name,
-        category: input.category?.trim() || 'Altro',
+        category: normalizeCategory(input.category),
         status: input.status ?? 'to_buy',
+        urgent: input.urgent === true,
         note: input.note?.trim() || null,
         quantity: input.quantity?.trim() || null,
       })
@@ -150,6 +168,7 @@ export function createMockItemsRepository(): ItemsRepository {
       const updated: Item = {
         ...current,
         status,
+        urgent: status === 'bought' ? false : current.urgent,
         updated_at: nowIso(),
         bought_at: status === 'bought' ? nowIso() : null,
       }
@@ -164,9 +183,11 @@ export function createMockItemsRepository(): ItemsRepository {
       const updated: Item = {
         ...current,
         name: patch.name?.trim() || current.name,
-        category: patch.category === undefined ? current.category : patch.category,
+        category:
+          patch.category === undefined ? current.category : normalizeCategory(patch.category),
         note: patch.note === undefined ? current.note : patch.note,
         quantity: patch.quantity === undefined ? current.quantity : patch.quantity,
+        urgent: patch.urgent === undefined ? current.urgent : patch.urgent,
         updated_at: nowIso(),
       }
       items = items.map((item) => (item.id === id ? updated : item))

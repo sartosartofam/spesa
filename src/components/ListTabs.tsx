@@ -16,7 +16,7 @@ export function ListTabs({ view, counts, onChange }: ListTabsProps) {
         aria-selected={view === 'active'}
         onClick={() => onChange('active')}
       >
-        Da comprare
+        Da prendere
         <span class="tab__count">{counts.active}</span>
       </button>
       <button
