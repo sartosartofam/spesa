@@ -111,20 +111,19 @@ function delay(ms = 90): Promise<void> {
 }
 
 /**
- * Due articoli sono lo stesso prodotto se hanno tutti gli attributi uguali
- * tranne la quantità (che viene sommata). L'id e i timestamp non contano.
+ * Due articoli sono lo stesso prodotto se hanno lo stesso nome e la stessa
+ * categoria nella stessa vista (attiva o storico). Note e urgenza non creano
+ * righe separate: la nota viene conservata e l'urgenza si somma con OR.
  *
  * Nota backend: quando arriverà l'implementazione Supabase, lo stesso merge
- * andrà garantito con un trigger/unique index su famiglia, stato, nome,
- * categoria, urgenza e nota (la quantità resta il valore da sommare).
+ * andrà garantito con un trigger/unique index su famiglia, stato, nome e
+ * categoria; quantità, nota e urgenza vanno unite.
  */
 function identityKey(item: Item): string {
   return JSON.stringify([
     item.status,
     item.name.trim().toLocaleLowerCase('it'),
     normalizeCategory(item.category).toLocaleLowerCase('it'),
-    (item.note ?? '').trim().toLocaleLowerCase('it'),
-    item.urgent,
   ])
 }
 
@@ -132,6 +131,8 @@ function mergeInto(target: Item, source: Item): Item {
   return {
     ...target,
     quantity: mergeQuantities(target.quantity, source.quantity),
+    note: target.note?.trim() ? target.note : source.note,
+    urgent: target.urgent || source.urgent,
     updated_at: nowIso(),
   }
 }

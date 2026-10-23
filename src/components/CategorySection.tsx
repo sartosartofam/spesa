@@ -9,7 +9,6 @@ interface CategorySectionProps {
   showCategory?: boolean
   onMarkBought: (item: Item) => void | Promise<void>
   onRestore: (item: Item) => void | Promise<void>
-  onToggleUrgent: (item: Item) => void | Promise<void>
   onEdit: (item: Item) => void
 }
 
@@ -21,7 +20,6 @@ export function CategorySection({
   showCategory = false,
   onMarkBought,
   onRestore,
-  onToggleUrgent,
   onEdit,
 }: CategorySectionProps) {
   if (items.length === 0) return null
@@ -44,7 +42,6 @@ export function CategorySection({
             showCategory={showCategory}
             onMarkBought={onMarkBought}
             onRestore={onRestore}
-            onToggleUrgent={onToggleUrgent}
             onEdit={onEdit}
           />
         ))}

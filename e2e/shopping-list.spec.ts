@@ -39,8 +39,42 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   const activeRow = mainList.getByRole('listitem').filter({ hasText: 'Urgente e2e' })
   await expect(activeRow).toContainText('Urgente')
 
-  await page.getByRole('button', { name: /Solo urgenti/ }).click()
+  await page.getByRole('button', { name: /Filtri/ }).click()
+  const filters = page.getByRole('dialog')
+  await filters.getByRole('checkbox', { name: /Solo urgenti/ }).check()
+  await filters.getByRole('button', { name: 'Applica' }).click()
+
   await expect(activeRow).toBeVisible()
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+})
+
+test('filtra per più categorie contemporaneamente', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByLabel('Nuovo articolo').fill('Casa e2e')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Categoria').selectOption('Casa')
+  await dialog.getByRole('button', { name: 'Salva' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByLabel('Nuovo articolo').fill('Dispensa e2e')
+  await expect(page.getByLabel('Nuovo articolo')).toHaveValue('Dispensa e2e')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Categoria').selectOption('Dispensa')
+  await dialog.getByRole('button', { name: 'Salva' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByRole('button', { name: /Filtri/ }).click()
+  const filters = page.getByRole('dialog')
+  await filters.getByRole('checkbox', { name: /Casa/ }).check()
+  await filters.getByRole('checkbox', { name: /Dispensa/ }).check()
+  await filters.getByRole('button', { name: 'Applica' }).click()
+
+  const mainList = page.getByRole('main')
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toBeVisible()
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Dispensa e2e' })).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
 })
 

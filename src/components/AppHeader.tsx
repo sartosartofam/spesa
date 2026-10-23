@@ -1,3 +1,5 @@
+import { SettingsIcon } from './Icons'
+
 interface AppHeaderProps {
   counts: { active: number; urgent: number; history: number }
   isMockData: boolean
@@ -30,7 +32,7 @@ export function AppHeader({ counts, isMockData, onOpenSettings }: AppHeaderProps
         title="Impostazioni"
         onClick={onOpenSettings}
       >
-        ⚙
+        <SettingsIcon />
       </button>
     </header>
   )

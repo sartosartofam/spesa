@@ -15,7 +15,7 @@ export function sortHistory(items: Item[]): Item[] {
   )
 }
 
-export function groupByCategory(items: Item[]): Array<[string, Item[]]> {
+export function groupByCategory(items: Item[], order?: readonly string[]): Array<[string, Item[]]> {
   const groups = new Map<string, Item[]>()
   for (const item of items) {
     const category = normalizeCategory(item.category)
@@ -25,7 +25,7 @@ export function groupByCategory(items: Item[]): Array<[string, Item[]]> {
   }
   return [...groups.entries()]
     .map(([category, group]) => [category, sortActive(group)] as [string, Item[]])
-    .sort(([a], [b]) => categoryRank(a) - categoryRank(b) || a.localeCompare(b, 'it'))
+    .sort(([a], [b]) => categoryRank(a, order) - categoryRank(b, order) || a.localeCompare(b, 'it'))
 }
 
 export function matchesQuery(item: Item, query: string): boolean {
@@ -36,13 +36,13 @@ export function matchesQuery(item: Item, query: string): boolean {
   )
 }
 
-export function categoryCounts(items: Item[]): Array<[string, number]> {
+export function categoryCounts(items: Item[], order?: readonly string[]): Array<[string, number]> {
   const counts = new Map<string, number>()
   for (const item of items) {
     const category = normalizeCategory(item.category)
     counts.set(category, (counts.get(category) ?? 0) + 1)
   }
   return [...counts.entries()].sort(
-    ([a], [b]) => categoryRank(a) - categoryRank(b) || a.localeCompare(b, 'it'),
+    ([a], [b]) => categoryRank(a, order) - categoryRank(b, order) || a.localeCompare(b, 'it'),
   )
 }

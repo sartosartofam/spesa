@@ -24,8 +24,15 @@ function formatAmount(amount: number): string {
 export function mergeQuantities(first: string | null, second: string | null): string | null {
   const a = first?.trim()
   const b = second?.trim()
+  if (!a && !b) return '2'
   if (!a) return b || null
-  if (!b) return a
+  if (!b) {
+    const parsedA = parseQuantity(a)
+    if (parsedA && parsedA.unit === '' && Number.isInteger(parsedA.amount)) {
+      return formatAmount(parsedA.amount + 1)
+    }
+    return a
+  }
 
   const parsedA = parseQuantity(a)
   const parsedB = parseQuantity(b)

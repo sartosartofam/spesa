@@ -28,9 +28,9 @@ describe('mock items repository', () => {
   it('aggiunge un articolo normalizzando nome e categoria', async () => {
     const repository = createMockItemsRepository()
 
-    const item = await repository.add({ name: '  Latte  ', category: ' Freschi ' })
+    const item = await repository.add({ name: '  Yogurt  ', category: ' Freschi ' })
 
-    expect(item.name).toBe('Latte')
+    expect(item.name).toBe('Yogurt')
     expect(item.category).toBe('Freschi')
     expect(item.status).toBe('to_buy')
     expect(item.urgent).toBe(false)
@@ -41,7 +41,7 @@ describe('mock items repository', () => {
     const repository = createMockItemsRepository()
 
     const item = await repository.add({
-      name: 'Pasta',
+      name: 'Riso',
       category: 'Dispensa',
       quantity: '3 pacchi',
       urgent: true,
@@ -108,6 +108,43 @@ describe('mock items repository', () => {
 
     expect(matches).toHaveLength(1)
     expect(matches[0]?.quantity).toBe('5 scatolette')
+    expect(second.id).toBe(first.id)
+  })
+
+  it('incrementa lo stesso articolo anche quando la nota non coincide', async () => {
+    const repository = createMockItemsRepository()
+
+    const first = await repository.add({
+      name: 'Fagioli',
+      category: 'Dispensa',
+      quantity: '1',
+      note: 'bio',
+    })
+    const second = await repository.add({
+      name: 'fagioli',
+      category: 'Dispensa',
+    })
+
+    const active = await repository.list('active')
+    const matches = active.filter((item) => item.name.toLowerCase() === 'fagioli')
+
+    expect(matches).toHaveLength(1)
+    expect(matches[0]?.quantity).toBe('2')
+    expect(matches[0]?.note).toBe('bio')
+    expect(second.id).toBe(first.id)
+  })
+
+  it('incrementa un articolo senza quantità già presente in lista', async () => {
+    const repository = createMockItemsRepository()
+
+    const first = await repository.add({ name: 'Grissini', category: 'Freschi' })
+    const second = await repository.add({ name: 'Grissini', category: 'Freschi' })
+
+    const active = await repository.list('active')
+    const matches = active.filter((item) => item.name.toLowerCase() === 'grissini')
+
+    expect(matches).toHaveLength(1)
+    expect(matches[0]?.quantity).toBe('2')
     expect(second.id).toBe(first.id)
   })
 

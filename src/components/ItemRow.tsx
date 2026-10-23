@@ -1,4 +1,5 @@
 import type { Item, ListView } from '../lib/types'
+import { CheckIcon, UndoIcon } from './Icons'
 
 interface ItemRowProps {
   item: Item
@@ -6,7 +7,6 @@ interface ItemRowProps {
   showCategory?: boolean
   onMarkBought: (item: Item) => void | Promise<void>
   onRestore: (item: Item) => void | Promise<void>
-  onToggleUrgent: (item: Item) => void | Promise<void>
   onEdit: (item: Item) => void
 }
 
@@ -16,7 +16,6 @@ export function ItemRow({
   showCategory = false,
   onMarkBought,
   onRestore,
-  onToggleUrgent,
   onEdit,
 }: ItemRowProps) {
   const isHistory = variant === 'history'
@@ -33,7 +32,7 @@ export function ItemRow({
           title="Rimetti in lista"
           onClick={() => void onRestore(item)}
         >
-          ↺
+          <UndoIcon />
         </button>
       ) : (
         <button
@@ -43,7 +42,7 @@ export function ItemRow({
           title="Segna come preso"
           onClick={() => void onMarkBought(item)}
         >
-          ✓
+          <CheckIcon />
         </button>
       )}
 
@@ -65,40 +64,26 @@ export function ItemRow({
       </button>
 
       <div class="item__actions">
+        <button class="button button--ghost" type="button" onClick={() => onEdit(item)}>
+          Modifica
+        </button>
         {isHistory ? (
           <button
-            class="button button--ghost"
+            class="button button--ghost item__action-main"
             type="button"
-            onClick={() => void onToggleUrgent(item)}
+            onClick={() => void onRestore(item)}
           >
-            Urgente
-          </button>
-        ) : (
-          <button
-            class="button button--ghost"
-            type="button"
-            aria-pressed={item.urgent}
-            onClick={() => void onToggleUrgent(item)}
-          >
-            {item.urgent ? 'Non urgente' : 'Urgente'}
-          </button>
-        )}
-        {isHistory ? (
-          <button class="button button--ghost" type="button" onClick={() => void onRestore(item)}>
             Rimetti
           </button>
         ) : (
           <button
-            class="button button--primary"
+            class="button button--primary item__action-main"
             type="button"
             onClick={() => void onMarkBought(item)}
           >
             Preso
           </button>
         )}
-        <button class="button button--ghost" type="button" onClick={() => onEdit(item)}>
-          Modifica
-        </button>
       </div>
     </li>
   )

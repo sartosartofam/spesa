@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
 import { addCustomCategory, normalizeCategory, readCategories } from '../lib/categories'
+import { CloseIcon } from './Icons'
 
 export interface ItemDraft {
   name: string
@@ -80,7 +81,7 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
             {mode === 'add' ? 'Aggiungi articolo' : 'Modifica articolo'}
           </h2>
           <button class="icon-button" type="button" aria-label="Chiudi" onClick={onClose}>
-            ×
+            <CloseIcon />
           </button>
         </header>
 
@@ -145,7 +146,7 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
                   {category}
                 </option>
               ))}
-              <option value={NEW_CATEGORY}>＋ Nuova categoria…</option>
+              <option value={NEW_CATEGORY}>Nuova categoria…</option>
             </select>
           </div>
         </div>

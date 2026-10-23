@@ -11,7 +11,12 @@ describe('mergeQuantities', () => {
   it('mantiene una quantità quando l’altra manca', () => {
     expect(mergeQuantities(null, '2 pacchi')).toBe('2 pacchi')
     expect(mergeQuantities('500 g', null)).toBe('500 g')
-    expect(mergeQuantities(null, null)).toBeNull()
+  })
+
+  it('incrementa di uno un numero senza unità e conta due pezzi se mancano entrambe', () => {
+    expect(mergeQuantities('1', null)).toBe('2')
+    expect(mergeQuantities('2 l', null)).toBe('2 l')
+    expect(mergeQuantities(null, null)).toBe('2')
   })
 
   it('tiene entrambe le quantità se le unità sono diverse', () => {

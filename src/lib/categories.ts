@@ -82,9 +82,38 @@ export function addCustomCategory(value: string): string[] {
   return readCategories()
 }
 
-/** Ordine di visualizzazione: base, personalizzate, "Altro" in fondo. */
-export function categoryRank(category: string): number {
+/**
+ * Normalizza l'ordine del percorso negozio: tiene solo categorie esistenti,
+ * elimina i duplicati, aggiunge in coda quelle nuove e mette "Altro" in fondo.
+ */
+export function normalizeCategoryOrder(
+  order: readonly string[] | undefined,
+  categories: readonly string[] = readCategories(),
+): string[] {
+  const available = categories.filter((category) => category !== 'Altro')
+  const normalized: string[] = []
+  const seen = new Set<string>()
+
+  for (const value of order ?? []) {
+    if (typeof value !== 'string') continue
+    const name = available.find((category) => category === value)
+    if (!name || seen.has(name)) continue
+    seen.add(name)
+    normalized.push(name)
+  }
+
+  for (const category of available) {
+    if (seen.has(category)) continue
+    normalized.push(category)
+  }
+
+  normalized.push('Altro')
+  return normalized
+}
+
+/** Ordine di visualizzazione: percorso negozio, personalizzate, "Altro" in fondo. */
+export function categoryRank(category: string, order: readonly string[] = CATEGORIES): number {
   if (category === 'Altro') return 1000
-  const index = CATEGORIES.indexOf(category as Category)
+  const index = order.indexOf(category)
   return index === -1 ? 900 : index
 }
