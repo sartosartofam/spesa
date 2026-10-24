@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(39);
+select plan(40);
 
 -- Enum -----------------------------------------------------------------------
 
@@ -220,6 +220,18 @@ select throws_ok(
   '23514',
   null,
   'un endpoint push oltre 2048 caratteri viene rifiutato'
+);
+
+select throws_ok(
+  $$ insert into public.push_subscriptions (member_id, endpoint, keys)
+     values (
+       '44444444-4444-4444-4444-444444444444',
+       'http://push.example/insecure',
+       '{"p256dh":"a","auth":"b"}'
+     ) $$,
+  '23514',
+  null,
+  'un endpoint push non HTTPS viene rifiutato'
 );
 
 select throws_ok(

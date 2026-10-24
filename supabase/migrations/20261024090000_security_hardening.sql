@@ -50,5 +50,7 @@ alter table public.items
 alter table public.push_subscriptions
   add constraint push_subscriptions_endpoint_length
     check (char_length(endpoint) between 1 and 2048),
+  add constraint push_subscriptions_endpoint_https
+    check (endpoint ~ '^https://'),
   add constraint push_subscriptions_keys_size
     check (length(keys::text) <= 4096);
