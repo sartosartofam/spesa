@@ -27,6 +27,10 @@ test('login e area privata sono noindex, l’area privata richiede accesso', asy
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
   await expect(page).toHaveTitle(/Accedi/i)
 
+  await page.goto('/register')
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
+  await expect(page).toHaveTitle(/Registrati/i)
+
   await page.goto('/app')
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
@@ -71,6 +75,51 @@ test('la password non viene mai mostrata nel form', async ({ page }) => {
   const password = page.getByLabel('Password')
   await password.fill(DEMO_PASSWORD)
   await expect(password).toHaveAttribute('type', 'password')
+})
+
+test('la registrazione pubblica normalizza l’email e chiede la conferma', async ({ page }) => {
+  let signUpBody: { email?: string; data?: Record<string, unknown> } | undefined
+
+  await mockAuth(page, {
+    onSignUp: (body) => {
+      signUpBody = body
+    },
+  })
+  await page.goto('/login')
+  await page.getByRole('link', { name: 'Non hai un account? Registrati' }).click()
+  await expect(page).toHaveURL(/\/register$/)
+
+  await page.getByLabel('Nome', { exact: true }).fill('Ada')
+  await page.getByLabel('Nome della famiglia').fill('Famiglia Ada')
+  await page.getByLabel('Email').fill('  Ada@Example.Test  ')
+  await page.getByLabel('Password', { exact: true }).fill('password-sicura')
+  await page.getByLabel('Conferma password').fill('password-sicura')
+  await page.getByRole('button', { name: 'Crea account' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Controlla la tua email' })).toBeVisible()
+  await expect(page.getByRole('status')).toContainText('ada@example.test')
+  await expect(page).toHaveURL(/\/register$/)
+
+  expect(signUpBody?.email).toBe('ada@example.test')
+  expect(signUpBody?.data).toMatchObject({
+    display_name: 'Ada',
+    family_name: 'Famiglia Ada',
+    signup_flow: 'public',
+  })
+})
+
+test('la registrazione rifiuta password diverse senza chiamare il server', async ({ page }) => {
+  await page.goto('/register')
+
+  await page.getByLabel('Nome', { exact: true }).fill('Ada')
+  await page.getByLabel('Nome della famiglia').fill('Famiglia Ada')
+  await page.getByLabel('Email').fill('ada@example.test')
+  await page.getByLabel('Password', { exact: true }).fill('password-sicura')
+  await page.getByLabel('Conferma password').fill('password-diversa')
+  await page.getByRole('button', { name: 'Crea account' }).click()
+
+  await expect(page.getByRole('alert')).toContainText('Le password non coincidono.')
+  await expect(page).toHaveURL(/\/register$/)
 })
 
 test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {

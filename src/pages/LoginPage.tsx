@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
-import { mapAuthError } from '../lib/auth'
+import { mapAuthError, normalizeEmail } from '../lib/auth'
 import { navigate } from '../lib/routes'
 
 interface LoginPageProps {
@@ -21,7 +21,7 @@ export function LoginPage({ onSignIn, initialError }: LoginPageProps) {
     setError(null)
     setSubmitting(true)
     try {
-      await onSignIn(email.trim(), password)
+      await onSignIn(normalizeEmail(email), password)
       navigate('/app', { replace: true })
     } catch (signInError) {
       setError(mapAuthError(signInError))
@@ -36,8 +36,8 @@ export function LoginPage({ onSignIn, initialError }: LoginPageProps) {
         <p class="landing__eyebrow">Spesa di famiglia</p>
         <h1 id="login-title">Accedi alla lista</h1>
         <p class="auth-card__intro">
-          Usa l’email e la password che ti ha dato chi gestisce la famiglia. Non c’è registrazione
-          pubblica.
+          Accedi con la tua email e la password. Se non hai ancora un account, puoi crearne uno e
+          avere subito la tua famiglia.
         </p>
 
         {error && (
@@ -89,6 +89,16 @@ export function LoginPage({ onSignIn, initialError }: LoginPageProps) {
           </button>
         </form>
 
+        <a
+          class="auth-card__back"
+          href="/register"
+          onClick={(event) => {
+            event.preventDefault()
+            navigate('/register')
+          }}
+        >
+          Non hai un account? Registrati
+        </a>
         <a
           class="auth-card__back"
           href="/"

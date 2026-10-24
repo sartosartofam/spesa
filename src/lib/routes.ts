@@ -1,17 +1,18 @@
-export type AppRoute = 'landing' | 'login' | 'app' | 'not-found'
+export type AppRoute = 'landing' | 'login' | 'register' | 'app' | 'not-found'
 
 /**
- * Risolve il pathname nelle quattro viste dell'app.
+ * Risolve il pathname nelle viste dell'app.
  *
  * Le route sono volutamente minime (ADR-0005): niente router esterno, solo
  * History API. `/app` e i suoi sottopercorsi sono privati; `/` è la landing
- * pubblica indicizzabile e `/login` è la pagina di accesso.
+ * pubblica indicizzabile, `/login` e `/register` sono le pagine di autenticazione.
  */
 export function routeFromPath(pathname: string): AppRoute {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
 
   if (path === '/' || path === '') return 'landing'
   if (path === '/login') return 'login'
+  if (path === '/register') return 'register'
   if (path === '/app' || path.startsWith('/app/')) return 'app'
   return 'not-found'
 }

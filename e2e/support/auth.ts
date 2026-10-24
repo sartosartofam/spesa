@@ -40,17 +40,45 @@ function json(body: unknown, status = 200) {
   }
 }
 
+interface SignUpBody {
+  email?: string
+  data?: Record<string, unknown>
+}
+
+interface MockAuthOptions {
+  onSignUp?: (body: SignUpBody) => void
+}
+
+function signUpUser(body: SignUpBody) {
+  return {
+    ...DEMO_USER,
+    id: '00000000-0000-4000-8000-000000000202',
+    email: body.email ?? DEMO_EMAIL,
+    email_confirmed_at: null,
+    confirmed_at: null,
+    last_sign_in_at: null,
+    user_metadata: body.data ?? {},
+  }
+}
+
 /**
  * Intercetta le chiamate Auth di Supabase per gli e2e.
  *
  * La CI non avvia Supabase: il build di Playwright usa un URL fittizio e questi
- * mock coprono login, refresh, utente e logout. La verifica contro il Supabase
- * locale reale resta manuale (e nei test pgTAP per il seed).
+ * mock coprono login, signup, refresh, utente e logout. La verifica contro il
+ * Supabase locale reale resta manuale (e nei test pgTAP per il seed).
  */
-export async function mockAuth(page: Page): Promise<void> {
+export async function mockAuth(page: Page, options: MockAuthOptions = {}): Promise<void> {
   await page.route('**/auth/v1/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
+
+    if (url.pathname.endsWith('/signup')) {
+      const body = request.postDataJSON() as SignUpBody
+      options.onSignUp?.(body)
+      await route.fulfill(json({ user: signUpUser(body), session: null }))
+      return
+    }
 
     if (url.pathname.endsWith('/token')) {
       const grantType = url.searchParams.get('grant_type')
