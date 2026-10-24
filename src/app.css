@@ -156,17 +156,6 @@ select {
   align-items: center;
 }
 
-.app__footer a {
-  color: var(--brand);
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.app__footer a:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
-
 @media (min-width: 56rem) {
   .app {
     padding: 1.5rem 1.5rem 2rem;
@@ -1016,6 +1005,12 @@ select {
 
 .settings-section__title {
   font-size: 0.95rem;
+}
+
+.settings-section a {
+  color: var(--brand);
+  font-weight: 650;
+  text-underline-offset: 0.15em;
 }
 
 .preset-toolbar {

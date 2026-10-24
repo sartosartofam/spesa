@@ -149,7 +149,7 @@ export function LandingPage() {
         <span>Spesa — lista della spesa condivisa per famiglie</span>
         <span class="public-footer__links">
           <a href="https://streamlinehq.com" target="_blank" rel="noreferrer noopener">
-            Icone: Streamline
+            Icone: Streamline (CC BY 4.0)
             <span class="sr-only"> (si apre in una nuova scheda)</span>
           </a>
           <a href="/login" onClick={goToLogin}>

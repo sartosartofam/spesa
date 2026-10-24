@@ -174,7 +174,14 @@ test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {
   await mockAuth(page)
   await signInAsDemo(page)
 
-  await expect(page.getByRole('link', { name: /Icone: Streamline/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Icone: Streamline/ })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  const settingsCredit = page.getByRole('dialog').getByRole('link', { name: /Streamline/ })
+  await settingsCredit.scrollIntoViewIfNeeded()
+  await expect(settingsCredit).toHaveAttribute('href', 'https://streamlinehq.com')
+  await expect(settingsCredit).toHaveAttribute('target', '_blank')
+
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
