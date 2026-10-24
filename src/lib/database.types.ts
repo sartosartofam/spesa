@@ -238,6 +238,15 @@ export type Database = {
       }
       current_family_id: { Args: Record<PropertyKey, never>; Returns: string }
       ensure_current_family: { Args: Record<PropertyKey, never>; Returns: string }
+      leave_family: {
+        Args: { p_family_id: string }
+        Returns: {
+          left_family_id: string
+          new_family_id: string
+          new_family_name: string
+          new_owner_id: string
+        }[]
+      }
       promote_family_owner: {
         Args: { p_member_id: string }
         Returns: {
