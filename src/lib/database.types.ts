@@ -224,6 +224,25 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          settings: NonNullable<Json>
+          updated_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          settings?: NonNullable<Json>
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          settings?: NonNullable<Json>
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
