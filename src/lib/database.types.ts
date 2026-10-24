@@ -252,6 +252,13 @@ export type Database = {
           target_family_name: string
         }[]
       }
+      rename_family: {
+        Args: { p_name: string }
+        Returns: {
+          family_id: string
+          family_name: string
+        }[]
+      }
     }
     Enums: {
       item_status: 'to_buy' | 'bought'

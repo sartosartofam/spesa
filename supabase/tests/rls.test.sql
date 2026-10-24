@@ -180,16 +180,13 @@ select is(
   'A non può cancellare un articolo di B'
 );
 
-with changed as (
-  update public.families
-  set name = 'HACK'
-  where id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
-  returning 1
-)
-select is(
-  (select count(*)::int from changed),
-  0,
-  'A non può modificare la famiglia B'
+select throws_ok(
+  $$ update public.families
+     set name = 'HACK'
+     where id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' $$,
+  '42501',
+  'permission denied for table families',
+  'A non può modificare direttamente una famiglia'
 );
 
 select throws_ok(
