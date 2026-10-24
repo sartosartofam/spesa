@@ -29,55 +29,90 @@ export function normalizeCategory(value: string | null | undefined): string {
   return trimmed ? trimmed : 'Altro'
 }
 
-function clean(value: string): string {
+/** Ripulisce un nome di categoria: spazi compatti e lunghezza massima. */
+export function cleanCategoryName(value: string): string {
   return value.trim().replace(/\s+/g, ' ').slice(0, MAX_LENGTH)
 }
 
-function readCustomCategories(): string[] {
+function isBaseCategory(name: string): boolean {
+  const key = name.toLowerCase()
+  return CATEGORIES.some((category) => category.toLowerCase() === key)
+}
+
+/**
+ * Normalizza un elenco di categorie personalizzate: stringhe valide, senza
+ * duplicati (case-insensitive) e senza nomi già presenti tra quelle di base.
+ * Accetta dati arbitrari perché lo stesso code path legge localStorage e il
+ * payload JSON remoto.
+ */
+export function normalizeCustomCategories(value: unknown): string[] {
+  const entries = Array.isArray(value) ? value : []
+  const seen = new Set<string>()
+  const custom: string[] = []
+
+  for (const entry of entries) {
+    if (typeof entry !== 'string') continue
+    const name = cleanCategoryName(entry)
+    const key = name.toLowerCase()
+    if (!name || seen.has(key) || isBaseCategory(name)) continue
+    seen.add(key)
+    custom.push(name)
+  }
+
+  return custom
+}
+
+/** Categorie personalizzate salvate sul dispositivo. */
+export function readCustomCategories(): string[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(CUSTOM_KEY) ?? '[]')
-    if (!Array.isArray(parsed)) return []
-    const seen = new Set<string>()
-    const custom: string[] = []
-    for (const value of parsed) {
-      if (typeof value !== 'string') continue
-      const name = clean(value)
-      const key = name.toLowerCase()
-      if (!name || seen.has(key)) continue
-      if (CATEGORIES.some((category) => category.toLowerCase() === key)) continue
-      seen.add(key)
-      custom.push(name)
-    }
-    return custom
+    return normalizeCustomCategories(JSON.parse(localStorage.getItem(CUSTOM_KEY) ?? '[]'))
   } catch {
     return []
   }
 }
 
+/** Salva le categorie personalizzate sul dispositivo e restituisce quelle normalizzate. */
+export function writeCustomCategories(value: unknown): string[] {
+  const custom = normalizeCustomCategories(value)
+  try {
+    localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom))
+  } catch {
+    // Storage non disponibile: la categoria vale solo in memoria.
+  }
+  return custom
+}
+
 /** Categorie di base, categorie personalizzate, "Altro" in fondo. */
-export function readCategories(): string[] {
+export function categoriesFromCustom(value: unknown): string[] {
   return [
     ...CATEGORIES.filter((category) => category !== 'Altro'),
-    ...readCustomCategories(),
+    ...normalizeCustomCategories(value),
     'Altro',
   ]
 }
 
-/** Aggiunge una categoria personalizzata e restituisce la lista aggiornata. */
+/** Categorie di base, categorie personalizzate salvate sul dispositivo, "Altro" in fondo. */
+export function readCategories(): string[] {
+  return categoriesFromCustom(readCustomCategories())
+}
+
+/**
+ * Aggiunge una categoria personalizzata a un elenco già in memoria e
+ * restituisce la lista normalizzata. Non tocca lo storage: la persistenza
+ * resta al chiamante (locale o account).
+ */
+export function appendCustomCategory(current: readonly string[], value: string): string[] {
+  return normalizeCustomCategories([...current, value])
+}
+
+/** Aggiunge una categoria personalizzata al dispositivo e restituisce la lista aggiornata. */
 export function addCustomCategory(value: string): string[] {
-  const name = clean(value)
+  const name = cleanCategoryName(value)
   if (name) {
     const existing = readCategories().some(
       (category) => category.toLowerCase() === name.toLowerCase(),
     )
-    if (!existing) {
-      const custom = [...readCustomCategories(), name]
-      try {
-        localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom))
-      } catch {
-        // Storage non disponibile: la categoria vale solo in memoria.
-      }
-    }
+    if (!existing) writeCustomCategories([...readCustomCategories(), name])
   }
   return readCategories()
 }

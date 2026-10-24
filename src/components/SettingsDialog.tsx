@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
-import { readCategories } from '../lib/categories'
 import { isLiveData } from '../lib/data'
 import {
   createFamilyInvite,
@@ -32,6 +31,7 @@ import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './Icons'
 
 interface SettingsDialogProps {
   settings: Settings
+  categories: readonly string[]
   currentUserId: string
   familyId: string | null
   familyName: string | null
@@ -42,6 +42,7 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({
   settings,
+  categories: categoryOptions,
   currentUserId,
   familyId,
   familyName,
@@ -54,7 +55,7 @@ export function SettingsDialog({
   const leaveResultRef = useRef<HTMLButtonElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
   const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
-  const [categories] = useState<string[]>(() => readCategories())
+  const categories = categoryOptions
   const [presets, setPresets] = useState<OrderPreset[]>(() =>
     settings.presets.map((preset) => ({ ...preset, order: [...preset.order] })),
   )
@@ -780,8 +781,8 @@ export function SettingsDialog({
             </p>
           )}
           <p class="hint">
-            Per ora i preset restano su questo dispositivo. La condivisione con la famiglia arriverà
-            con la sincronizzazione.
+            Le impostazioni seguono il tuo account e non sono condivise con la famiglia. Se la
+            sincronizzazione non riesce restano su questo dispositivo.
           </p>
         </section>
 

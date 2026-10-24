@@ -25,8 +25,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const STORAGE_KEY = 'spesa.settings.v1'
 
-export function createDefaultSettings(): Settings {
-  const preset = defaultPreset(readCategories())
+export function createDefaultSettings(categories: readonly string[] = readCategories()): Settings {
+  const preset = defaultPreset(categories)
   return {
     ...DEFAULT_SETTINGS,
     activePresetId: preset.id,
@@ -62,45 +62,58 @@ export function normalizeSettings(
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Interpreta un payload di impostazioni (locale o remoto) in modo tollerante:
+ * campi mancanti o non validi ricadono sui default, i preset vengono normalizzati
+ * sulle categorie disponibili e il vecchio `categoryOrder` viene migrato.
+ */
+export function parseSettings(
+  value: unknown,
+  categories: readonly string[] = readCategories(),
+): Settings {
+  const parsed = isRecord(value) ? value : {}
+  let presets: OrderPreset[]
+
+  if (Array.isArray(parsed.presets)) {
+    presets = normalizePresets(parsed.presets, categories)
+  } else if (Array.isArray(parsed.categoryOrder)) {
+    // Migrazione dal formato precedente, con un solo ordine globale.
+    const order = parsed.categoryOrder.filter((entry): entry is string => typeof entry === 'string')
+    presets = normalizePresets([{ id: 'default', name: 'Il mio negozio', order }], categories)
+  } else {
+    presets = normalizePresets([], categories)
+  }
+
+  const activePresetId =
+    typeof parsed.activePresetId === 'string' &&
+    presets.some((preset) => preset.id === parsed.activePresetId)
+      ? parsed.activePresetId
+      : (presets[0]?.id ?? 'default')
+
+  return normalizeSettings(
+    {
+      quickAdd: parsed.quickAdd === true,
+      defaultCategory:
+        typeof parsed.defaultCategory === 'string' && categories.includes(parsed.defaultCategory)
+          ? parsed.defaultCategory
+          : DEFAULT_CATEGORY,
+      activePresetId,
+      presets,
+    },
+    categories,
+  )
+}
+
 export function readSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return createDefaultSettings()
 
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    const categories = readCategories()
-    let presets: OrderPreset[]
-
-    if (Array.isArray(parsed.presets)) {
-      presets = normalizePresets(parsed.presets, categories)
-    } else if (Array.isArray(parsed.categoryOrder)) {
-      // Migrazione dal formato precedente, con un solo ordine globale.
-      const order = parsed.categoryOrder.filter(
-        (value): value is string => typeof value === 'string',
-      )
-      presets = normalizePresets([{ id: 'default', name: 'Il mio negozio', order }], categories)
-    } else {
-      presets = normalizePresets([], categories)
-    }
-
-    const activePresetId =
-      typeof parsed.activePresetId === 'string' &&
-      presets.some((preset) => preset.id === parsed.activePresetId)
-        ? parsed.activePresetId
-        : (presets[0]?.id ?? 'default')
-
-    return normalizeSettings(
-      {
-        quickAdd: parsed.quickAdd === true,
-        defaultCategory:
-          typeof parsed.defaultCategory === 'string' && categories.includes(parsed.defaultCategory)
-            ? parsed.defaultCategory
-            : DEFAULT_CATEGORY,
-        activePresetId,
-        presets,
-      },
-      categories,
-    )
+    return parseSettings(JSON.parse(raw), readCategories())
   } catch {
     return createDefaultSettings()
   }
