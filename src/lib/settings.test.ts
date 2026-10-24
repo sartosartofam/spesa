@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { activeCategoryOrder, readSettings, writeSettings } from './settings'
+import { activeCategoryOrder, createDefaultSettings, readSettings, writeSettings } from './settings'
 
 describe('settings', () => {
   beforeEach(() => {
@@ -25,6 +25,15 @@ describe('settings', () => {
     expect(settings.presets.map((preset) => preset.name)).toEqual(['Il mio negozio', 'Conad'])
     expect(activeCategoryOrder(settings).slice(0, 2)).toEqual(['Dispensa', 'Casa'])
     expect(activeCategoryOrder(settings).at(-1)).toBe('Altro')
+  })
+
+  it('crea un default pulito con un solo preset', () => {
+    const settings = createDefaultSettings()
+
+    expect(settings.quickAdd).toBe(false)
+    expect(settings.defaultCategory).toBe('Dispensa')
+    expect(settings.presets).toHaveLength(1)
+    expect(settings.activePresetId).toBe(settings.presets[0]?.id)
   })
 
   it('migra il vecchio ordine globale in un preset', () => {

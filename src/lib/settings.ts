@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const STORAGE_KEY = 'spesa.settings.v1'
 
-function defaultSettings(): Settings {
+export function createDefaultSettings(): Settings {
   const preset = defaultPreset(readCategories())
   return {
     ...DEFAULT_SETTINGS,
@@ -65,7 +65,7 @@ export function normalizeSettings(
 export function readSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultSettings()
+    if (!raw) return createDefaultSettings()
 
     const parsed = JSON.parse(raw) as Record<string, unknown>
     const categories = readCategories()
@@ -102,7 +102,7 @@ export function readSettings(): Settings {
       categories,
     )
   } catch {
-    return defaultSettings()
+    return createDefaultSettings()
   }
 }
 
