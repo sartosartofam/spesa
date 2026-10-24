@@ -22,6 +22,62 @@ export type Database = {
         }
         Relationships: []
       }
+      family_invites: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          family_id: string
+          id: string
+          used_at: string | null
+          used_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          family_id: string
+          id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          family_id?: string
+          id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'family_invites_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'members'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'family_invites_family_id_fkey'
+            columns: ['family_id']
+            isOneToOne: false
+            referencedRelation: 'families'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'family_invites_used_by_fkey'
+            columns: ['used_by']
+            isOneToOne: false
+            referencedRelation: 'members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       items: {
         Row: {
           bought_at: string | null
@@ -173,8 +229,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_family_invite: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          invite_code: string
+          invite_expires_at: string
+        }[]
+      }
       current_family_id: { Args: Record<PropertyKey, never>; Returns: string }
       ensure_current_family: { Args: Record<PropertyKey, never>; Returns: string }
+      promote_family_owner: {
+        Args: { p_member_id: string }
+        Returns: {
+          promoted_member_id: string
+          promoted_role: string
+        }[]
+      }
+      redeem_family_invite: {
+        Args: { p_code: string }
+        Returns: {
+          target_family_id: string
+          target_family_name: string
+        }[]
+      }
     }
     Enums: {
       item_status: 'to_buy' | 'bought'

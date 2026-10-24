@@ -989,6 +989,43 @@ select {
   gap: 0.5rem;
 }
 
+.family-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-members__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface-muted);
+}
+
+.family-members__name {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.family-members__role {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.family-members__item .button {
+  min-height: 32px;
+  margin-left: auto;
+  padding: 0 0.65rem;
+  font-size: 0.8rem;
+}
+
 .field--grow {
   flex: 1 1 12rem;
 }

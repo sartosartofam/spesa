@@ -182,7 +182,12 @@ export function Root() {
     }
     if (familyReadyFor !== auth.user?.id) return <LoadingPage />
     return (
-      <App userEmail={auth.user?.email ?? ''} authError={logoutError} onLogout={handleLogout} />
+      <App
+        userEmail={auth.user?.email ?? ''}
+        userId={auth.user?.id ?? ''}
+        authError={logoutError}
+        onLogout={handleLogout}
+      />
     )
   }
 

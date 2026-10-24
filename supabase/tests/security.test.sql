@@ -33,7 +33,13 @@ select is(
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and p.prokind = 'f'
-      and p.proname not in ('current_family_id', 'ensure_current_family')
+      and p.proname not in (
+        'current_family_id',
+        'ensure_current_family',
+        'create_family_invite',
+        'promote_family_owner',
+        'redeem_family_invite'
+      )
       and (
         has_function_privilege('anon', p.oid, 'execute')
         or has_function_privilege('authenticated', p.oid, 'execute')

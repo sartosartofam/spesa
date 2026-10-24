@@ -23,6 +23,8 @@ Decisioni prese per il progetto. In caso di conflitto con `docs/studio-di-proget
 - Le email sono normalizzate (trim + lowercase) nel client e nel database.
 - La conferma email è obbligatoria prima del primo accesso.
 - Per ora vale una sola famiglia per utente. Gli inviti con codice permettono di entrare in un'altra famiglia o cambiare la propria; la multi-famiglia è rimandata a una fase successiva.
+- Gli inviti sono monouso, scadono dopo 7 giorni e sono gestiti dalle RPC `create_family_invite()` e `redeem_family_invite(code)`, entrambe `security definer`. La tabella `family_invites` non è accessibile direttamente dal client.
+- Un `owner` può nominare un altro `owner` della stessa famiglia con la RPC `promote_family_owner(member_id)`. Serve a sbloccare il cambio famiglia quando l'owner non è l'unico membro.
 - Magic link post-MVP.
 
 **Perché.** La registrazione pubblica rende l'app utilizzabile senza intervento manuale dell'umano, mantenendo isolamento tra famiglie grazie alla RPC e alla RLS. Una famiglia per utente evita ambiguità su quale lista mostrare e quale `family_id` usare nelle query; gli inviti coprono il caso reale di più persone nella stessa famiglia.
@@ -32,7 +34,7 @@ Decisioni prese per il progetto. In caso di conflitto con `docs/studio-di-proget
 - In locale `enable_signup = true`, `enable_confirmations = true` e le email di conferma si leggono su Mailpit (`http://127.0.0.1:54324`).
 - In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana. La conferma email va testata con un indirizzo reale prima del push in produzione.
 - La gestione manuale degli utenti resta possibile per seed e test, ma non è più il flusso principale.
-- Gli inviti e il cambio famiglia sono implementati in una issue dedicata; fino ad allora ogni account resta nella propria famiglia personale.
+- Accettando un invito, l'utente passa alla famiglia di destinazione con ruolo `member`. Se era l'unico membro della famiglia di partenza, la vecchia famiglia e la sua lista vengono eliminate; se era owner con altri membri, il cambio è bloccato finché non nomina un altro owner dalla sezione Famiglia. Gli inviti attivi creati dall'utente per la vecchia famiglia vengono revocati.
 - Rate limiting e protezione anti-bot restano a carico della configurazione Supabase e vanno verificati prima della produzione.
 
 ## ADR-0003 — Backup ed export

@@ -19,11 +19,12 @@ type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; 
 
 interface AppProps {
   userEmail: string
+  userId: string
   authError: string | null
   onLogout: () => void
 }
 
-export function App({ userEmail, authError, onLogout }: AppProps) {
+export function App({ userEmail, userId, authError, onLogout }: AppProps) {
   const list = useShoppingList()
   const [view, setView] = useState<ListView>('active')
   const [query, setQuery] = useState('')
@@ -414,6 +415,7 @@ export function App({ userEmail, authError, onLogout }: AppProps) {
       {settingsOpen && (
         <SettingsDialog
           settings={settings}
+          currentUserId={userId}
           onClose={() => setSettingsOpen(false)}
           onSave={handleSaveSettings}
         />
