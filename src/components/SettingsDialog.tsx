@@ -1,6 +1,19 @@
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
 import { readCategories } from '../lib/categories'
+import { isLiveData } from '../lib/data'
+import {
+  createFamilyInvite,
+  type FamilyInvite,
+  type FamilyMember,
+  formatInviteExpiry,
+  listFamilyMembers,
+  mapInviteError,
+  normalizeInviteCode,
+  promoteFamilyOwner,
+  type RedeemedFamily,
+  redeemFamilyInvite,
+} from '../lib/family'
 import {
   createPreset,
   mergeImportedPresets,
@@ -14,11 +27,12 @@ import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './Icons'
 
 interface SettingsDialogProps {
   settings: Settings
+  currentUserId: string
   onClose: () => void
   onSave: (settings: Settings) => void
 }
 
-export function SettingsDialog({ settings, onClose, onSave }: SettingsDialogProps) {
+export function SettingsDialog({ settings, currentUserId, onClose, onSave }: SettingsDialogProps) {
   const dialogRef = useModalDialog(onClose)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
@@ -30,6 +44,41 @@ export function SettingsDialog({ settings, onClose, onSave }: SettingsDialogProp
   const [activePresetId, setActivePresetId] = useState(settings.activePresetId)
   const [importMessage, setImportMessage] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
+  const [invite, setInvite] = useState<FamilyInvite | null>(null)
+  const [inviteCode, setInviteCode] = useState('')
+  const [inviteBusy, setInviteBusy] = useState(false)
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [copyMessage, setCopyMessage] = useState<string | null>(null)
+  const [redeemedFamily, setRedeemedFamily] = useState<RedeemedFamily | null>(null)
+  const [members, setMembers] = useState<FamilyMember[]>([])
+  const [membersLoading, setMembersLoading] = useState(isLiveData)
+  const [membersError, setMembersError] = useState<string | null>(null)
+  const [promotingMemberId, setPromotingMemberId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isLiveData) return
+
+    let cancelled = false
+    setMembersLoading(true)
+
+    listFamilyMembers()
+      .then((rows) => {
+        if (!cancelled) setMembers(rows)
+      })
+      .catch((error) => {
+        if (!cancelled) setMembersError(mapInviteError(error))
+      })
+      .finally(() => {
+        if (!cancelled) setMembersLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const currentUserRole = members.find((member) => member.id === currentUserId)?.role
 
   const activePreset =
     presets.find((preset) => preset.id === activePresetId) ??
@@ -125,6 +174,72 @@ export function SettingsDialog({ settings, onClose, onSave }: SettingsDialogProp
     setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
+  async function createInvite() {
+    setInviteBusy(true)
+    setInviteError(null)
+    setInviteMessage(null)
+    setCopyMessage(null)
+
+    try {
+      const created = await createFamilyInvite()
+      setInvite(created)
+      setInviteMessage('Codice creato. Condividilo con la persona che vuoi invitare.')
+    } catch (error) {
+      setInviteError(mapInviteError(error))
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
+  async function copyInvite() {
+    if (!invite) return
+    try {
+      await navigator.clipboard.writeText(invite.code)
+      setCopyMessage('Codice copiato.')
+    } catch {
+      setCopyMessage('Copia il codice manualmente.')
+    }
+  }
+
+  async function redeemInvite() {
+    const code = normalizeInviteCode(inviteCode)
+    if (!code) {
+      setInviteError('Inserisci un codice invito.')
+      return
+    }
+
+    setInviteBusy(true)
+    setInviteError(null)
+    setInviteMessage(null)
+
+    try {
+      const family = await redeemFamilyInvite(code)
+      setRedeemedFamily(family)
+      setInviteCode('')
+      setInvite(null)
+      setCopyMessage(null)
+    } catch (error) {
+      setInviteError(mapInviteError(error))
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
+  async function promote(memberId: string) {
+    setPromotingMemberId(memberId)
+    setInviteError(null)
+    setMembersError(null)
+
+    try {
+      await promoteFamilyOwner(memberId)
+      setMembers(await listFamilyMembers())
+    } catch (error) {
+      setInviteError(mapInviteError(error))
+    } finally {
+      setPromotingMemberId(null)
+    }
+  }
+
   return (
     <dialog
       ref={dialogRef}
@@ -181,6 +296,171 @@ export function SettingsDialog({ settings, onClose, onSave }: SettingsDialogProp
             <p class="hint">Usata dall'aggiunta rapida e come proposta nel dialog.</p>
           </div>
         </section>
+
+        {isLiveData && (
+          <section class="settings-section" aria-labelledby="settings-family-title">
+            <h3 class="settings-section__title" id="settings-family-title">
+              Famiglia
+            </h3>
+
+            {redeemedFamily ? (
+              <>
+                <p class="hint" role="status">
+                  Ora fai parte di <strong>{redeemedFamily.familyName}</strong>. Ricarica la lista
+                  per vedere i dati della nuova famiglia.
+                </p>
+                <button
+                  class="button button--primary"
+                  type="button"
+                  onClick={() => window.location.reload()}
+                >
+                  Ricarica la lista
+                </button>
+              </>
+            ) : (
+              <>
+                <p class="hint">Membri della famiglia</p>
+
+                {membersLoading ? (
+                  <p class="hint" role="status">
+                    Carico i membri…
+                  </p>
+                ) : (
+                  <ul class="family-members">
+                    {members.map((member) => (
+                      <li class="family-members__item" key={member.id}>
+                        <span class="family-members__name">
+                          {member.displayName || member.email}
+                          {member.id === currentUserId ? ' (tu)' : ''}
+                        </span>
+                        <span class="family-members__role">
+                          {member.role === 'owner' ? 'owner' : 'member'}
+                        </span>
+                        {currentUserRole === 'owner' &&
+                          member.id !== currentUserId &&
+                          member.role === 'member' && (
+                            <button
+                              class="button button--ghost"
+                              type="button"
+                              disabled={promotingMemberId === member.id}
+                              onClick={() => void promote(member.id)}
+                            >
+                              {promotingMemberId === member.id ? 'Attendi…' : 'Rendi owner'}
+                            </button>
+                          )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {membersError && (
+                  <p class="alert" role="alert">
+                    {membersError}
+                  </p>
+                )}
+
+                <p class="hint">
+                  Genera un codice monouso e condividilo con la persona che vuoi invitare. Il codice
+                  scade dopo 7 giorni e può essere usato una sola volta.
+                </p>
+
+                <div class="preset-toolbar">
+                  <button
+                    class="button button--ghost"
+                    type="button"
+                    disabled={inviteBusy}
+                    onClick={() => void createInvite()}
+                  >
+                    {invite ? 'Genera un altro codice' : 'Genera codice invito'}
+                  </button>
+                </div>
+
+                {invite && (
+                  <>
+                    <div class="field">
+                      <label class="field__label" for="family-invite-code">
+                        Codice invito
+                      </label>
+                      <input
+                        id="family-invite-code"
+                        type="text"
+                        readOnly
+                        value={invite.code}
+                        onFocus={(event) => event.currentTarget.select()}
+                      />
+                      <p class="hint">Monouso. Scade il {formatInviteExpiry(invite.expiresAt)}.</p>
+                    </div>
+                    <div class="preset-toolbar">
+                      <button
+                        class="button button--ghost"
+                        type="button"
+                        onClick={() => void copyInvite()}
+                      >
+                        Copia codice
+                      </button>
+                    </div>
+                    {copyMessage && (
+                      <p class="hint" role="status">
+                        {copyMessage}
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {inviteMessage && (
+                  <p class="hint" role="status">
+                    {inviteMessage}
+                  </p>
+                )}
+
+                <div class="field">
+                  <label class="field__label" for="family-invite-input">
+                    Hai ricevuto un codice?
+                  </label>
+                  <input
+                    id="family-invite-input"
+                    type="text"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck={false}
+                    maxLength={32}
+                    value={inviteCode}
+                    onInput={(event) => setInviteCode(event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void redeemInvite()
+                      }
+                    }}
+                  />
+                </div>
+
+                <div class="preset-toolbar">
+                  <button
+                    class="button button--primary"
+                    type="button"
+                    disabled={inviteBusy}
+                    onClick={() => void redeemInvite()}
+                  >
+                    {inviteBusy ? 'Attendi…' : 'Entra nella famiglia'}
+                  </button>
+                </div>
+
+                <p class="hint">
+                  Attenzione: se sei l’unico membro della famiglia attuale, entrando in un’altra
+                  famiglia la famiglia e la sua lista verranno eliminate. Se sei owner con altri
+                  membri, nomina prima un altro owner.
+                </p>
+              </>
+            )}
+
+            {inviteError && (
+              <p class="alert" role="alert">
+                {inviteError}
+              </p>
+            )}
+          </section>
+        )}
 
         <section class="settings-section">
           <h3 class="settings-section__title">Percorso negozio</h3>
