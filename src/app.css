@@ -13,6 +13,7 @@
   --urgent: #a8410c;
   --urgent-surface: #fff4e5;
   --danger: #a3231b;
+  --glow: rgb(31 122 77 / 16%);
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -43,6 +44,7 @@
     --urgent: #ffb27a;
     --urgent-surface: #2c1f14;
     --danger: #ff9a91;
+    --glow: rgb(123 217 167 / 14%);
     --shadow: none;
   }
 }
@@ -1241,10 +1243,49 @@ code {
   width: 100%;
   max-width: 64rem;
   margin: 0 auto;
-  padding: 2.5rem 1rem 4rem;
+  padding: 0 1rem 4rem;
 }
 
 .landing__hero {
+  --glow-x: 50%;
+  --glow-y: 40%;
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100svh - 5rem);
+  padding-block: 2rem;
+  overflow: hidden;
+}
+
+.landing__hero::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: radial-gradient(
+    circle 22rem at var(--glow-x) var(--glow-y),
+    var(--glow),
+    transparent 72%
+  );
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 10%, #000 90%, transparent),
+    linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 10%, #000 90%, transparent),
+    linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  mask-composite: intersect;
+  opacity: 0;
+  transition: opacity 240ms ease;
+  content: "";
+  pointer-events: none;
+}
+
+.landing__hero-inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -1302,6 +1343,42 @@ code {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landing__hero::before {
+    opacity: 1;
+  }
+
+  .landing__feature:hover {
+    transform: translateY(-3px);
+    border-color: var(--brand);
+    box-shadow: 0 12px 28px rgb(20 35 27 / 12%);
+  }
+}
+
+@media (prefers-color-scheme: dark) and (hover: hover) and (pointer: fine) {
+  .landing__feature:hover {
+    box-shadow: 0 12px 28px rgb(0 0 0 / 28%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing__hero::before {
+    display: none;
+  }
+
+  .landing__feature {
+    transition: none;
+  }
+
+  .landing__feature:hover {
+    transform: none;
+  }
 }
 
 .landing__feature > svg {
@@ -1444,9 +1521,5 @@ code {
 @media (min-width: 40rem) {
   .landing__features {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .landing {
-    padding-top: 4rem;
   }
 }

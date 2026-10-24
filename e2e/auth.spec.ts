@@ -14,6 +14,22 @@ test('la landing pubblica è indicizzabile e robots.txt è permissivo', async ({
   )
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow')
 
+  const viewport = page.viewportSize()
+  const hero = page.locator('.landing__hero')
+  const heroBox = await hero.boundingBox()
+  expect(heroBox?.height).toBeGreaterThanOrEqual((viewport?.height ?? 0) - 100)
+
+  const nextSectionBox = await page.locator('#come-funziona').boundingBox()
+  expect(nextSectionBox?.y).toBeGreaterThan(viewport?.height ?? 0)
+
+  await page.mouse.move(200, 200)
+  expect(await hero.evaluate((element) => element.style.getPropertyValue('--glow-x'))).toMatch(
+    /px$/,
+  )
+  expect(await hero.evaluate((element) => element.style.getPropertyValue('--glow-y'))).toMatch(
+    /px$/,
+  )
+
   const robots = await request.get('/robots.txt')
   expect(robots.ok()).toBe(true)
   const robotsText = await robots.text()

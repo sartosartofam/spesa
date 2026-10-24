@@ -1,3 +1,4 @@
+import { useRef } from 'preact/hooks'
 import { CheckIcon } from '../components/Icons'
 import { navigate } from '../lib/routes'
 
@@ -12,6 +13,25 @@ function goToRegister(event: MouseEvent) {
 }
 
 export function LandingPage() {
+  const heroRef = useRef<HTMLElement>(null)
+
+  function handlePointerMove(event: PointerEvent) {
+    const hero = heroRef.current
+    if (!hero) return
+
+    const rect = hero.getBoundingClientRect()
+    hero.style.setProperty('--glow-x', `${event.clientX - rect.left}px`)
+    hero.style.setProperty('--glow-y', `${event.clientY - rect.top}px`)
+  }
+
+  function handlePointerLeave() {
+    const hero = heroRef.current
+    if (!hero) return
+
+    hero.style.setProperty('--glow-x', '50%')
+    hero.style.setProperty('--glow-y', '40%')
+  }
+
   return (
     <div class="public-shell">
       <header class="public-header">
@@ -36,24 +56,34 @@ export function LandingPage() {
       </header>
 
       <main class="landing">
-        <section class="landing__hero" aria-labelledby="landing-title">
-          <p class="landing__eyebrow">Lista della spesa condivisa</p>
-          <h1 id="landing-title">La lista della spesa di tutta la famiglia, sempre aggiornata.</h1>
-          <p class="landing__lead">
-            Spesa è la webapp gratuita e senza pubblicità per organizzare la spesa di famiglia.
-            Aggiungi ciò che manca, segna le urgenze e ritrova lo storico degli acquisti in un unico
-            posto, condiviso tra i membri della famiglia.
-          </p>
-          <div class="landing__actions">
-            <a class="button button--primary" href="/register" onClick={goToRegister}>
-              Crea la tua famiglia
-            </a>
-            <a class="button button--ghost" href="/login" onClick={goToLogin}>
-              Accedi
-            </a>
-            <a class="button button--ghost" href="#come-funziona">
-              Come funziona
-            </a>
+        <section
+          class="landing__hero"
+          aria-labelledby="landing-title"
+          ref={heroRef}
+          onPointerMove={handlePointerMove}
+          onPointerLeave={handlePointerLeave}
+        >
+          <div class="landing__hero-inner">
+            <p class="landing__eyebrow">Lista della spesa condivisa</p>
+            <h1 id="landing-title">
+              La lista della spesa di tutta la famiglia, sempre aggiornata.
+            </h1>
+            <p class="landing__lead">
+              Spesa è la webapp gratuita e senza pubblicità per organizzare la spesa di famiglia.
+              Aggiungi ciò che manca, segna le urgenze e ritrova lo storico degli acquisti in un
+              unico posto, condiviso tra i membri della famiglia.
+            </p>
+            <div class="landing__actions">
+              <a class="button button--primary" href="/register" onClick={goToRegister}>
+                Crea la tua famiglia
+              </a>
+              <a class="button button--ghost" href="/login" onClick={goToLogin}>
+                Accedi
+              </a>
+              <a class="button button--ghost" href="#come-funziona">
+                Come funziona
+              </a>
+            </div>
           </div>
         </section>
 
