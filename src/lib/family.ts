@@ -11,6 +11,13 @@ export interface RedeemedFamily {
   familyName: string
 }
 
+export interface LeftFamily {
+  leftFamilyId: string
+  newOwnerId: string | null
+  newFamilyId: string
+  newFamilyName: string
+}
+
 export interface FamilyMember {
   id: string
   email: string
@@ -76,6 +83,22 @@ export async function renameFamily(name: string): Promise<CurrentFamily> {
   const family = data?.[0]
   if (!family?.family_id) throw new Error('Rinomina della famiglia non riuscita.')
   return { id: family.family_id, name: family.family_name }
+}
+
+/** Esce dalla famiglia indicata e restituisce la nuova famiglia personale. */
+export async function leaveFamily(familyId: string): Promise<LeftFamily> {
+  const client = liveClient()
+  const { data, error } = await client.rpc('leave_family', { p_family_id: familyId })
+  if (error) throw error
+
+  const result = data?.[0]
+  if (!result?.new_family_id) throw new Error('Uscita dalla famiglia non riuscita.')
+  return {
+    leftFamilyId: result.left_family_id,
+    newOwnerId: result.new_owner_id ?? null,
+    newFamilyId: result.new_family_id,
+    newFamilyName: result.new_family_name,
+  }
 }
 
 /** Elenca i membri della famiglia visibili all'utente autenticato. */
@@ -194,6 +217,31 @@ export function mapRenameFamilyError(error: unknown): string {
     return 'Impossibile contattare il server. Controlla la connessione e riprova.'
   }
   return 'Non è stato possibile rinominare la famiglia. Riprova.'
+}
+
+/** Messaggio utente per un errore durante l'uscita dalla famiglia. */
+export function mapLeaveFamilyError(error: unknown): string {
+  const message = errorMessage(error)
+
+  const knownMessages = [
+    'La famiglia è cambiata. Ricarica l’app.',
+    'Famiglia non trovata. Ricarica l’app.',
+    'Famiglia non valida.',
+  ]
+
+  const known = knownMessages.find((text) => message.includes(text))
+  if (known) return known
+
+  if (/not authenticated|non autenticato|jwt|session/i.test(message)) {
+    return 'Sessione scaduta. Accedi di nuovo.'
+  }
+  if (/supabase non configurato|richiede il backend/i.test(message)) {
+    return 'L’uscita dalla famiglia è disponibile solo con il backend configurato.'
+  }
+  if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {
+    return 'Impossibile contattare il server. Controlla la connessione e riprova.'
+  }
+  return 'Non è stato possibile uscire dalla famiglia. Riprova.'
 }
 
 /** Messaggio utente per un errore di invito o cambio famiglia. */

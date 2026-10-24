@@ -92,6 +92,7 @@ export function Root() {
   const auth = useAuth()
   const [logoutError, setLogoutError] = useState<string | null>(null)
   const [familyReadyFor, setFamilyReadyFor] = useState<string | null>(null)
+  const [familyId, setFamilyId] = useState<string | null>(null)
   const [familyName, setFamilyName] = useState<string | null>(null)
   const [familyError, setFamilyError] = useState<string | null>(null)
   const [familyAttempt, setFamilyAttempt] = useState(0)
@@ -117,6 +118,7 @@ export function Root() {
   useEffect(() => {
     if (auth.status !== 'authenticated' || !auth.user) {
       setFamilyReadyFor(null)
+      setFamilyId(null)
       setFamilyName(null)
       setFamilyError(null)
       return
@@ -126,6 +128,7 @@ export function Root() {
     let cancelled = false
 
     setFamilyReadyFor(null)
+    setFamilyId(null)
     setFamilyName(null)
     setFamilyError(null)
 
@@ -134,6 +137,7 @@ export function Root() {
       .then((family) => {
         if (cancelled) return
         if (isLiveData && !family) throw new Error('Famiglia non trovata.')
+        setFamilyId(family?.id ?? null)
         setFamilyName(family?.name ?? null)
         setFamilyReadyFor(userId)
       })
@@ -195,6 +199,7 @@ export function Root() {
       <App
         userEmail={auth.user?.email ?? ''}
         userId={auth.user?.id ?? ''}
+        familyId={familyId}
         familyName={familyName}
         onFamilyRenamed={setFamilyName}
         authError={logoutError}

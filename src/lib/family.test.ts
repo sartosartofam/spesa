@@ -4,6 +4,7 @@ import {
   formatInviteExpiry,
   mapFamilyError,
   mapInviteError,
+  mapLeaveFamilyError,
   mapRenameFamilyError,
   normalizeInviteCode,
 } from './family'
@@ -59,6 +60,30 @@ describe('mapRenameFamilyError', () => {
   it('ha un fallback dedicato alla rinomina', () => {
     expect(mapRenameFamilyError(new Error('boom'))).toBe(
       'Non è stato possibile rinominare la famiglia. Riprova.',
+    )
+  })
+})
+
+describe('mapLeaveFamilyError', () => {
+  it('mantiene i messaggi noti della RPC', () => {
+    expect(mapLeaveFamilyError(new Error('La famiglia è cambiata. Ricarica l’app.'))).toBe(
+      'La famiglia è cambiata. Ricarica l’app.',
+    )
+    expect(mapLeaveFamilyError(new Error('Famiglia non valida.'))).toBe('Famiglia non valida.')
+  })
+
+  it('traduce errori di rete e backend assente', () => {
+    expect(mapLeaveFamilyError(new Error('Failed to fetch'))).toBe(
+      'Impossibile contattare il server. Controlla la connessione e riprova.',
+    )
+    expect(mapLeaveFamilyError(new Error('Questa operazione richiede il backend Supabase.'))).toBe(
+      'L’uscita dalla famiglia è disponibile solo con il backend configurato.',
+    )
+  })
+
+  it('ha un fallback dedicato all’uscita', () => {
+    expect(mapLeaveFamilyError(new Error('boom'))).toBe(
+      'Non è stato possibile uscire dalla famiglia. Riprova.',
     )
   })
 })

@@ -7,8 +7,11 @@ import {
   type FamilyInvite,
   type FamilyMember,
   formatInviteExpiry,
+  type LeftFamily,
+  leaveFamily,
   listFamilyMembers,
   mapInviteError,
+  mapLeaveFamilyError,
   mapRenameFamilyError,
   normalizeInviteCode,
   promoteFamilyOwner,
@@ -30,6 +33,7 @@ import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './Icons'
 interface SettingsDialogProps {
   settings: Settings
   currentUserId: string
+  familyId: string | null
   familyName: string | null
   onFamilyRenamed: (name: string) => void
   onClose: () => void
@@ -39,6 +43,7 @@ interface SettingsDialogProps {
 export function SettingsDialog({
   settings,
   currentUserId,
+  familyId,
   familyName,
   onFamilyRenamed,
   onClose,
@@ -46,6 +51,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const dialogRef = useModalDialog(saveAndClose)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const leaveResultRef = useRef<HTMLButtonElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
   const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
   const [categories] = useState<string[]>(() => readCategories())
@@ -69,6 +75,8 @@ export function SettingsDialog({
   const [familyNameDraft, setFamilyNameDraft] = useState(familyName ?? '')
   const [familyNameError, setFamilyNameError] = useState<string | null>(null)
   const [savingFamilyName, setSavingFamilyName] = useState(false)
+  const [leftFamily, setLeftFamily] = useState<LeftFamily | null>(null)
+  const [leavingFamily, setLeavingFamily] = useState(false)
 
   useEffect(() => {
     if (!isLiveData) return
@@ -93,6 +101,15 @@ export function SettingsDialog({
   }, [])
 
   const currentUserRole = members.find((member) => member.id === currentUserId)?.role
+  const newOwner = leftFamily?.newOwnerId
+    ? members.find((member) => member.id === leftFamily.newOwnerId)
+    : undefined
+
+  useEffect(() => {
+    if (!leftFamily) return
+    leaveResultRef.current?.scrollIntoView({ block: 'center' })
+    leaveResultRef.current?.focus()
+  }, [leftFamily])
 
   const activePreset =
     presets.find((preset) => preset.id === activePresetId) ??
@@ -113,7 +130,7 @@ export function SettingsDialog({
   }
 
   async function saveAndClose() {
-    if (savingFamilyName) return
+    if (savingFamilyName || leftFamily) return
 
     const next = currentSettings()
     const nextFamilyName = familyNameDraft.trim()
@@ -152,7 +169,41 @@ export function SettingsDialog({
   }
 
   function cancel() {
+    if (leftFamily) return
     onClose()
+  }
+
+  async function leaveCurrentFamily() {
+    if (!familyId) {
+      setInviteError('Famiglia non trovata. Ricarica l’app.')
+      return
+    }
+
+    const hasOtherMembers = members.some((member) => member.id !== currentUserId)
+    const consequence =
+      currentUserRole === 'owner' && hasOtherMembers
+        ? 'Il ruolo di owner passerà al membro più vecchio.'
+        : 'Riceverai una nuova famiglia personale.'
+
+    if (
+      !window.confirm(
+        `Vuoi uscire da “${familyName ?? 'questa famiglia'}”? La lista non sarà più accessibile. ${consequence}`,
+      )
+    ) {
+      return
+    }
+
+    setLeavingFamily(true)
+    setInviteError(null)
+
+    try {
+      const result = await leaveFamily(familyId)
+      setLeftFamily(result)
+    } catch (error) {
+      setInviteError(mapLeaveFamilyError(error))
+    } finally {
+      setLeavingFamily(false)
+    }
   }
 
   function resetDefaults() {
@@ -334,7 +385,7 @@ export function SettingsDialog({
             class="icon-button"
             type="button"
             aria-label="Chiudi"
-            disabled={savingFamilyName}
+            disabled={savingFamilyName || Boolean(leftFamily)}
             onClick={() => void saveAndClose()}
           >
             <CloseIcon />
@@ -386,7 +437,29 @@ export function SettingsDialog({
               Famiglia
             </h3>
 
-            {redeemedFamily ? (
+            {leftFamily ? (
+              <>
+                <p class="hint" role="status">
+                  Sei uscito dalla famiglia. Ora fai parte di{' '}
+                  <strong>{leftFamily.newFamilyName}</strong>.
+                  {newOwner && (
+                    <>
+                      {' '}
+                      Il ruolo di owner è passato a{' '}
+                      <strong>{newOwner.displayName || newOwner.email}</strong>.
+                    </>
+                  )}
+                </p>
+                <button
+                  ref={leaveResultRef}
+                  class="button button--primary"
+                  type="button"
+                  onClick={() => window.location.reload()}
+                >
+                  Ricarica la lista
+                </button>
+              </>
+            ) : redeemedFamily ? (
               <>
                 <p class="hint" role="status">
                   Ora fai parte di <strong>{redeemedFamily.familyName}</strong>. Ricarica la lista
@@ -563,6 +636,24 @@ export function SettingsDialog({
                   famiglia la famiglia e la sua lista verranno eliminate. Se sei owner con altri
                   membri, nomina prima un altro owner.
                 </p>
+
+                <div class="family-leave">
+                  <p class="hint">
+                    Se esci, questa lista non sarà più accessibile e riceverai una nuova famiglia
+                    personale.
+                    {currentUserRole === 'owner' &&
+                      members.some((member) => member.id !== currentUserId) &&
+                      ' Il ruolo di owner passerà al membro più vecchio.'}
+                  </p>
+                  <button
+                    class="button button--danger-ghost"
+                    type="button"
+                    disabled={leavingFamily || inviteBusy || savingFamilyName}
+                    onClick={() => void leaveCurrentFamily()}
+                  >
+                    {leavingFamily ? 'Attendi…' : 'Esci dalla famiglia'}
+                  </button>
+                </div>
               </>
             )}
 
@@ -716,12 +807,17 @@ export function SettingsDialog({
           <button
             class="button button--ghost"
             type="button"
-            disabled={savingFamilyName}
+            disabled={savingFamilyName || Boolean(leftFamily)}
             onClick={cancel}
           >
             Annulla
           </button>
-          <button class="button button--danger-ghost" type="button" onClick={resetDefaults}>
+          <button
+            class="button button--danger-ghost"
+            type="button"
+            disabled={Boolean(leftFamily)}
+            onClick={resetDefaults}
+          >
             Ripristina impostazioni
           </button>
         </div>

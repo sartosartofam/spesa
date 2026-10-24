@@ -21,6 +21,7 @@ type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; 
 interface AppProps {
   userEmail: string
   userId: string
+  familyId: string | null
   familyName: string | null
   onFamilyRenamed: (name: string) => void
   authError: string | null
@@ -30,6 +31,7 @@ interface AppProps {
 export function App({
   userEmail,
   userId,
+  familyId,
   familyName,
   onFamilyRenamed,
   authError,
@@ -422,6 +424,7 @@ export function App({
         <SettingsDialog
           settings={settings}
           currentUserId={userId}
+          familyId={familyId}
           familyName={familyName}
           onFamilyRenamed={onFamilyRenamed}
           onClose={() => setSettingsOpen(false)}
