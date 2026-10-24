@@ -18,11 +18,21 @@ export interface FamilyMember {
   role: 'owner' | 'member'
 }
 
+export interface CurrentFamily {
+  id: string
+  name: string
+}
+
 function liveClient() {
-  if (!isLiveData) throw new Error('Gli inviti richiedono il backend Supabase.')
+  if (!isLiveData) throw new Error('Questa operazione richiede il backend Supabase.')
   const client = getSupabase()
   if (!client) throw new Error('Supabase non configurato')
   return client
+}
+
+/** Nome da mostrare nel footer, con un fallback per la modalità demo. */
+export function familyDisplayName(name: string | null): string {
+  return name?.trim() || 'Spesa di famiglia'
 }
 
 /** Normalizza un codice invito incollato dall'utente. */
@@ -45,6 +55,27 @@ export async function ensureCurrentFamily(): Promise<void> {
 
   const { error } = await client.rpc('ensure_current_family')
   if (error) throw error
+}
+
+/** Legge la famiglia corrente dell'utente autenticato. */
+export async function getCurrentFamily(): Promise<CurrentFamily | null> {
+  if (!isLiveData) return null
+
+  const client = liveClient()
+  const { data, error } = await client.from('families').select('id, name').maybeSingle()
+  if (error) throw error
+  return data ?? null
+}
+
+/** Rinomina la famiglia corrente. La RPC verifica che il chiamante sia owner. */
+export async function renameFamily(name: string): Promise<CurrentFamily> {
+  const client = liveClient()
+  const { data, error } = await client.rpc('rename_family', { p_name: name.trim() })
+  if (error) throw error
+
+  const family = data?.[0]
+  if (!family?.family_id) throw new Error('Rinomina della famiglia non riuscita.')
+  return { id: family.family_id, name: family.family_name }
 }
 
 /** Elenca i membri della famiglia visibili all'utente autenticato. */
@@ -139,6 +170,32 @@ export function mapFamilyError(error: unknown): string {
   return 'Non è stato possibile preparare la tua famiglia. Riprova.'
 }
 
+/** Messaggio utente per un errore durante la rinomina della famiglia. */
+export function mapRenameFamilyError(error: unknown): string {
+  const message = errorMessage(error)
+
+  const knownMessages = [
+    'Il nome della famiglia non può essere vuoto.',
+    'Il nome della famiglia è troppo lungo (massimo 80 caratteri).',
+    'Solo un owner può rinominare la famiglia.',
+    'Famiglia non trovata. Ricarica l’app.',
+  ]
+
+  const known = knownMessages.find((text) => message.includes(text))
+  if (known) return known
+
+  if (/not authenticated|non autenticato|jwt|session/i.test(message)) {
+    return 'Sessione scaduta. Accedi di nuovo.'
+  }
+  if (/supabase non configurato|richiede il backend/i.test(message)) {
+    return 'La rinomina è disponibile solo con il backend configurato.'
+  }
+  if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {
+    return 'Impossibile contattare il server. Controlla la connessione e riprova.'
+  }
+  return 'Non è stato possibile rinominare la famiglia. Riprova.'
+}
+
 /** Messaggio utente per un errore di invito o cambio famiglia. */
 export function mapInviteError(error: unknown): string {
   const message = errorMessage(error)
@@ -163,7 +220,7 @@ export function mapInviteError(error: unknown): string {
   if (/not authenticated|non autenticato|jwt|session/i.test(message)) {
     return 'Sessione scaduta. Accedi di nuovo.'
   }
-  if (/supabase non configurato|richiedono il backend/i.test(message)) {
+  if (/supabase non configurato|richiede(?:no)? il backend/i.test(message)) {
     return 'Gli inviti sono disponibili solo con il backend configurato.'
   }
   if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {

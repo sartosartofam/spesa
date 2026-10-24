@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { formatInviteExpiry, mapFamilyError, mapInviteError, normalizeInviteCode } from './family'
+import {
+  familyDisplayName,
+  formatInviteExpiry,
+  mapFamilyError,
+  mapInviteError,
+  mapRenameFamilyError,
+  normalizeInviteCode,
+} from './family'
+
+describe('familyDisplayName', () => {
+  it('usa il nome della famiglia quando c’è', () => {
+    expect(familyDisplayName('Famiglia Rossi')).toBe('Famiglia Rossi')
+  })
+
+  it('ha un fallback quando il nome manca o è vuoto', () => {
+    expect(familyDisplayName(null)).toBe('Spesa di famiglia')
+    expect(familyDisplayName('   ')).toBe('Spesa di famiglia')
+  })
+})
 
 describe('normalizeInviteCode', () => {
   it('toglie spazi e porta il codice in maiuscolo', () => {
@@ -14,6 +32,34 @@ describe('formatInviteExpiry', () => {
 
   it('non mostra nulla per una data non valida', () => {
     expect(formatInviteExpiry('non-una-data')).toBe('')
+  })
+})
+
+describe('mapRenameFamilyError', () => {
+  it('mantiene i messaggi noti della RPC', () => {
+    expect(mapRenameFamilyError(new Error('Solo un owner può rinominare la famiglia.'))).toBe(
+      'Solo un owner può rinominare la famiglia.',
+    )
+    expect(
+      mapRenameFamilyError(
+        new Error('Il nome della famiglia è troppo lungo (massimo 80 caratteri).'),
+      ),
+    ).toBe('Il nome della famiglia è troppo lungo (massimo 80 caratteri).')
+  })
+
+  it('traduce errori di rete e backend assente', () => {
+    expect(mapRenameFamilyError(new Error('Failed to fetch'))).toBe(
+      'Impossibile contattare il server. Controlla la connessione e riprova.',
+    )
+    expect(mapRenameFamilyError(new Error('Questa operazione richiede il backend Supabase.'))).toBe(
+      'La rinomina è disponibile solo con il backend configurato.',
+    )
+  })
+
+  it('ha un fallback dedicato alla rinomina', () => {
+    expect(mapRenameFamilyError(new Error('boom'))).toBe(
+      'Non è stato possibile rinominare la famiglia. Riprova.',
+    )
   })
 })
 
