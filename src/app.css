@@ -1057,6 +1057,19 @@ select {
   font-size: 0.8rem;
 }
 
+.family-leave {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border);
+}
+
+.family-leave .button {
+  align-self: flex-start;
+}
+
 .field--grow {
   flex: 1 1 12rem;
 }
