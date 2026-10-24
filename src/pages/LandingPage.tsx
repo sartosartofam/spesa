@@ -6,6 +6,11 @@ function goToLogin(event: MouseEvent) {
   navigate('/login')
 }
 
+function goToRegister(event: MouseEvent) {
+  event.preventDefault()
+  navigate('/register')
+}
+
 export function LandingPage() {
   return (
     <div class="public-shell">
@@ -20,9 +25,14 @@ export function LandingPage() {
         >
           Spesa
         </a>
-        <a class="button button--ghost" href="/login" onClick={goToLogin}>
-          Accedi
-        </a>
+        <div class="public-header__actions">
+          <a class="button button--ghost" href="/login" onClick={goToLogin}>
+            Accedi
+          </a>
+          <a class="button button--primary" href="/register" onClick={goToRegister}>
+            Registrati
+          </a>
+        </div>
       </header>
 
       <main class="landing">
@@ -35,8 +45,11 @@ export function LandingPage() {
             posto, condiviso tra i membri della famiglia.
           </p>
           <div class="landing__actions">
-            <a class="button button--primary" href="/login" onClick={goToLogin}>
-              Accedi alla lista
+            <a class="button button--primary" href="/register" onClick={goToRegister}>
+              Crea la tua famiglia
+            </a>
+            <a class="button button--ghost" href="/login" onClick={goToLogin}>
+              Accedi
             </a>
             <a class="button button--ghost" href="#come-funziona">
               Come funziona
@@ -93,11 +106,11 @@ export function LandingPage() {
         <section class="landing__section landing__section--note" aria-labelledby="gratis-title">
           <h2 id="gratis-title">Gratis e senza pubblicità</h2>
           <p>
-            Spesa è pensata per un gruppo chiuso di 2–6 persone. L’accesso è riservato ai membri
-            della famiglia: non c’è registrazione pubblica e non ci sono annunci pubblicitari.
+            Spesa è pensata per le famiglie: ogni famiglia ha il suo spazio riservato e non ci sono
+            annunci pubblicitari. Crea il tuo account e inizia subito.
           </p>
-          <a class="button button--primary" href="/login" onClick={goToLogin}>
-            Accedi alla lista
+          <a class="button button--primary" href="/register" onClick={goToRegister}>
+            Crea la tua famiglia
           </a>
         </section>
       </main>
@@ -111,6 +124,9 @@ export function LandingPage() {
           </a>
           <a href="/login" onClick={goToLogin}>
             Accedi
+          </a>
+          <a href="/register" onClick={goToRegister}>
+            Registrati
           </a>
         </span>
       </footer>

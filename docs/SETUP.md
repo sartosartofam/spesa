@@ -61,7 +61,7 @@ npm run db:reset     # applica migrazioni + seed
 
 - Studio: <http://127.0.0.1:54323>
 - API: <http://127.0.0.1:54321>
-- Mail (quando servirà il magic link): <http://127.0.0.1:54324>
+- Mail locale (conferma email e magic link): <http://127.0.0.1:54324>
 
 Le chiavi locali sono pubbliche e rigenerabili: non sono secret di produzione. `npm run env:local` evita di copiarle a mano.
 
@@ -82,13 +82,28 @@ npm run db:seed
 
 Lo script usa la `service_role` locale, rifiuta URL non locali e non stampa la chiave. Non usarlo mai contro la produzione.
 
+### Registrazione pubblica e conferma email
+
+La registrazione è aperta. Da `/register` si crea un account con nome, nome della famiglia, email e password. La configurazione locale ha:
+
+- `[auth] enable_signup = true`;
+- `[auth.email] enable_confirmations = true`;
+- `minimum_password_length = 8`.
+
+Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: apri <http://127.0.0.1:54324>, prendi l'ultimo messaggio e clicca il link. Dopo la conferma accedi da `/login`.
+
+Al primo accesso autenticato il frontend chiama la RPC `ensure_current_family()`: se l'utente non ha ancora una membership, crea una famiglia personale e lo inserisce come `owner`. La funzione è idempotente, quindi ricaricare o riaprire l'app non duplica la famiglia. Le email vengono normalizzate (trim + lowercase) nel client e dal trigger sul database.
+
+In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana. **La conferma email va testata con un indirizzo reale prima del push in produzione**; fino ad allora i test si fanno in locale con Mailpit.
+
 Con `npm run dev`:
 
 - `/` è la landing pubblica;
-- `/login` è la pagina di accesso, senza registrazione pubblica;
+- `/login` è la pagina di accesso;
+- `/register` è la pagina di registrazione;
 - `/app` è l’area riservata e richiede una sessione attiva.
 
-Per provare il login usa uno degli utenti demo qui sopra.
+Per provare il login usa uno degli utenti demo qui sopra, oppure registra un nuovo account.
 
 ### Tipi TypeScript
 

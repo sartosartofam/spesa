@@ -4,10 +4,12 @@ import { useAuth } from './hooks/useAuth'
 import { type DocumentMeta, useDocumentMeta } from './hooks/useDocumentMeta'
 import { useRoute } from './hooks/useRoute'
 import { mapAuthError } from './lib/auth'
+import { ensureCurrentFamily, mapFamilyError } from './lib/family'
 import { type AppRoute, navigate } from './lib/routes'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { RegisterPage } from './pages/RegisterPage'
 
 const LANDING_DESCRIPTION =
   'Spesa è la lista della spesa condivisa per famiglie: gratuita, senza pubblicità e sempre aggiornata. Aggiungi articoli, segnala le urgenze e consulta lo storico.'
@@ -24,6 +26,13 @@ function metaFor(route: AppRoute): DocumentMeta {
     return {
       title: 'Accedi | Spesa',
       description: 'Accedi alla lista della spesa condivisa della tua famiglia.',
+      robots: 'noindex, nofollow',
+    }
+  }
+  if (route === 'register') {
+    return {
+      title: 'Registrati | Spesa',
+      description: 'Crea il tuo account e la tua famiglia personale su Spesa.',
       robots: 'noindex, nofollow',
     }
   }
@@ -51,10 +60,39 @@ function LoadingPage() {
   )
 }
 
+interface FamilyErrorPageProps {
+  message: string
+  onRetry: () => void
+  onLogout: () => void
+}
+
+function FamilyErrorPage({ message, onRetry, onLogout }: FamilyErrorPageProps) {
+  return (
+    <div class="auth-page">
+      <main class="auth-card" aria-labelledby="family-error-title">
+        <p class="landing__eyebrow">Preparazione della famiglia</p>
+        <h1 id="family-error-title">Non riesco a preparare la tua famiglia</h1>
+        <p class="alert" role="alert">
+          {message}
+        </p>
+        <button class="button button--primary" type="button" onClick={onRetry}>
+          Riprova
+        </button>
+        <button class="button button--ghost" type="button" onClick={onLogout}>
+          Esci
+        </button>
+      </main>
+    </div>
+  )
+}
+
 export function Root() {
   const { route } = useRoute()
   const auth = useAuth()
   const [logoutError, setLogoutError] = useState<string | null>(null)
+  const [familyReadyFor, setFamilyReadyFor] = useState<string | null>(null)
+  const [familyError, setFamilyError] = useState<string | null>(null)
+  const [familyAttempt, setFamilyAttempt] = useState(0)
   const loggingOut = useRef(false)
 
   useDocumentMeta(metaFor(route))
@@ -62,7 +100,7 @@ export function Root() {
   useEffect(() => {
     if (auth.status === 'authenticated') {
       loggingOut.current = false
-      if (route === 'landing' || route === 'login') {
+      if (route === 'landing' || route === 'login' || route === 'register') {
         navigate('/app', { replace: true })
       }
       return
@@ -73,6 +111,32 @@ export function Root() {
     }
     if (route !== 'app') loggingOut.current = false
   }, [auth.status, route])
+
+  useEffect(() => {
+    if (auth.status !== 'authenticated' || !auth.user) {
+      setFamilyReadyFor(null)
+      setFamilyError(null)
+      return
+    }
+
+    const userId = auth.user.id
+    let cancelled = false
+
+    setFamilyReadyFor(null)
+    setFamilyError(null)
+
+    void ensureCurrentFamily()
+      .then(() => {
+        if (!cancelled) setFamilyReadyFor(userId)
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setFamilyError(mapFamilyError(error))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [auth.status, auth.user?.id, familyAttempt])
 
   async function handleLogout() {
     setLogoutError(null)
@@ -98,8 +162,25 @@ export function Root() {
     return <LoginPage onSignIn={auth.signIn} initialError={auth.error} />
   }
 
+  if (route === 'register') {
+    if (auth.status === 'authenticated') return <LoadingPage />
+    return <RegisterPage onSignUp={auth.signUp} initialError={auth.error} />
+  }
+
   if (route === 'app') {
     if (auth.status !== 'authenticated') return <LoadingPage />
+    if (familyError) {
+      return (
+        <FamilyErrorPage
+          message={familyError}
+          onRetry={() => setFamilyAttempt((attempt) => attempt + 1)}
+          onLogout={() => {
+            void handleLogout()
+          }}
+        />
+      )
+    }
+    if (familyReadyFor !== auth.user?.id) return <LoadingPage />
     return (
       <App userEmail={auth.user?.email ?? ''} authError={logoutError} onLogout={handleLogout} />
     )

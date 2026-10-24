@@ -174,6 +174,7 @@ export type Database = {
     }
     Functions: {
       current_family_id: { Args: Record<PropertyKey, never>; Returns: string }
+      ensure_current_family: { Args: Record<PropertyKey, never>; Returns: string }
     }
     Enums: {
       item_status: 'to_buy' | 'bought'

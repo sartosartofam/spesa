@@ -1155,6 +1155,13 @@ code {
   text-decoration: none;
 }
 
+.public-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
 .landing {
   display: flex;
   flex: 1;
