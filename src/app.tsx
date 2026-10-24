@@ -11,6 +11,7 @@ import { SettingsDialog } from './components/SettingsDialog'
 import { useShoppingList } from './hooks/useShoppingList'
 import { categoryRank, normalizeCategory } from './lib/categories'
 import { isLiveData } from './lib/data'
+import { familyDisplayName } from './lib/family'
 import { categoryCounts, groupByCategory, matchesQuery, sortActive, sortHistory } from './lib/list'
 import { activeCategoryOrder, readSettings, type Settings, writeSettings } from './lib/settings'
 import type { Item, ListView } from './lib/types'
@@ -20,11 +21,20 @@ type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; 
 interface AppProps {
   userEmail: string
   userId: string
+  familyName: string | null
+  onFamilyRenamed: (name: string) => void
   authError: string | null
   onLogout: () => void
 }
 
-export function App({ userEmail, userId, authError, onLogout }: AppProps) {
+export function App({
+  userEmail,
+  userId,
+  familyName,
+  onFamilyRenamed,
+  authError,
+  onLogout,
+}: AppProps) {
   const list = useShoppingList()
   const [view, setView] = useState<ListView>('active')
   const [query, setQuery] = useState('')
@@ -391,7 +401,7 @@ export function App({ userEmail, userId, authError, onLogout }: AppProps) {
       </div>
 
       <footer class="app__footer">
-        <span>Spesa di famiglia</span>
+        <span>{familyDisplayName(familyName)}</span>
         <span class="app__footer-meta">
           {!isLiveData && <span>modalità demo · dati locali</span>}
         </span>
@@ -412,6 +422,8 @@ export function App({ userEmail, userId, authError, onLogout }: AppProps) {
         <SettingsDialog
           settings={settings}
           currentUserId={userId}
+          familyName={familyName}
+          onFamilyRenamed={onFamilyRenamed}
           onClose={() => setSettingsOpen(false)}
           onSave={handleSaveSettings}
         />

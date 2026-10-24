@@ -9,10 +9,12 @@ import {
   formatInviteExpiry,
   listFamilyMembers,
   mapInviteError,
+  mapRenameFamilyError,
   normalizeInviteCode,
   promoteFamilyOwner,
   type RedeemedFamily,
   redeemFamilyInvite,
+  renameFamily,
 } from '../lib/family'
 import {
   createPreset,
@@ -28,11 +30,20 @@ import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './Icons'
 interface SettingsDialogProps {
   settings: Settings
   currentUserId: string
+  familyName: string | null
+  onFamilyRenamed: (name: string) => void
   onClose: () => void
   onSave: (settings: Settings) => void
 }
 
-export function SettingsDialog({ settings, currentUserId, onClose, onSave }: SettingsDialogProps) {
+export function SettingsDialog({
+  settings,
+  currentUserId,
+  familyName,
+  onFamilyRenamed,
+  onClose,
+  onSave,
+}: SettingsDialogProps) {
   const dialogRef = useModalDialog(saveAndClose)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
@@ -55,6 +66,9 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
   const [membersLoading, setMembersLoading] = useState(isLiveData)
   const [membersError, setMembersError] = useState<string | null>(null)
   const [promotingMemberId, setPromotingMemberId] = useState<string | null>(null)
+  const [familyNameDraft, setFamilyNameDraft] = useState(familyName ?? '')
+  const [familyNameError, setFamilyNameError] = useState<string | null>(null)
+  const [savingFamilyName, setSavingFamilyName] = useState(false)
 
   useEffect(() => {
     if (!isLiveData) return
@@ -98,9 +112,43 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
     )
   }
 
-  function saveAndClose() {
-    onSave(currentSettings())
-    onClose()
+  async function saveAndClose() {
+    if (savingFamilyName) return
+
+    const next = currentSettings()
+    const nextFamilyName = familyNameDraft.trim()
+    const shouldRename =
+      isLiveData && currentUserRole === 'owner' && nextFamilyName !== (familyName ?? '').trim()
+
+    if (!shouldRename) {
+      onSave(next)
+      onClose()
+      return
+    }
+
+    if (!nextFamilyName) {
+      setFamilyNameError('Il nome della famiglia non può essere vuoto.')
+      return
+    }
+
+    if (nextFamilyName.length > 80) {
+      setFamilyNameError('Il nome della famiglia è troppo lungo (massimo 80 caratteri).')
+      return
+    }
+
+    setSavingFamilyName(true)
+    setFamilyNameError(null)
+
+    try {
+      const renamed = await renameFamily(nextFamilyName)
+      onFamilyRenamed(renamed.name)
+      onSave(next)
+      onClose()
+    } catch (error) {
+      setFamilyNameError(mapRenameFamilyError(error))
+    } finally {
+      setSavingFamilyName(false)
+    }
   }
 
   function cancel() {
@@ -282,7 +330,13 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
       >
         <header class="sheet__header">
           <h2 id="settings-dialog-title">Impostazioni</h2>
-          <button class="icon-button" type="button" aria-label="Chiudi" onClick={saveAndClose}>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Chiudi"
+            disabled={savingFamilyName}
+            onClick={() => void saveAndClose()}
+          >
             <CloseIcon />
           </button>
         </header>
@@ -348,6 +402,35 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
               </>
             ) : (
               <>
+                <div class="field">
+                  <label class="field__label" for="family-name">
+                    Nome famiglia
+                  </label>
+                  <input
+                    id="family-name"
+                    type="text"
+                    maxLength={80}
+                    readOnly={currentUserRole !== 'owner'}
+                    disabled={savingFamilyName}
+                    value={familyNameDraft}
+                    onInput={(event) => {
+                      setFamilyNameDraft(event.currentTarget.value)
+                      setFamilyNameError(null)
+                    }}
+                  />
+                  <p class="hint">
+                    {currentUserRole === 'owner'
+                      ? 'Solo l’owner può modificarlo. Viene salvato alla chiusura.'
+                      : 'Solo l’owner può modificare il nome della famiglia.'}
+                  </p>
+                </div>
+
+                {familyNameError && (
+                  <p class="alert" role="alert">
+                    {familyNameError}
+                  </p>
+                )}
+
                 <p class="hint">Membri della famiglia</p>
 
                 {membersLoading ? (
@@ -630,7 +713,12 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
         </p>
 
         <div class="dialog-actions">
-          <button class="button button--ghost" type="button" onClick={cancel}>
+          <button
+            class="button button--ghost"
+            type="button"
+            disabled={savingFamilyName}
+            onClick={cancel}
+          >
             Annulla
           </button>
           <button class="button button--danger-ghost" type="button" onClick={resetDefaults}>

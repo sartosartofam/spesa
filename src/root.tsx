@@ -4,7 +4,8 @@ import { useAuth } from './hooks/useAuth'
 import { type DocumentMeta, useDocumentMeta } from './hooks/useDocumentMeta'
 import { useRoute } from './hooks/useRoute'
 import { mapAuthError } from './lib/auth'
-import { ensureCurrentFamily, mapFamilyError } from './lib/family'
+import { isLiveData } from './lib/data'
+import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
 import { type AppRoute, navigate } from './lib/routes'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
@@ -91,6 +92,7 @@ export function Root() {
   const auth = useAuth()
   const [logoutError, setLogoutError] = useState<string | null>(null)
   const [familyReadyFor, setFamilyReadyFor] = useState<string | null>(null)
+  const [familyName, setFamilyName] = useState<string | null>(null)
   const [familyError, setFamilyError] = useState<string | null>(null)
   const [familyAttempt, setFamilyAttempt] = useState(0)
   const loggingOut = useRef(false)
@@ -115,6 +117,7 @@ export function Root() {
   useEffect(() => {
     if (auth.status !== 'authenticated' || !auth.user) {
       setFamilyReadyFor(null)
+      setFamilyName(null)
       setFamilyError(null)
       return
     }
@@ -123,11 +126,16 @@ export function Root() {
     let cancelled = false
 
     setFamilyReadyFor(null)
+    setFamilyName(null)
     setFamilyError(null)
 
     void ensureCurrentFamily()
-      .then(() => {
-        if (!cancelled) setFamilyReadyFor(userId)
+      .then(() => getCurrentFamily())
+      .then((family) => {
+        if (cancelled) return
+        if (isLiveData && !family) throw new Error('Famiglia non trovata.')
+        setFamilyName(family?.name ?? null)
+        setFamilyReadyFor(userId)
       })
       .catch((error: unknown) => {
         if (!cancelled) setFamilyError(mapFamilyError(error))
@@ -187,6 +195,8 @@ export function Root() {
       <App
         userEmail={auth.user?.email ?? ''}
         userId={auth.user?.id ?? ''}
+        familyName={familyName}
+        onFamilyRenamed={setFamilyName}
         authError={logoutError}
         onLogout={handleLogout}
       />
