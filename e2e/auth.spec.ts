@@ -72,3 +72,31 @@ test('la password non viene mai mostrata nel form', async ({ page }) => {
   await password.fill(DEMO_PASSWORD)
   await expect(password).toHaveAttribute('type', 'password')
 })
+
+test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto('/')
+
+  await expect(
+    page.locator('link[href*="fonts.googleapis.com/css2?family=JetBrains+Mono"]'),
+  ).toHaveCount(1)
+  const landingCredit = page.getByRole('link', { name: /Icone: Streamline/ })
+  await expect(landingCredit).toHaveAttribute('href', 'https://streamlinehq.com')
+  await expect(landingCredit).toHaveAttribute('target', '_blank')
+
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(false)
+
+  await mockAuth(page)
+  await signInAsDemo(page)
+
+  await expect(page.getByRole('link', { name: /Icone: Streamline/ })).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(false)
+})
