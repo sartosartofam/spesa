@@ -22,7 +22,7 @@ import {
   serializePresets,
   uniquePresetName,
 } from '../lib/order-presets'
-import { normalizeSettings, type Settings } from '../lib/settings'
+import { createDefaultSettings, normalizeSettings, type Settings } from '../lib/settings'
 import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './Icons'
 
 interface SettingsDialogProps {
@@ -33,7 +33,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ settings, currentUserId, onClose, onSave }: SettingsDialogProps) {
-  const dialogRef = useModalDialog(onClose)
+  const dialogRef = useModalDialog(saveAndClose)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
   const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
@@ -86,20 +86,43 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
     createPreset('Il mio negozio', undefined, categories)
   const orderedCategories = activePreset.order.filter((category) => category !== 'Altro')
 
-  function submit(event: Event) {
-    event.preventDefault()
-    onSave(
-      normalizeSettings(
-        {
-          quickAdd,
-          defaultCategory,
-          activePresetId,
-          presets,
-        },
-        categories,
-      ),
+  function currentSettings(): Settings {
+    return normalizeSettings(
+      {
+        quickAdd,
+        defaultCategory,
+        activePresetId,
+        presets,
+      },
+      categories,
     )
+  }
+
+  function saveAndClose() {
+    onSave(currentSettings())
     onClose()
+  }
+
+  function cancel() {
+    onClose()
+  }
+
+  function resetDefaults() {
+    if (
+      !window.confirm(
+        'Ripristinare le impostazioni predefinite? Le modifiche non ancora salvate andranno perse.',
+      )
+    ) {
+      return
+    }
+
+    const defaults = createDefaultSettings()
+    setQuickAdd(defaults.quickAdd)
+    setDefaultCategory(defaults.defaultCategory)
+    setPresets(defaults.presets.map((preset) => ({ ...preset, order: [...preset.order] })))
+    setActivePresetId(defaults.activePresetId)
+    setImportMessage(null)
+    setImportError(null)
   }
 
   function updateActivePreset(patch: Partial<Pick<OrderPreset, 'name' | 'order'>>) {
@@ -247,13 +270,19 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
       aria-labelledby="settings-dialog-title"
       onCancel={(event) => {
         event.preventDefault()
-        onClose()
+        saveAndClose()
       }}
     >
-      <form class="sheet__body" onSubmit={submit}>
+      <form
+        class="sheet__body"
+        onSubmit={(event) => {
+          event.preventDefault()
+          saveAndClose()
+        }}
+      >
         <header class="sheet__header">
           <h2 id="settings-dialog-title">Impostazioni</h2>
-          <button class="icon-button" type="button" aria-label="Chiudi" onClick={onClose}>
+          <button class="icon-button" type="button" aria-label="Chiudi" onClick={saveAndClose}>
             <CloseIcon />
           </button>
         </header>
@@ -582,12 +611,16 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
           </p>
         </section>
 
+        <p class="hint">
+          Le modifiche si salvano automaticamente quando chiudi. Annulla le scarta.
+        </p>
+
         <div class="dialog-actions">
-          <button class="button button--ghost" type="button" onClick={onClose}>
+          <button class="button button--ghost" type="button" onClick={cancel}>
             Annulla
           </button>
-          <button class="button button--primary" type="submit">
-            Salva
+          <button class="button button--danger-ghost" type="button" onClick={resetDefaults}>
+            Ripristina impostazioni
           </button>
         </div>
       </form>

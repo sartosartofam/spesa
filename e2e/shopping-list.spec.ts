@@ -89,7 +89,7 @@ test('l’aggiunta rapida usa la categoria predefinita', async ({ page }) => {
   const settings = page.getByRole('dialog')
   await settings.getByLabel('Aggiunta rapida').check()
   await settings.getByLabel('Categoria predefinita').selectOption('Casa')
-  await settings.getByRole('button', { name: 'Salva' }).click()
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
 
   await expect(page.getByText(/Aggiunta rapida in/)).toContainText('Casa')
 
@@ -100,6 +100,50 @@ test('l’aggiunta rapida usa la categoria predefinita', async ({ page }) => {
   await expect(
     page.getByRole('main').getByRole('listitem').filter({ hasText: 'Sapone e2e' }),
   ).toBeVisible()
+})
+
+test('salva le impostazioni alla chiusura e Annulla le scarta', async ({ page }) => {
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  let settings = page.getByRole('dialog')
+  await settings.getByLabel('Aggiunta rapida').check()
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
+
+  await expect(page.getByText(/Aggiunta rapida in/)).toBeVisible()
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  settings = page.getByRole('dialog')
+  await expect(settings.getByLabel('Aggiunta rapida')).toBeChecked()
+
+  await settings.getByLabel('Aggiunta rapida').uncheck()
+  await settings.getByRole('button', { name: 'Annulla' }).click()
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  settings = page.getByRole('dialog')
+  await expect(settings.getByLabel('Aggiunta rapida')).toBeChecked()
+})
+
+test('ripristina le impostazioni solo dopo conferma', async ({ page }) => {
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  let settings = page.getByRole('dialog')
+  await settings.getByLabel('Aggiunta rapida').check()
+  await settings.getByLabel('Categoria predefinita').selectOption('Casa')
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  settings = page.getByRole('dialog')
+
+  page.once('dialog', (dialog) => void dialog.dismiss())
+  await settings.getByRole('button', { name: 'Ripristina impostazioni' }).click()
+  await expect(settings.getByLabel('Aggiunta rapida')).toBeChecked()
+  await expect(settings.getByLabel('Categoria predefinita')).toHaveValue('Casa')
+
+  page.once('dialog', (dialog) => void dialog.accept())
+  await settings.getByRole('button', { name: 'Ripristina impostazioni' }).click()
+  await expect(settings.getByLabel('Aggiunta rapida')).not.toBeChecked()
+  await expect(settings.getByLabel('Categoria predefinita')).toHaveValue('Dispensa')
+
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
+  await expect(page.getByText(/Aggiunta rapida in/)).toHaveCount(0)
 })
 
 test('permette di creare una categoria personalizzata', async ({ page }) => {
@@ -134,7 +178,7 @@ test('importa un preset negozio da JSON', async ({ page }) => {
   })
 
   await expect(settings.getByText(/Preset importati/)).toBeVisible()
-  await settings.getByRole('button', { name: 'Salva' }).click()
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
 
   const imported = await page.evaluate(() => {
     const raw = localStorage.getItem('spesa.settings.v1')
