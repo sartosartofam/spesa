@@ -1,6 +1,6 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
-import { addCustomCategory, normalizeCategory, readCategories } from '../lib/categories'
+import { normalizeCategory } from '../lib/categories'
 import { CloseIcon } from './Icons'
 
 export interface ItemDraft {
@@ -14,6 +14,10 @@ export interface ItemDraft {
 interface ItemDialogProps {
   mode: 'add' | 'edit'
   initial: Partial<ItemDraft>
+  /** Categorie disponibili, gestite dallo stato dell'app (account). */
+  categories: readonly string[]
+  /** Crea una categoria personalizzata e restituisce il nome canonico. */
+  onAddCategory: (name: string) => string | null
   onClose: () => void
   onSave: (draft: ItemDraft) => void | Promise<void>
   onDelete?: (() => void | Promise<void>) | undefined
@@ -22,7 +26,15 @@ interface ItemDialogProps {
 const QUANTITY_HINTS = ['pz', 'pacchi', 'kg', 'g', 'l', 'bottiglie', 'confezioni', 'scatolette']
 const NEW_CATEGORY = '__new__'
 
-export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDialogProps) {
+export function ItemDialog({
+  mode,
+  initial,
+  categories: categoryOptions,
+  onAddCategory,
+  onClose,
+  onSave,
+  onDelete,
+}: ItemDialogProps) {
   const dialogRef = useModalDialog(onClose)
   const [draft, setDraft] = useState<ItemDraft>({
     name: initial.name ?? '',
@@ -31,9 +43,13 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
     note: initial.note ?? '',
     urgent: initial.urgent ?? false,
   })
-  const [categories, setCategories] = useState<string[]>(() => readCategories())
+  const [categories, setCategories] = useState<string[]>(() => [...categoryOptions])
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
+
+  useEffect(() => {
+    setCategories([...categoryOptions])
+  }, [categoryOptions])
 
   function patch<K extends keyof ItemDraft>(key: K, value: ItemDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -57,10 +73,14 @@ export function ItemDialog({ mode, initial, onClose, onSave, onDelete }: ItemDia
   function createCategory() {
     const name = newCategory.trim()
     if (!name) return
-    const updated = addCustomCategory(name)
-    const canonical = updated.find((category) => category.toLowerCase() === name.toLowerCase())
-    setCategories(updated)
-    patch('category', canonical ?? name)
+    const canonical = onAddCategory(name)
+    if (!canonical) return
+    setCategories((current) => {
+      if (current.includes(canonical)) return current
+      const withoutAltro = current.filter((category) => category !== 'Altro')
+      return [...withoutAltro, canonical, 'Altro']
+    })
+    patch('category', canonical)
     setAddingCategory(false)
     setNewCategory('')
   }

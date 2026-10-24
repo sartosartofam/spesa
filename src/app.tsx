@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks'
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { AppHeader } from './components/AppHeader'
 import { CategorySection } from './components/CategorySection'
 import { EmptyState } from './components/EmptyState'
@@ -9,11 +9,32 @@ import { ListTabs } from './components/ListTabs'
 import { QuickAdd } from './components/QuickAdd'
 import { SettingsDialog } from './components/SettingsDialog'
 import { useShoppingList } from './hooks/useShoppingList'
-import { categoryRank, normalizeCategory } from './lib/categories'
+import {
+  type AccountSettings,
+  loadAccountSettings,
+  localAccountSettings,
+  mapAccountSettingsError,
+  mergeAccountSettings,
+  saveAccountSettings,
+  writeCachedAccountSettings,
+} from './lib/account-settings'
+import {
+  appendCustomCategory,
+  categoriesFromCustom,
+  categoryRank,
+  cleanCategoryName,
+  normalizeCategory,
+  writeCustomCategories,
+} from './lib/categories'
 import { isLiveData } from './lib/data'
 import { familyDisplayName } from './lib/family'
 import { categoryCounts, groupByCategory, matchesQuery, sortActive, sortHistory } from './lib/list'
-import { activeCategoryOrder, readSettings, type Settings, writeSettings } from './lib/settings'
+import {
+  activeCategoryOrder,
+  normalizeSettings,
+  type Settings,
+  writeSettings,
+} from './lib/settings'
 import type { Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
@@ -44,9 +65,66 @@ export function App({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [dialog, setDialog] = useState<DialogState>(null)
-  const [settings, setSettings] = useState<Settings>(() => readSettings())
+  const [account, setAccount] = useState<AccountSettings>(() => localAccountSettings(userId))
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsSyncError, setSettingsSyncError] = useState<string | null>(null)
+  const settingsTouched = useRef(false)
+  const settings = account.settings
+  const categories = useMemo(
+    () => categoriesFromCustom(account.customCategories),
+    [account.customCategories],
+  )
   const categoryOrder = activeCategoryOrder(settings)
+
+  // Carica le impostazioni dell'account dopo il login. I dati locali restano
+  // visibili finché la sync non risponde e servono a seminare una riga mancante.
+  useEffect(() => {
+    let cancelled = false
+    settingsTouched.current = false
+    const local = localAccountSettings(userId)
+    setAccount(local)
+    setSettingsSyncError(null)
+
+    if (!isLiveData) return
+
+    void loadAccountSettings(userId)
+      .then(async (remote) => {
+        if (cancelled || settingsTouched.current) return
+        const next = mergeAccountSettings(remote, local)
+        setAccount(next)
+        writeCachedAccountSettings(userId, next)
+        if (remote) return
+
+        try {
+          await saveAccountSettings(userId, next)
+        } catch (error) {
+          if (!cancelled) setSettingsSyncError(mapAccountSettingsError(error))
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setSettingsSyncError(mapAccountSettingsError(error))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  function persistAccount(next: AccountSettings) {
+    settingsTouched.current = true
+    setAccount(next)
+    writeCachedAccountSettings(userId, next)
+
+    if (!isLiveData) {
+      writeSettings(next.settings)
+      writeCustomCategories(next.customCategories)
+      return
+    }
+
+    void saveAccountSettings(userId, next)
+      .then(() => setSettingsSyncError(null))
+      .catch((error: unknown) => setSettingsSyncError(mapAccountSettingsError(error)))
+  }
 
   const categoryFilter = useMemo(() => new Set(selectedCategories), [selectedCategories])
   const activeItems = useMemo(
@@ -152,8 +230,32 @@ export function App({
   }
 
   function handleSaveSettings(next: Settings) {
-    setSettings(next)
-    writeSettings(next)
+    persistAccount({ settings: next, customCategories: account.customCategories })
+  }
+
+  /**
+   * Crea una categoria personalizzata e la salva subito, anche se l'articolo
+   * viene poi annullato. Restituisce il nome canonico per il select.
+   */
+  function handleAddCategory(value: string): string | null {
+    const requested = cleanCategoryName(value)
+    if (!requested) return null
+
+    const customCategories = appendCustomCategory(account.customCategories, requested)
+    const nextCategories = categoriesFromCustom(customCategories)
+    const canonical = nextCategories.find(
+      (category) => category.toLowerCase() === requested.toLowerCase(),
+    )
+    if (!canonical) return null
+
+    const changed = customCategories.length !== account.customCategories.length
+    if (changed) {
+      persistAccount({
+        settings: normalizeSettings(account.settings, nextCategories),
+        customCategories,
+      })
+    }
+    return canonical
   }
 
   const dialogInitial: Partial<ItemDraft> =
@@ -253,6 +355,11 @@ export function App({
               </p>
             )}
             {list.error && <p class="alert">{list.error}</p>}
+            {settingsSyncError && (
+              <p class="alert" role="status">
+                {settingsSyncError}
+              </p>
+            )}
             {list.loading && <p class="hint">Carico la lista…</p>}
           </div>
 
@@ -414,6 +521,8 @@ export function App({
           key={dialog.mode === 'edit' ? dialog.item.id : `add-${dialog.draft.name ?? ''}`}
           mode={dialog.mode}
           initial={dialogInitial}
+          categories={categories}
+          onAddCategory={handleAddCategory}
           onClose={() => setDialog(null)}
           onSave={handleSave}
           onDelete={dialog.mode === 'edit' ? handleDelete : undefined}
@@ -423,6 +532,7 @@ export function App({
       {settingsOpen && (
         <SettingsDialog
           settings={settings}
+          categories={categories}
           currentUserId={userId}
           familyId={familyId}
           familyName={familyName}

@@ -197,6 +197,7 @@ export function Root() {
     if (familyReadyFor !== auth.user?.id) return <LoadingPage />
     return (
       <App
+        key={auth.user?.id}
         userEmail={auth.user?.email ?? ''}
         userId={auth.user?.id ?? ''}
         familyId={familyId}
