@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { addCustomCategory, categoryRank, readCategories } from './categories'
+import {
+  addCustomCategory,
+  appendCustomCategory,
+  categoriesFromCustom,
+  categoryRank,
+  normalizeCustomCategories,
+  readCategories,
+  readCustomCategories,
+  writeCustomCategories,
+} from './categories'
 
 describe('categorie', () => {
   beforeEach(() => {
@@ -35,5 +44,30 @@ describe('categorie', () => {
 
   it('mette le categorie personalizzate prima di Altro', () => {
     expect(categoryRank('Panetteria')).toBeLessThan(categoryRank('Altro'))
+  })
+
+  it('normalizza elenchi arbitrari e scarta le categorie di base', () => {
+    expect(normalizeCustomCategories([' Panetteria ', 42, 'panetteria', 'Casa', '', null])).toEqual(
+      ['Panetteria'],
+    )
+  })
+
+  it('costruisce le categorie da un elenco in memoria', () => {
+    const categories = categoriesFromCustom(['Panetteria'])
+
+    expect(categories[0]).toBe('Frutta e verdura')
+    expect(categories).toContain('Panetteria')
+    expect(categories.at(-1)).toBe('Altro')
+  })
+
+  it('unisce una categoria senza toccare lo storage', () => {
+    expect(appendCustomCategory([], 'Panetteria')).toEqual(['Panetteria'])
+    expect(readCustomCategories()).toEqual([])
+  })
+
+  it('scrive le categorie personalizzate normalizzate', () => {
+    writeCustomCategories(['Panetteria', 'Panetteria', 'Dispensa'])
+
+    expect(readCustomCategories()).toEqual(['Panetteria'])
   })
 })

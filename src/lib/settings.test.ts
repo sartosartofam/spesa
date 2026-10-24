@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { activeCategoryOrder, createDefaultSettings, readSettings, writeSettings } from './settings'
+import { categoriesFromCustom } from './categories'
+import {
+  activeCategoryOrder,
+  createDefaultSettings,
+  parseSettings,
+  readSettings,
+  writeSettings,
+} from './settings'
 
 describe('settings', () => {
   beforeEach(() => {
@@ -52,5 +59,39 @@ describe('settings', () => {
     expect(settings.presets[0]?.name).toBe('Il mio negozio')
     expect(settings.presets[0]?.order.slice(0, 2)).toEqual(['Casa', 'Dispensa'])
     expect(settings.activePresetId).toBe(settings.presets[0]?.id)
+  })
+
+  it('interpreta un payload arbitrario con categorie esplicite', () => {
+    const categories = categoriesFromCustom(['Panetteria'])
+    const settings = parseSettings(
+      {
+        quickAdd: 'sì',
+        defaultCategory: 'Panetteria',
+        activePresetId: 'sconosciuto',
+        presets: [{ id: 'p1', name: 'Mercato', order: ['Panetteria', 'Casa'] }],
+      },
+      categories,
+    )
+
+    expect(settings.quickAdd).toBe(false)
+    expect(settings.defaultCategory).toBe('Panetteria')
+    expect(settings.activePresetId).toBe('p1')
+    expect(activeCategoryOrder(settings)[0]).toBe('Panetteria')
+    expect(activeCategoryOrder(settings).at(-1)).toBe('Altro')
+  })
+
+  it('accetta dati non validi senza lanciare', () => {
+    for (const value of [null, 'boh', 42, []]) {
+      const settings = parseSettings(value, categoriesFromCustom([]))
+      expect(settings.defaultCategory).toBe('Dispensa')
+      expect(settings.presets).toHaveLength(1)
+    }
+  })
+
+  it('crea i default sulle categorie passate', () => {
+    const settings = createDefaultSettings(categoriesFromCustom(['Panetteria']))
+
+    expect(activeCategoryOrder(settings)).toContain('Panetteria')
+    expect(activeCategoryOrder(settings).at(-1)).toBe('Altro')
   })
 })
