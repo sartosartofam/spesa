@@ -139,6 +139,8 @@ export function Root() {
   }, [auth.status, auth.user?.id, familyAttempt])
 
   async function handleLogout() {
+    if (!window.confirm('Vuoi uscire dall’account?')) return
+
     setLogoutError(null)
     loggingOut.current = true
     try {

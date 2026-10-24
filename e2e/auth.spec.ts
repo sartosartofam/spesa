@@ -59,6 +59,7 @@ test('login, sessione persistente al reload e logout', async ({ page }) => {
   await expect(page).toHaveURL(/\/app$/)
   await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
 
+  page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Esci' }).click()
   await expect(page).toHaveURL(/\/$/)
   await expect(
@@ -68,6 +69,21 @@ test('login, sessione persistente al reload e logout', async ({ page }) => {
   await page.goto('/app')
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByRole('button', { name: 'Accedi' })).toBeVisible()
+})
+
+test('il logout chiede conferma e Annulla mantiene la sessione', async ({ page }) => {
+  await mockAuth(page)
+  await signInAsDemo(page)
+
+  page.once('dialog', (dialog) => void dialog.dismiss())
+  await page.getByRole('button', { name: 'Esci' }).click()
+
+  await expect(page).toHaveURL(/\/app$/)
+  await expect(page.getByText(DEMO_EMAIL)).toBeVisible()
+
+  page.once('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: 'Esci' }).click()
+  await expect(page).toHaveURL(/\/$/)
 })
 
 test('la password non viene mai mostrata nel form', async ({ page }) => {
