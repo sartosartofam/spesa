@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(28);
 
 -- Dati di partenza. Il test gira come `postgres`, che è owner delle tabelle e
 -- quindi bypassa la RLS: questi insert servono solo a predisporre lo scenario.
@@ -134,6 +134,39 @@ select is(
   (select count(*)::int from changed),
   0,
   'A non può modificare un articolo di B'
+);
+
+select lives_ok(
+  $$ update public.items
+     set quantity = '2 litri', note = 'Aggiornato'
+     where id = 'a1111111-1111-1111-1111-111111111111' $$,
+  'A può aggiornare le colonne consentite del proprio articolo'
+);
+
+select is(
+  (
+    select quantity
+    from public.items
+    where id = 'a1111111-1111-1111-1111-111111111111'
+  ),
+  '2 litri',
+  'la quantità aggiornata è visibile ad A'
+);
+
+select throws_ok(
+  $$ update public.items
+     set created_by = '22222222-2222-2222-2222-222222222222'
+     where id = 'a1111111-1111-1111-1111-111111111111' $$,
+  '42501',
+  'permission denied for table items',
+  'A non può modificare created_by'
+);
+
+select throws_ok(
+  $$ select public.set_updated_at() $$,
+  '42501',
+  'permission denied for function set_updated_at',
+  'le funzioni trigger non sono richiamabili via API'
 );
 
 with deleted as (

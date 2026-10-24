@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(39);
 
 -- Enum -----------------------------------------------------------------------
 
@@ -164,6 +164,74 @@ select is(
   (select bought_at from public.items where name = 'Latte'),
   null,
   'tornando in lista viene azzerato bought_at'
+);
+
+-- Limiti sui testi liberi ----------------------------------------------------
+
+select throws_ok(
+  $$ insert into public.items (family_id, name, category)
+     select id, 'Categoria lunga', repeat('x', 31)
+     from public.families
+     where name = 'Famiglia test schema' $$,
+  '23514',
+  null,
+  'una categoria oltre 30 caratteri viene rifiutata'
+);
+
+select throws_ok(
+  $$ insert into public.items (family_id, name, note)
+     select id, 'Nota lunga', repeat('x', 121)
+     from public.families
+     where name = 'Famiglia test schema' $$,
+  '23514',
+  null,
+  'una nota oltre 120 caratteri viene rifiutata'
+);
+
+select throws_ok(
+  $$ insert into public.items (family_id, name, quantity)
+     select id, 'Quantità lunga', repeat('x', 41)
+     from public.families
+     where name = 'Famiglia test schema' $$,
+  '23514',
+  null,
+  'una quantità oltre 40 caratteri viene rifiutata'
+);
+
+insert into auth.users (id, email)
+values ('44444444-4444-4444-4444-444444444444', 'schema@example.test');
+
+insert into public.members (id, family_id, email, display_name)
+select
+  '44444444-4444-4444-4444-444444444444',
+  id,
+  'schema@example.test',
+  'Membro schema'
+from public.families
+where name = 'Famiglia test schema';
+
+select throws_ok(
+  $$ insert into public.push_subscriptions (member_id, endpoint, keys)
+     values (
+       '44444444-4444-4444-4444-444444444444',
+       'https://push.example/' || repeat('x', 2040),
+       '{"p256dh":"a","auth":"b"}'
+     ) $$,
+  '23514',
+  null,
+  'un endpoint push oltre 2048 caratteri viene rifiutato'
+);
+
+select throws_ok(
+  $$ insert into public.push_subscriptions (member_id, endpoint, keys)
+     values (
+       '44444444-4444-4444-4444-444444444444',
+       'https://push.example/keys',
+       jsonb_build_object('p256dh', repeat('x', 4100))
+     ) $$,
+  '23514',
+  null,
+  'chiavi push oltre 4096 caratteri vengono rifiutate'
 );
 
 select * from finish();
