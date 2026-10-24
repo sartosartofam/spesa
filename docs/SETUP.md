@@ -105,6 +105,21 @@ Con `npm run dev`:
 
 Per provare il login usa uno degli utenti demo qui sopra, oppure registra un nuovo account.
 
+### Inviti e cambio famiglia
+
+Da **Impostazioni → Famiglia** un membro autenticato può generare un codice invito monouso. Il codice scade dopo 7 giorni e va condiviso manualmente con la persona da invitare.
+
+L'invitato accede o si registra, apre **Impostazioni → Famiglia**, incolla il codice e conferma. Dopo il cambio famiglia ricarica la lista per vedere i dati della nuova famiglia.
+
+Nella stessa sezione l'`owner` vede i membri della famiglia e può usare **Rendi owner** per nominare un altro `owner` (RPC `promote_family_owner`). Serve quando l'owner vuole cambiare famiglia ma non è l'unico membro.
+
+- Se l'invitato era l'unico membro della famiglia di partenza, la vecchia famiglia e la sua lista vengono eliminate.
+- Se era `owner` con altri membri, il cambio è bloccato finché non nomina un altro `owner`.
+- Gli inviti attivi creati dall'utente per la vecchia famiglia vengono revocati.
+- La tabella `family_invites` non è leggibile dal client: creazione e riscatto passano solo dalle RPC `create_family_invite()` e `redeem_family_invite(code)`.
+
+I test pgTAP coprono creazione, riscatto, codice scaduto, codice già usato, blocco dell'owner e utente senza membership.
+
 ### Tipi TypeScript
 
 Dopo una modifica a schema, policy o funzioni SQL:
