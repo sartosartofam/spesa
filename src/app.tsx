@@ -184,7 +184,7 @@ export function App({ userEmail, authError, onLogout }: AppProps) {
               id="search-items"
               class="search"
               type="search"
-              placeholder="Cerca per nome, categoria o nota…"
+              placeholder="Cerca per nome o categoria"
               value={query}
               onInput={(event) => setQuery(event.currentTarget.value)}
             />
@@ -391,7 +391,13 @@ export function App({ userEmail, authError, onLogout }: AppProps) {
 
       <footer class="app__footer">
         <span>Spesa di famiglia</span>
-        {!isLiveData && <span>modalità demo · dati locali</span>}
+        <span class="app__footer-meta">
+          {!isLiveData && <span>modalità demo · dati locali</span>}
+          <a href="https://streamlinehq.com" target="_blank" rel="noreferrer noopener">
+            Icone: Streamline
+            <span class="sr-only"> (si apre in una nuova scheda)</span>
+          </a>
+        </span>
       </footer>
 
       {dialog && (
