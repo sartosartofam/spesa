@@ -26,7 +26,7 @@ lang: it-IT
 - **Spunta articolo:** "preso" / "da prendere"; gli articoli presi si archiviano (non si cancellano subito, per lo storico).
 - **Segnalazione "è finito":** pulsante dedicato che aggiunge l'articolo alla lista con flag "urgente/finito" e genera una notifica.
 - **Notifiche push:** quando un articolo viene aggiunto o segnalato come finito, gli altri membri ricevono una notifica (almeno su mobile).
-- **Login familiare semplice:** accesso con email + password tramite Supabase Auth (magic link come estensione post-MVP); nessuna registrazione pubblica (solo invito).
+- **Login familiare semplice:** accesso con email + password tramite Supabase Auth (magic link come estensione post-MVP); registrazione pubblica con famiglia personale e inviti con codice per entrare o cambiare famiglia.
 - **Categorie base:** raggruppamento automatico o manuale (es. dispensa, freschi, surgelati, casa).
 - **Storico:** articoli comprati di recente, per riaggiungerli in un tap.
 
@@ -242,7 +242,7 @@ keepalive (id, last_ping)
 ## 7. Sicurezza (punti chiave)
 
 - HTTPS obbligatorio, gestito da Vercel e Supabase.
-- **Auth:** email + password tramite Supabase (magic link come estensione post-MVP); niente registrazione aperta, inviti familiari.
+- **Auth:** email + password tramite Supabase (magic link come estensione post-MVP); registrazione pubblica con famiglia personale, conferma email obbligatoria e inviti con codice. La creazione della famiglia passa da una RPC `security definer`, non da insert diretti.
 - **Autorizzazione:** Row Level Security attiva su ogni tabella; ogni query filtrata per il `family_id` dell'utente. La revisione delle policy è umana.
 - **Push:** endpoint e chiavi salvati per membro; revoca alla rimozione del membro; nessun fallback esterno, badge in-app alla riapertura.
 - **Rate limiting** sulle API di aggiunta (evita spam e abusi).

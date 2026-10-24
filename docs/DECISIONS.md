@@ -14,13 +14,26 @@ Decisioni prese per il progetto. In caso di conflitto con `docs/studio-di-proget
 
 **Conseguenze.** Lo scaffold usa ancora `finished`: va allineato nella fase backend/frontend. "È finito" da storico o da un form dedicato rimette l'articolo in lista con `urgent = true`.
 
-## ADR-0002 — Autenticazione
+## ADR-0002 — Autenticazione, registrazione e famiglie
 
-**Decisione.** MVP con email + password tramite Supabase Auth. Nessuna registrazione pubblica: i membri vengono creati dall'umano (dashboard Supabase o script admin locale) e collegati a una riga di `members`. Magic link post-MVP.
+**Decisione.** MVP con email + password tramite Supabase Auth e registrazione pubblica.
 
-**Perché.** Una famiglia è un gruppo chiuso di 2–6 persone. La registrazione aperta aggiunge superficie d'attacco e lavoro inutile. Email + password è il flusso più semplice da testare in locale.
+- Chi si registra crea un account e, al primo accesso autenticato, una famiglia personale con ruolo `owner`.
+- La creazione della famiglia passa dalla funzione SQL `public.ensure_current_family()`, `security definer` e idempotente: il client non può inserirsi in una famiglia esistente né scegliere un `family_id` arbitrario.
+- Le email sono normalizzate (trim + lowercase) nel client e nel database.
+- La conferma email è obbligatoria prima del primo accesso.
+- Per ora vale una sola famiglia per utente. Gli inviti con codice permettono di entrare in un'altra famiglia o cambiare la propria; la multi-famiglia è rimandata a una fase successiva.
+- Magic link post-MVP.
 
-**Conseguenze.** In produzione `enable_signup` resta disabilitato. In locale si possono creare utenti di test con la chiave `service_role` locale. La gestione inviti è manuale per l'MVP.
+**Perché.** La registrazione pubblica rende l'app utilizzabile senza intervento manuale dell'umano, mantenendo isolamento tra famiglie grazie alla RPC e alla RLS. Una famiglia per utente evita ambiguità su quale lista mostrare e quale `family_id` usare nelle query; gli inviti coprono il caso reale di più persone nella stessa famiglia.
+
+**Conseguenze.**
+
+- In locale `enable_signup = true`, `enable_confirmations = true` e le email di conferma si leggono su Mailpit (`http://127.0.0.1:54324`).
+- In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana. La conferma email va testata con un indirizzo reale prima del push in produzione.
+- La gestione manuale degli utenti resta possibile per seed e test, ma non è più il flusso principale.
+- Gli inviti e il cambio famiglia sono implementati in una issue dedicata; fino ad allora ogni account resta nella propria famiglia personale.
+- Rate limiting e protezione anti-bot restano a carico della configurazione Supabase e vanno verificati prima della produzione.
 
 ## ADR-0003 — Backup ed export
 
