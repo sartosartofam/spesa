@@ -394,10 +394,6 @@ export function App({ userEmail, userId, authError, onLogout }: AppProps) {
         <span>Spesa di famiglia</span>
         <span class="app__footer-meta">
           {!isLiveData && <span>modalità demo · dati locali</span>}
-          <a href="https://streamlinehq.com" target="_blank" rel="noreferrer noopener">
-            Icone: Streamline
-            <span class="sr-only"> (si apre in una nuova scheda)</span>
-          </a>
         </span>
       </footer>
 

@@ -611,6 +611,20 @@ export function SettingsDialog({ settings, currentUserId, onClose, onSave }: Set
           </p>
         </section>
 
+        <section class="settings-section" aria-labelledby="settings-credits-title">
+          <h3 class="settings-section__title" id="settings-credits-title">
+            Crediti
+          </h3>
+          <p class="hint">
+            Icone:{' '}
+            <a href="https://streamlinehq.com" target="_blank" rel="noreferrer noopener">
+              Streamline (CC BY 4.0)
+              <span class="sr-only"> (si apre in una nuova scheda)</span>
+            </a>
+            .
+          </p>
+        </section>
+
         <p class="hint">
           Le modifiche si salvano automaticamente quando chiudi. Annulla le scarta.
         </p>
