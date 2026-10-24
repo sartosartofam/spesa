@@ -39,7 +39,8 @@ select is(
         'create_family_invite',
         'promote_family_owner',
         'redeem_family_invite',
-        'rename_family'
+        'rename_family',
+        'leave_family'
       )
       and (
         has_function_privilege('anon', p.oid, 'execute')
