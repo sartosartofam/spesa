@@ -30,6 +30,22 @@ test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ pag
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Test e2e' })).toBeVisible()
 })
 
+test('ordina i controlli: tabs, aggiunta, categorie e ricerca', async ({ page }) => {
+  const main = page.getByRole('main')
+  const controls = page.locator('#mobile-controls-body')
+
+  await expect(page.getByRole('button', { name: 'Aggiungi e filtra' })).toBeHidden()
+  await expect(main.getByRole('tablist', { name: 'Viste della lista' })).toBeVisible()
+  await expect(main.getByLabel('Nuovo articolo')).toBeVisible()
+  await expect(main.getByRole('group', { name: 'Filtra per categoria' })).toBeVisible()
+  await expect(main.getByLabel('Cerca articoli')).toBeVisible()
+
+  const order = await controls
+    .locator(':scope > *')
+    .evaluateAll((elements) => elements.map((element) => element.classList[0]))
+  expect(order).toEqual(['tabs', 'quick-add', 'category-chips', 'toolbar'])
+})
+
 test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   await page.getByLabel('Nuovo articolo').fill('Urgente e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
@@ -41,12 +57,17 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   const mainList = page.getByRole('main')
   const activeRow = mainList.getByRole('listitem').filter({ hasText: 'Urgente e2e' })
   await expect(activeRow).toContainText('Urgente')
+  await expect(activeRow).toHaveClass(/item--urgent/)
+  await expect(mainList.getByRole('heading', { name: 'Urgenti', exact: true })).toHaveCount(0)
 
   const banner = page.locator('.urgent-banner')
   await banner.getByRole('button', { name: 'Mostra urgenti' }).click()
 
   await expect(activeRow).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+  await expect(mainList.getByRole('heading', { name: 'Urgenti', exact: true })).toHaveCount(0)
+  await expect(mainList.getByRole('heading', { name: /^Dispensa/ })).toBeVisible()
+  await expect(mainList.getByRole('heading', { name: /^Casa/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Togli il filtro Solo urgenti' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Togli il filtro Solo urgenti' }).click()
@@ -307,16 +328,41 @@ test('filtra con le chip categoria e usa l’avviso urgenze', async ({ page }) =
   await expect(main.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
 })
 
-test('a 360 px la schermata resta usabile senza overflow orizzontale', async ({ page }) => {
+test('a 360 px i controlli stanno in un collapse e la lista resta libera', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 })
   await page.reload()
 
   await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
-  await expect(page.getByLabel('Nuovo articolo')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Aggiungi', exact: true })).toBeVisible()
 
-  const overflow = await page.evaluate(
+  const toggle = page.getByRole('button', { name: 'Aggiungi e filtra' })
+  await expect(toggle).toBeVisible()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByLabel('Nuovo articolo')).toBeHidden()
+  await expect(page.getByRole('tablist', { name: 'Viste della lista' })).toBeHidden()
+  await expect(page.getByRole('group', { name: 'Filtra per categoria' })).toBeHidden()
+  await expect(page.getByLabel('Cerca articoli')).toBeHidden()
+
+  let overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
   expect(overflow).toBeLessThanOrEqual(0)
+
+  await toggle.click()
+  await expect(page.getByRole('button', { name: 'Nascondi controlli' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  )
+  await expect(page.getByLabel('Nuovo articolo')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Aggiungi', exact: true })).toBeVisible()
+  await expect(page.getByRole('tablist', { name: 'Viste della lista' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Filtra per categoria' })).toBeVisible()
+  await expect(page.getByLabel('Cerca articoli')).toBeVisible()
+
+  overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
+
+  await page.getByRole('button', { name: 'Nascondi controlli' }).click()
+  await expect(page.getByLabel('Nuovo articolo')).toBeHidden()
 })
