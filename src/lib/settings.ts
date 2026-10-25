@@ -1,6 +1,26 @@
 import { CATEGORIES, DEFAULT_CATEGORY, readCategories } from './categories'
 import { defaultPreset, normalizePresets, type OrderPreset } from './order-presets'
 
+export type ThemeId = 'auto' | 'light' | 'dark-yellow' | 'light-yellow'
+
+export interface ThemeOption {
+  id: ThemeId
+  label: string
+}
+
+export const THEME_OPTIONS: readonly ThemeOption[] = [
+  { id: 'auto', label: 'Sistema' },
+  { id: 'light', label: 'Chiaro' },
+  { id: 'dark-yellow', label: 'Scuro giallo' },
+  { id: 'light-yellow', label: 'Chiaro giallo' },
+]
+
+const THEME_IDS = new Set<string>(THEME_OPTIONS.map((option) => option.id))
+
+export function isThemeId(value: unknown): value is ThemeId {
+  return typeof value === 'string' && THEME_IDS.has(value)
+}
+
 export interface Settings {
   /** Se attivo, il campo rapido aggiunge subito senza aprire il dialog. */
   quickAdd: boolean
@@ -10,6 +30,8 @@ export interface Settings {
   presets: OrderPreset[]
   /** Effetto luminoso che segue il cursore sulla landing. */
   landingGlow: boolean
+  /** Tema della UI: automatico oppure una palette esplicita. */
+  theme: ThemeId
 }
 
 const DEFAULT_PRESET: OrderPreset = {
@@ -24,6 +46,7 @@ const DEFAULT_SETTINGS: Settings = {
   activePresetId: DEFAULT_PRESET.id,
   presets: [DEFAULT_PRESET],
   landingGlow: true,
+  theme: 'auto',
 }
 
 const STORAGE_KEY = 'spesa.settings.v1'
@@ -60,6 +83,7 @@ export function normalizeSettings(
 
   return {
     ...settings,
+    theme: isThemeId(settings.theme) ? settings.theme : 'auto',
     activePresetId,
     presets,
   }
@@ -108,6 +132,7 @@ export function parseSettings(
       presets,
       // Il default è attivo; solo un `false` esplicito lo disattiva.
       landingGlow: parsed.landingGlow !== false,
+      theme: isThemeId(parsed.theme) ? parsed.theme : DEFAULT_SETTINGS.theme,
     },
     categories,
   )

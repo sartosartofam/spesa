@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { AppHeader } from './components/AppHeader'
 import { CategorySection } from './components/CategorySection'
 import { EmptyState } from './components/EmptyState'
@@ -36,6 +36,7 @@ import {
   type Settings,
   writeSettings,
 } from './lib/settings'
+import { applyTheme } from './lib/theme'
 import type { Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
@@ -118,6 +119,14 @@ export function App({
     const timeout = window.setTimeout(() => setToast(null), 3200)
     return () => window.clearTimeout(timeout)
   }, [toast])
+
+  useLayoutEffect(() => {
+    applyTheme(settings.theme)
+  }, [settings.theme])
+
+  useEffect(() => {
+    return () => applyTheme('auto')
+  }, [])
 
   function persistAccount(next: AccountSettings) {
     settingsTouched.current = true

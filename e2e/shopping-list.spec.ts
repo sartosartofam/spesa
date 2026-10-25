@@ -258,6 +258,42 @@ test('salva le impostazioni alla chiusura e Annulla le scarta', async ({ page })
   await expect(settings.getByLabel('Bagliore che segue il cursore')).not.toBeChecked()
 })
 
+test('cambia tema, lo salva e Annulla ripristina quello attivo', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'auto')
+
+  const background = () =>
+    page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  let dialog = page.getByRole('dialog')
+
+  await dialog.getByLabel('Tema').selectOption('dark-yellow')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark-yellow')
+  expect(await background()).toBe('#17140c')
+  await dialog.getByRole('button', { name: 'Chiudi' }).click()
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Tema').selectOption('light-yellow')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light-yellow')
+  expect(await background()).toBe('#fbf7e8')
+  await dialog.getByRole('button', { name: 'Annulla' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark-yellow')
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Tema').selectOption('light')
+  await dialog.getByRole('button', { name: 'Chiudi' }).click()
+
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  expect(await background()).toBe('#f6f7f5')
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  expect(await background()).toBe('#f6f7f5')
+})
+
 test('le impostazioni usano una sola barra di scorrimento', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 })
   await page.getByRole('button', { name: 'Impostazioni' }).click()

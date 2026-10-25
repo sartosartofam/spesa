@@ -26,7 +26,14 @@ import {
   serializePresets,
   uniquePresetName,
 } from '../lib/order-presets'
-import { createDefaultSettings, normalizeSettings, type Settings } from '../lib/settings'
+import {
+  createDefaultSettings,
+  isThemeId,
+  normalizeSettings,
+  type Settings,
+  THEME_OPTIONS,
+} from '../lib/settings'
+import { applyTheme } from '../lib/theme'
 import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './Icons'
 
 interface SettingsDialogProps {
@@ -56,6 +63,7 @@ export function SettingsDialog({
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
   const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
   const [landingGlow, setLandingGlow] = useState(settings.landingGlow)
+  const [theme, setTheme] = useState(settings.theme)
   const categories = categoryOptions
   const [presets, setPresets] = useState<OrderPreset[]>(() =>
     settings.presets.map((preset) => ({ ...preset, order: [...preset.order] })),
@@ -79,6 +87,10 @@ export function SettingsDialog({
   const [savingFamilyName, setSavingFamilyName] = useState(false)
   const [leftFamily, setLeftFamily] = useState<LeftFamily | null>(null)
   const [leavingFamily, setLeavingFamily] = useState(false)
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   useEffect(() => {
     if (!isLiveData) return
@@ -127,6 +139,7 @@ export function SettingsDialog({
         activePresetId,
         presets,
         landingGlow,
+        theme,
       },
       categories,
     )
@@ -173,6 +186,7 @@ export function SettingsDialog({
 
   function cancel() {
     if (leftFamily) return
+    applyTheme(settings.theme)
     onClose()
   }
 
@@ -222,6 +236,7 @@ export function SettingsDialog({
     setQuickAdd(defaults.quickAdd)
     setDefaultCategory(defaults.defaultCategory)
     setLandingGlow(defaults.landingGlow)
+    setTheme(defaults.theme)
     setPresets(defaults.presets.map((preset) => ({ ...preset, order: [...preset.order] })))
     setActivePresetId(defaults.activePresetId)
     setImportMessage(null)
@@ -451,6 +466,30 @@ export function SettingsDialog({
               </span>
             </span>
           </label>
+
+          <div class="field">
+            <label class="field__label" for="settings-theme">
+              Tema
+            </label>
+            <select
+              id="settings-theme"
+              value={theme}
+              onChange={(event) => {
+                const value = event.currentTarget.value
+                if (isThemeId(value)) setTheme(value)
+              }}
+            >
+              {THEME_OPTIONS.map((option) => (
+                <option value={option.id} key={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p class="hint">
+              Sistema segue l’impostazione chiaro/scuro del dispositivo. Gli altri temi restano
+              fissi.
+            </p>
+          </div>
         </section>
 
         {isLiveData && (
