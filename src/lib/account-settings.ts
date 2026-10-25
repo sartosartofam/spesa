@@ -23,6 +23,7 @@ export interface AccountSettingsPayload {
   activePresetId: string
   presets: OrderPreset[]
   customCategories: string[]
+  landingGlow: boolean
 }
 
 export interface AccountSettings {
@@ -74,6 +75,7 @@ export function toAccountSettingsPayload(
     activePresetId: normalized.activePresetId,
     presets: normalized.presets,
     customCategories: custom,
+    landingGlow: normalized.landingGlow,
   }
 }
 

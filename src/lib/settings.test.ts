@@ -22,11 +22,13 @@ describe('settings', () => {
         { id: 'default', name: 'Il mio negozio', order: ['Casa'] },
         { id: 'conad', name: 'Conad', order: ['Dispensa', 'Casa'] },
       ],
+      landingGlow: false,
     })
 
     const settings = readSettings()
 
     expect(settings.quickAdd).toBe(true)
+    expect(settings.landingGlow).toBe(false)
     expect(settings.defaultCategory).toBe('Casa')
     expect(settings.activePresetId).toBe('conad')
     expect(settings.presets.map((preset) => preset.name)).toEqual(['Il mio negozio', 'Conad'])
@@ -39,6 +41,7 @@ describe('settings', () => {
 
     expect(settings.quickAdd).toBe(false)
     expect(settings.defaultCategory).toBe('Dispensa')
+    expect(settings.landingGlow).toBe(true)
     expect(settings.presets).toHaveLength(1)
     expect(settings.activePresetId).toBe(settings.presets[0]?.id)
   })
@@ -78,6 +81,12 @@ describe('settings', () => {
     expect(settings.activePresetId).toBe('p1')
     expect(activeCategoryOrder(settings)[0]).toBe('Panetteria')
     expect(activeCategoryOrder(settings).at(-1)).toBe('Altro')
+  })
+
+  it('tiene il bagliore attivo salvo un false esplicito', () => {
+    expect(parseSettings({}, categoriesFromCustom([])).landingGlow).toBe(true)
+    expect(parseSettings({ landingGlow: 'no' }, categoriesFromCustom([])).landingGlow).toBe(true)
+    expect(parseSettings({ landingGlow: false }, categoriesFromCustom([])).landingGlow).toBe(false)
   })
 
   it('accetta dati non validi senza lanciare', () => {

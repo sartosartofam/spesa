@@ -55,6 +55,7 @@ export function SettingsDialog({
   const leaveResultRef = useRef<HTMLButtonElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
   const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
+  const [landingGlow, setLandingGlow] = useState(settings.landingGlow)
   const categories = categoryOptions
   const [presets, setPresets] = useState<OrderPreset[]>(() =>
     settings.presets.map((preset) => ({ ...preset, order: [...preset.order] })),
@@ -125,6 +126,7 @@ export function SettingsDialog({
         defaultCategory,
         activePresetId,
         presets,
+        landingGlow,
       },
       categories,
     )
@@ -219,6 +221,7 @@ export function SettingsDialog({
     const defaults = createDefaultSettings()
     setQuickAdd(defaults.quickAdd)
     setDefaultCategory(defaults.defaultCategory)
+    setLandingGlow(defaults.landingGlow)
     setPresets(defaults.presets.map((preset) => ({ ...preset, order: [...preset.order] })))
     setActivePresetId(defaults.activePresetId)
     setImportMessage(null)
@@ -430,6 +433,24 @@ export function SettingsDialog({
             </select>
             <p class="hint">Usata dall'aggiunta rapida e come proposta nel dialog.</p>
           </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="settings-section__title">Aspetto</h3>
+
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              checked={landingGlow}
+              onChange={(event) => setLandingGlow(event.currentTarget.checked)}
+            />
+            <span>
+              <strong>Bagliore che segue il cursore</strong>
+              <span class="checkbox__hint">
+                Attivo sulla landing page. Puoi disattivarlo anche dalla landing.
+              </span>
+            </span>
+          </label>
         </section>
 
         {isLiveData && (

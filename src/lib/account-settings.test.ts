@@ -21,6 +21,7 @@ const SETTINGS = {
   defaultCategory: 'Panetteria',
   activePresetId: 'p1',
   presets: [{ id: 'p1', name: 'Esselunga', order: ['Panetteria', 'Casa'] }],
+  landingGlow: false,
 }
 
 function account(): AccountSettings {
@@ -85,6 +86,7 @@ describe('payload impostazioni account', () => {
 
     expect(payload.version).toBe(1)
     expect(payload.quickAdd).toBe(true)
+    expect(payload.landingGlow).toBe(false)
     expect(payload.defaultCategory).toBe('Panetteria')
     expect(payload.customCategories).toEqual(['Panetteria'])
     expect(payload.presets[0]?.order[0]).toBe('Panetteria')
@@ -145,6 +147,7 @@ describe('payload impostazioni account', () => {
     expect(parsed.settings.presets[0]?.order).toEqual(original.settings.presets[0]?.order)
     expect(parsed.customCategories).toEqual(['Panetteria'])
     expect(parsed.settings.quickAdd).toBe(true)
+    expect(parsed.settings.landingGlow).toBe(false)
     expect(parsed.settings.defaultCategory).toBe('Panetteria')
   })
 })
@@ -176,6 +179,7 @@ describe('merge e cache locale', () => {
       defaultCategory: 'Casa',
       activePresetId: 'default',
       presets: [{ id: 'default', name: 'Il mio negozio', order: ['Casa'] }],
+      landingGlow: true,
     })
 
     expect(localAccountSettings('utente-nuovo').settings.quickAdd).toBe(true)

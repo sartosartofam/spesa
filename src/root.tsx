@@ -10,6 +10,7 @@ import { type AppRoute, navigate } from './lib/routes'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { PrivacyPage } from './pages/PrivacyPage'
 import { RegisterPage } from './pages/RegisterPage'
 
 const LANDING_DESCRIPTION =
@@ -35,6 +36,14 @@ function metaFor(route: AppRoute): DocumentMeta {
       title: 'Registrati | Spesa',
       description: 'Crea il tuo account e la tua famiglia personale su Spesa.',
       robots: 'noindex, nofollow',
+    }
+  }
+  if (route === 'privacy') {
+    return {
+      title: 'Privacy | Spesa',
+      description:
+        'Informativa privacy di Spesa: dati trattati, finalità, conservazione e diritti degli utenti.',
+      robots: 'index, follow',
     }
   }
   if (route === 'app') {
@@ -174,6 +183,10 @@ export function Root() {
   if (route === 'login') {
     if (auth.status === 'authenticated') return <LoadingPage />
     return <LoginPage onSignIn={auth.signIn} initialError={auth.error} />
+  }
+
+  if (route === 'privacy') {
+    return <PrivacyPage authenticated={auth.status === 'authenticated'} />
   }
 
   if (route === 'register') {
