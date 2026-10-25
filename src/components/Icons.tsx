@@ -123,6 +123,25 @@ export function UndoIcon({ class: className }: IconProps) {
   )
 }
 
+export function RedoIcon({ class: className }: IconProps) {
+  return (
+    <svg {...base} class={className}>
+      <title>Ripeti</title>
+      <g transform="translate(32 0) scale(-1 1)">
+        <path d="M4.57 14.48h3.05v3.04H4.57Z" />
+        <path d="M7.62 11.43h3.04v3.05H7.62Z" />
+        <path d="M7.62 17.52h3.04v3.05H7.62Z" />
+        <path d="M10.67 8.38h3.04v3.05h-3.04Z" />
+        <path d="M10.67 14.48h3.04v3.04h-3.04Z" />
+        <path d="M10.67 20.57h3.04v3.05h-3.04Z" />
+        <path d="M13.71 14.48h12.19v3.04H13.71Z" />
+        <path d="M25.9 17.52h3.05v6.1H25.9Z" />
+        <path d="M22.85 23.62h3.05v3.05h-3.05Z" />
+      </g>
+    </svg>
+  )
+}
+
 export function CloseIcon({ class: className }: IconProps) {
   return (
     <svg {...base} class={className}>

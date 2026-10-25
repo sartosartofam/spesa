@@ -1,9 +1,16 @@
 import type { FamilyPerson } from '../lib/family'
-import { LogOutIcon, SettingsIcon } from './Icons'
+import { LogOutIcon, RedoIcon, SettingsIcon, UndoIcon } from './Icons'
 
 interface AppHeaderProps {
   counts: { active: number; urgent: number; history: number }
   people: FamilyPerson[]
+  canUndo: boolean
+  canRedo: boolean
+  undoLabel: string | null
+  redoLabel: string | null
+  historyBusy: boolean
+  onUndo: () => void
+  onRedo: () => void
   onOpenSettings: () => void
   onLogout: () => void
 }
@@ -16,7 +23,24 @@ function initials(name: string): string {
   return `${first}${last}`.toUpperCase()
 }
 
-export function AppHeader({ counts, people, onOpenSettings, onLogout }: AppHeaderProps) {
+export function AppHeader({
+  counts,
+  people,
+  canUndo,
+  canRedo,
+  undoLabel,
+  redoLabel,
+  historyBusy,
+  onUndo,
+  onRedo,
+  onOpenSettings,
+  onLogout,
+}: AppHeaderProps) {
+  const undoTitle = undoLabel ? `Annulla: ${undoLabel}` : 'Nessuna azione da annullare'
+  const redoTitle = redoLabel ? `Ripeti: ${redoLabel}` : 'Nessuna azione da ripetere'
+  const undoAriaLabel = undoLabel ? `Annulla: ${undoLabel}` : 'Annulla'
+  const redoAriaLabel = redoLabel ? `Ripeti: ${redoLabel}` : 'Ripeti'
+
   return (
     <header class="app-header">
       <div class="app-header__brand">
@@ -41,6 +65,26 @@ export function AppHeader({ counts, people, onOpenSettings, onLogout }: AppHeade
       </ul>
 
       <div class="app-header__actions">
+        <button
+          class="icon-button"
+          type="button"
+          aria-label={undoAriaLabel}
+          title={undoTitle}
+          disabled={!canUndo || historyBusy}
+          onClick={onUndo}
+        >
+          <UndoIcon />
+        </button>
+        <button
+          class="icon-button"
+          type="button"
+          aria-label={redoAriaLabel}
+          title={redoTitle}
+          disabled={!canRedo || historyBusy}
+          onClick={onRedo}
+        >
+          <RedoIcon />
+        </button>
         <button class="icon-button" type="button" aria-label="Esci" title="Esci" onClick={onLogout}>
           <LogOutIcon />
         </button>

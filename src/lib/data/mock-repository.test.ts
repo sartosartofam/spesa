@@ -107,6 +107,34 @@ describe('mock items repository', () => {
     expect(updated.urgent).toBe(true)
   })
 
+  it('ripristina uno snapshot anche dopo modifica o eliminazione', async () => {
+    const repository = createMockItemsRepository()
+    const item = await repository.add({
+      name: 'Biscotti',
+      category: 'Freschi',
+      quantity: '2 confezioni',
+    })
+
+    await repository.update(item.id, { name: 'Biscotti integrali', quantity: '3 confezioni' })
+    await repository.restoreItem(item)
+
+    let active = await repository.list('active')
+    expect(active.find((candidate) => candidate.id === item.id)).toMatchObject({
+      name: 'Biscotti',
+      quantity: '2 confezioni',
+    })
+
+    await repository.remove(item.id)
+    await repository.restoreItem(item)
+
+    active = await repository.list('active')
+    expect(active.find((candidate) => candidate.id === item.id)).toMatchObject({
+      id: item.id,
+      name: 'Biscotti',
+      quantity: '2 confezioni',
+    })
+  })
+
   it('somma la quantità quando si aggiunge un articolo identico', async () => {
     const repository = createMockItemsRepository()
 

@@ -349,6 +349,32 @@ describe('supabase items repository', () => {
     expect(api.rows).toHaveLength(0)
   })
 
+  it('ripristina una riga modificata o eliminata', async () => {
+    const { api, repository } = createFakeApi()
+    const item = await repository.add({
+      name: 'Pane',
+      category: 'Freschi',
+      quantity: '2 confezioni',
+    })
+
+    await repository.update(item.id, { name: 'Pane integrale', quantity: '3 confezioni' })
+    await repository.restoreItem(item)
+
+    expect(
+      (await repository.list('active')).find((candidate) => candidate.id === item.id),
+    ).toMatchObject({
+      name: 'Pane',
+      quantity: '2 confezioni',
+    })
+
+    await repository.remove(item.id)
+    const restored = await repository.restoreItem(item)
+
+    expect(restored.id).toBe(item.id)
+    expect(api.rows).toHaveLength(1)
+    expect(api.rows[0]?.name).toBe('Pane')
+  })
+
   it('mappa i permessi negati in un messaggio chiaro', async () => {
     const { api, repository } = createFakeApi()
     api.failNext = { code: '42501', status: 403 }

@@ -207,6 +207,71 @@ select {
   display: none;
 }
 
+.toast {
+  position: fixed;
+  bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: max-content;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.5rem 0.55rem 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 8px 24px rgb(20 35 27 / 18%);
+  font-size: 0.82rem;
+  font-weight: 650;
+  transform: translateX(-50%);
+  animation: toast-in 160ms ease-out;
+}
+
+.toast__message {
+  min-width: 0;
+}
+
+.toast__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.toast__close:hover {
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+}
+
+.toast__close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.45rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
 .app__footer {
   display: flex;
   flex-wrap: wrap;

@@ -225,6 +225,16 @@ export function createMockItemsRepository(): ItemsRepository {
       persist()
     },
 
+    async restoreItem(item) {
+      await delay()
+      const restored = { ...item }
+      items = items.some((candidate) => candidate.id === restored.id)
+        ? items.map((candidate) => (candidate.id === restored.id ? restored : candidate))
+        : [...items, restored]
+      persist()
+      return { ...restored }
+    },
+
     async suggestions() {
       await delay(30)
       const unique = new Set<string>()
