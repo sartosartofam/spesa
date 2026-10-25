@@ -14,6 +14,7 @@
   --urgent-surface: #fff4e5;
   --danger: #a3231b;
   --glow: rgb(31 122 77 / 16%);
+  --cursor-glow: rgb(31 122 77 / 10%);
 
   --radius: 14px;
   --radius-sm: 9px;
@@ -45,6 +46,7 @@
     --urgent-surface: #2c1f14;
     --danger: #ff9a91;
     --glow: rgb(123 217 167 / 14%);
+    --cursor-glow: rgb(123 217 167 / 8%);
     --shadow: none;
   }
 }
@@ -1571,7 +1573,11 @@ code {
   z-index: 0;
   inset: 0;
   background:
-    radial-gradient(circle 24rem at var(--glow-x) var(--glow-y), var(--glow), transparent 70%),
+    radial-gradient(
+      circle 20rem at var(--glow-x) var(--glow-y),
+      var(--cursor-glow),
+      transparent 70%
+    ),
     radial-gradient(circle 42rem at 82% 18%, rgb(31 122 77 / 8%), transparent 72%);
   -webkit-mask-image:
     linear-gradient(to right, transparent, #000 10%, #000 90%, transparent),
@@ -1719,7 +1725,7 @@ code {
 
 .landing-glow-toggle[aria-pressed="true"] .landing-glow-toggle__dot {
   background: var(--brand);
-  box-shadow: 0 0 0 4px var(--glow);
+  box-shadow: 0 0 0 4px var(--cursor-glow);
 }
 
 @keyframes landing-nudge {
@@ -2679,7 +2685,8 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-hero::before {
+  .landing-hero::before,
+  .not-found__glow {
     display: none;
   }
 
@@ -2776,7 +2783,44 @@ code {
   padding: 1rem;
 }
 
+.not-found-shell {
+  --glow-x: 50%;
+  --glow-y: 50%;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.not-found__glow {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle 20rem at var(--glow-x) var(--glow-y),
+      var(--cursor-glow),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 34rem at 78% 16%,
+      color-mix(in srgb, var(--brand) 7%, transparent),
+      transparent 72%
+    );
+  -webkit-mask-image: radial-gradient(ellipse at 50% 42%, #000 20%, transparent 78%);
+  mask-image: radial-gradient(ellipse at 50% 42%, #000 20%, transparent 78%);
+  opacity: 1;
+  transition: opacity 240ms ease;
+  pointer-events: none;
+}
+
+.not-found-shell[data-glow="off"] .not-found__glow {
+  opacity: 0;
+}
+
 .not-found {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex: 1;
   flex-direction: column;
