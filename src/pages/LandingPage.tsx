@@ -4,6 +4,7 @@ import { LandingGlass } from '../components/landing/LandingGlass'
 import { LandingMockup } from '../components/landing/LandingMockup'
 import { PublicFooter } from '../components/PublicFooter'
 import { PublicHeader } from '../components/PublicHeader'
+import { useLandingGlow } from '../hooks/useLandingGlow'
 import { readLandingGlow, writeLandingGlow } from '../lib/landing-glow'
 import { navigate } from '../lib/routes'
 
@@ -21,22 +22,7 @@ export function LandingPage() {
   const heroRef = useRef<HTMLElement>(null)
   const [glowEnabled, setGlowEnabled] = useState(() => readLandingGlow())
 
-  function handlePointerMove(event: PointerEvent) {
-    const hero = heroRef.current
-    if (!hero || !glowEnabled) return
-
-    const rect = hero.getBoundingClientRect()
-    hero.style.setProperty('--glow-x', `${event.clientX - rect.left}px`)
-    hero.style.setProperty('--glow-y', `${event.clientY - rect.top}px`)
-  }
-
-  function handlePointerLeave() {
-    const hero = heroRef.current
-    if (!hero || !glowEnabled) return
-
-    hero.style.setProperty('--glow-x', '50%')
-    hero.style.setProperty('--glow-y', '40%')
-  }
+  useLandingGlow(heroRef, glowEnabled)
 
   function toggleGlow() {
     const next = !glowEnabled
@@ -54,8 +40,6 @@ export function LandingPage() {
           aria-labelledby="landing-title"
           ref={heroRef}
           data-glow={glowEnabled ? 'on' : 'off'}
-          onPointerMove={handlePointerMove}
-          onPointerLeave={handlePointerLeave}
         >
           <div class="landing-hero__grid" aria-hidden="true" />
           <div class="landing-hero__inner">

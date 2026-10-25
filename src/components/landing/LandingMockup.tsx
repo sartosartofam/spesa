@@ -25,7 +25,6 @@ export function LandingMockup({ kind }: LandingMockupProps) {
           <div class="landing-mockup__body">
             <div class="landing-mockup__input">
               <span>Aggiungi un articolo</span>
-              <kbd>Invio</kbd>
             </div>
             <div class="landing-mockup__chips">
               <span class="is-active">Dispensa</span>

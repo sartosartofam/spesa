@@ -22,13 +22,45 @@ test('la landing pubblica è indicizzabile e robots.txt è permissivo', async ({
   const nextSectionBox = await page.locator('#come-funziona').boundingBox()
   expect(nextSectionBox?.y).toBeGreaterThan(viewport?.height ?? 0)
 
+  async function glowPosition() {
+    return hero.evaluate((element) => ({
+      x: Number.parseFloat(element.style.getPropertyValue('--glow-x')),
+      y: Number.parseFloat(element.style.getPropertyValue('--glow-y')),
+      width: element.clientWidth,
+      height: element.clientHeight,
+    }))
+  }
+
+  await expect
+    .poll(async () => {
+      const glow = await glowPosition()
+      return Math.abs(glow.x - glow.width / 2) < 2 && Math.abs(glow.y - glow.height / 2) < 2
+    })
+    .toBe(true)
+
   await page.mouse.move(200, 200)
-  expect(await hero.evaluate((element) => element.style.getPropertyValue('--glow-x'))).toMatch(
-    /px$/,
-  )
-  expect(await hero.evaluate((element) => element.style.getPropertyValue('--glow-y'))).toMatch(
-    /px$/,
-  )
+  await expect
+    .poll(
+      async () => {
+        const glow = await glowPosition()
+        return Math.abs(glow.x - 200) < 12 && Math.abs(glow.y - 200) < 12
+      },
+      { timeout: 4_000 },
+    )
+    .toBe(true)
+
+  await hero.dispatchEvent('pointerleave')
+  await expect
+    .poll(
+      async () => {
+        const glow = await glowPosition()
+        return Math.abs(glow.x - glow.width / 2) < 12 && Math.abs(glow.y - glow.height / 2) < 15
+      },
+      { timeout: 5_000 },
+    )
+    .toBe(true)
+
+  await expect(page.getByText('Invio')).toHaveCount(0)
 
   const robots = await request.get('/robots.txt')
   expect(robots.ok()).toBe(true)
@@ -80,6 +112,22 @@ test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async (
     'href',
     'https://github.com/sartosartofam/spesa',
   )
+})
+
+test('la pagina 404 mostra il codice e riporta alla home', async ({ page }) => {
+  await page.goto('/questa-pagina-non-esiste')
+
+  await expect(page).toHaveTitle(/Pagina non trovata/i)
+  await expect(page.locator('.not-found__code')).toHaveText('404')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Questa pagina non esiste.' }),
+  ).toBeVisible()
+
+  await page.getByRole('link', { name: 'Torna alla pagina iniziale' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(
+    page.getByRole('heading', { level: 1, name: /lista della spesa di tutta la famiglia/i }),
+  ).toBeVisible()
 })
 
 test('login e area privata sono noindex, l’area privata richiede accesso', async ({ page }) => {

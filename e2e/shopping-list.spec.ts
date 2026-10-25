@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
 
 test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
+  await expect(page.getByText('Invio')).toHaveCount(0)
 
   await page.getByLabel('Nuovo articolo').fill('Test e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
@@ -52,7 +53,7 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   await expect(banner).toBeVisible()
 })
 
-test('filtra per più categorie contemporaneamente', async ({ page }) => {
+test('le chip in alto filtrano una sola categoria', async ({ page }) => {
   await page.getByLabel('Nuovo articolo').fill('Casa e2e')
   await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
   let dialog = page.getByRole('dialog')
@@ -70,12 +71,67 @@ test('filtra per più categorie contemporaneamente', async ({ page }) => {
 
   const mainList = page.getByRole('main')
   const chips = mainList.getByRole('group', { name: 'Filtra per categoria' })
-  await chips.getByRole('button', { name: /^Casa/ }).click()
-  await chips.getByRole('button', { name: /^Dispensa/ }).click()
+  const casa = chips.getByRole('button', { name: /^Casa/ })
+  const dispensa = chips.getByRole('button', { name: /^Dispensa/ })
+
+  await casa.click()
+  await expect(casa).toHaveAttribute('aria-pressed', 'true')
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toBeVisible()
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Dispensa e2e' })).toHaveCount(0)
+
+  await dispensa.click()
+  await expect(dispensa).toHaveAttribute('aria-pressed', 'true')
+  await expect(casa).toHaveAttribute('aria-pressed', 'false')
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Dispensa e2e' })).toBeVisible()
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toHaveCount(0)
+
+  await dispensa.click()
+  await expect(chips.getByRole('button', { name: 'Tutte' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toBeVisible()
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Dispensa e2e' })).toBeVisible()
+})
+
+test('la sidebar filtra più categorie insieme', async ({ page }) => {
+  await page.getByLabel('Nuovo articolo').fill('Casa e2e')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Categoria').selectOption('Casa')
+  await dialog.getByRole('button', { name: 'Salva' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByLabel('Nuovo articolo').fill('Dispensa e2e')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Categoria').selectOption('Dispensa')
+  await dialog.getByRole('button', { name: 'Salva' }).click()
+  await expect(dialog).toHaveCount(0)
+
+  const mainList = page.getByRole('main')
+  const sidebar = page.getByRole('complementary', { name: 'Riepilogo e controlli' })
+  const chips = mainList.getByRole('group', { name: 'Filtra per categoria' })
+
+  await sidebar.getByRole('checkbox', { name: /^Casa/ }).check()
+  await sidebar.getByRole('checkbox', { name: /^Dispensa/ }).check()
 
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Dispensa e2e' })).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+  await expect(chips.getByRole('button', { name: 'Tutte' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  await expect(chips.getByRole('button', { name: /^Casa/ })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  await expect(chips.getByRole('button', { name: /^Dispensa/ })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+
+  await sidebar.getByRole('button', { name: 'Azzera filtri' }).click()
+  await expect(chips.getByRole('button', { name: 'Tutte' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toBeVisible()
 })
 
 test('l’aggiunta rapida usa la categoria predefinita', async ({ page }) => {

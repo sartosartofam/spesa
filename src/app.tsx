@@ -172,6 +172,7 @@ export function App({
   }, [view, list.active, list.history, selectedCategories, categoryOrder])
 
   const hasFilters = query.trim().length > 0 || selectedCategories.length > 0 || urgentOnly
+  const hasSidebarFilters = selectedCategories.length > 0 || urgentOnly
 
   function changeView(next: ListView) {
     setView(next)
@@ -184,6 +185,17 @@ export function App({
         ? current.filter((candidate) => candidate !== category)
         : [...current, category],
     )
+  }
+
+  function selectCategory(category: string) {
+    setSelectedCategories((current) =>
+      current.length === 1 && current[0] === category ? [] : [category],
+    )
+  }
+
+  function clearFilters() {
+    setSelectedCategories([])
+    setUrgentOnly(false)
   }
 
   async function handleQuickAdd(name: string) {
@@ -302,13 +314,17 @@ export function App({
               {filterCategories.map(([category, count]) => (
                 <button
                   class={`category-chip ${
-                    selectedCategories.includes(category) ? 'category-chip--active' : ''
+                    selectedCategories.length === 1 && selectedCategories[0] === category
+                      ? 'category-chip--active'
+                      : ''
                   }`}
                   type="button"
                   key={category}
                   aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
-                  aria-pressed={selectedCategories.includes(category)}
-                  onClick={() => toggleCategory(category)}
+                  aria-pressed={
+                    selectedCategories.length === 1 && selectedCategories[0] === category
+                  }
+                  onClick={() => selectCategory(category)}
                 >
                   {category}
                   <span class="category-chip__count" aria-hidden="true">
@@ -469,6 +485,58 @@ export function App({
                 <dd>{list.counts.history}</dd>
               </div>
             </dl>
+          </section>
+
+          <section class="panel" aria-labelledby="sidebar-filters-title">
+            <div class="panel__head">
+              <h2 id="sidebar-filters-title" class="panel__title">
+                Filtri
+              </h2>
+              {hasSidebarFilters && (
+                <button class="panel__action" type="button" onClick={clearFilters}>
+                  Azzera filtri
+                </button>
+              )}
+            </div>
+
+            {view === 'active' && (
+              <label
+                class={`filter-option filter-option--urgent ${
+                  urgentOnly ? 'filter-option--active' : ''
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={urgentOnly}
+                  onChange={(event) => setUrgentOnly(event.currentTarget.checked)}
+                />
+                <span class="filter-option__label">Solo urgenti</span>
+                <span class="filter-option__count">{list.counts.urgent}</span>
+              </label>
+            )}
+
+            {filterCategories.length > 0 && (
+              <fieldset class="filter-options">
+                <legend class="sr-only">Categorie</legend>
+                {filterCategories.map(([category, count]) => {
+                  const active = selectedCategories.includes(category)
+                  return (
+                    <label
+                      class={`filter-option ${active ? 'filter-option--active' : ''}`}
+                      key={category}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => toggleCategory(category)}
+                      />
+                      <span class="filter-option__label">{category}</span>
+                      <span class="filter-option__count">{count}</span>
+                    </label>
+                  )
+                })}
+              </fieldset>
+            )}
           </section>
 
           <section class="panel">

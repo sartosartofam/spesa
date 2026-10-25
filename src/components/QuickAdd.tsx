@@ -45,9 +45,6 @@ export function QuickAdd({
             enterKeyHint="done"
             onInput={(event) => setName(event.currentTarget.value)}
           />
-          <span class="quick-add__kbd" aria-hidden="true">
-            Invio
-          </span>
         </div>
         <datalist id="item-suggestions">
           {suggestions.map((suggestion) => (
