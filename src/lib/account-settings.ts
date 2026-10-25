@@ -2,7 +2,7 @@ import { categoriesFromCustom, normalizeCustomCategories, readCustomCategories }
 import { isLiveData } from './data'
 import type { Json } from './database.types'
 import type { OrderPreset } from './order-presets'
-import { parseSettings, readSettings, type Settings } from './settings'
+import { parseSettings, readSettings, type Settings, type ThemeId } from './settings'
 import { getSupabase, type SpesaSupabaseClient } from './supabase'
 
 /**
@@ -24,6 +24,7 @@ interface AccountSettingsPayload {
   presets: OrderPreset[]
   customCategories: string[]
   landingGlow: boolean
+  theme: ThemeId
 }
 
 export interface AccountSettings {
@@ -76,6 +77,7 @@ export function toAccountSettingsPayload(
     presets: normalized.presets,
     customCategories: custom,
     landingGlow: normalized.landingGlow,
+    theme: normalized.theme,
   }
 }
 
