@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { isPrivateRoute, routeFromPath } from './routes'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { isPrivateRoute, navigate, routeFromPath } from './routes'
 
 describe('routeFromPath', () => {
   it('riconosce la landing pubblica', () => {
@@ -43,5 +43,30 @@ describe('isPrivateRoute', () => {
     expect(isPrivateRoute('register')).toBe(false)
     expect(isPrivateRoute('privacy')).toBe(false)
     expect(isPrivateRoute('not-found')).toBe(false)
+  })
+})
+
+describe('navigate', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('riporta in cima dopo un cambio di route', () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    window.history.replaceState(null, '', '/')
+
+    navigate('/privacy')
+
+    expect(window.location.pathname).toBe('/privacy')
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' })
+  })
+
+  it('riporta in cima anche quando il path è già quello corrente', () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    window.history.replaceState(null, '', '/privacy')
+
+    navigate('/privacy')
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' })
   })
 })

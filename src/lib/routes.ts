@@ -26,7 +26,10 @@ export function isPrivateRoute(route: AppRoute): boolean {
 /** Naviga lato client e notifica gli hook che ascoltano `popstate`. */
 export function navigate(path: string, options: { replace?: boolean } = {}): void {
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
-  if (current === path) return
+  if (current === path) {
+    scrollToTop()
+    return
+  }
 
   if (options.replace) {
     window.history.replaceState(null, '', path)
@@ -34,4 +37,13 @@ export function navigate(path: string, options: { replace?: boolean } = {}): voi
     window.history.pushState(null, '', path)
   }
   window.dispatchEvent(new PopStateEvent('popstate'))
+  scrollToTop()
+}
+
+/**
+ * Le route sono client-side: senza reset l'utente resterebbe alla stessa
+ * altezza di scroll nella nuova pagina (per esempio arrivando dal footer).
+ */
+function scrollToTop(): void {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
 }
