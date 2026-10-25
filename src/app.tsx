@@ -275,242 +275,308 @@ export function App({
 
   return (
     <div class="app">
-      <AppHeader
-        counts={list.counts}
-        isMockData={!isLiveData}
-        userEmail={userEmail}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onLogout={onLogout}
-      />
+      <div class="app-window">
+        <AppHeader
+          counts={list.counts}
+          isMockData={!isLiveData}
+          userEmail={userEmail}
+          familyName={familyDisplayName(familyName)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onLogout={onLogout}
+        />
 
-      <div class="layout">
-        <main class="app__main">
-          <QuickAdd
-            suggestions={list.suggestions}
-            quickMode={settings.quickAdd}
-            defaultCategory={settings.defaultCategory}
-            onSubmit={handleQuickAdd}
-            onDetails={handleQuickAddDetails}
-          />
-
-          <ListTabs view={view} counts={list.counts} onChange={changeView} />
-
-          <div class="toolbar">
-            <label class="sr-only" for="search-items">
-              Cerca articoli
-            </label>
-            <input
-              id="search-items"
-              class="search"
-              type="search"
-              placeholder="Cerca per nome o categoria"
-              value={query}
-              onInput={(event) => setQuery(event.currentTarget.value)}
+        <div class="layout">
+          <main class="app__main">
+            <QuickAdd
+              suggestions={list.suggestions}
+              quickMode={settings.quickAdd}
+              defaultCategory={settings.defaultCategory}
+              onSubmit={handleQuickAdd}
+              onDetails={handleQuickAddDetails}
             />
-            <button
-              class="filter-button"
-              type="button"
-              aria-haspopup="dialog"
-              onClick={() => setFiltersOpen(true)}
-            >
-              <FilterIcon />
-              <span>Filtri</span>
-              {activeFilterCount > 0 && (
-                <span class="filter-button__count">{activeFilterCount}</span>
-              )}
-            </button>
-          </div>
 
-          {activeFilterCount > 0 && (
-            <div class="active-filters">
-              {urgentOnly && (
+            {filterCategories.length > 0 && (
+              <fieldset class="category-chips">
+                <legend class="sr-only">Filtra per categoria</legend>
                 <button
-                  class="filter-chip filter-chip--active filter-chip--urgent"
+                  class={`category-chip ${
+                    selectedCategories.length === 0 ? 'category-chip--active' : ''
+                  }`}
                   type="button"
-                  aria-label="Togli il filtro Solo urgenti"
-                  onClick={() => setUrgentOnly(false)}
+                  aria-pressed={selectedCategories.length === 0}
+                  onClick={() => setSelectedCategories([])}
                 >
-                  Solo urgenti
-                  <CloseIcon />
+                  Tutte
                 </button>
-              )}
-              {selectedCategories.map((category) => (
-                <button
-                  class="filter-chip filter-chip--active"
-                  type="button"
-                  key={category}
-                  aria-label={`Togli il filtro ${category}`}
-                  onClick={() => toggleCategory(category)}
-                >
-                  {category}
-                  <CloseIcon />
-                </button>
-              ))}
-              <button class="link-button" type="button" onClick={clearFilters}>
-                Azzera
+                {filterCategories.map(([category, count]) => (
+                  <button
+                    class={`category-chip ${
+                      selectedCategories.includes(category) ? 'category-chip--active' : ''
+                    }`}
+                    type="button"
+                    key={category}
+                    aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
+                    aria-pressed={selectedCategories.includes(category)}
+                    onClick={() => toggleCategory(category)}
+                  >
+                    {category}
+                    <span class="category-chip__count" aria-hidden="true">
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </fieldset>
+            )}
+
+            <ListTabs view={view} counts={list.counts} onChange={changeView} />
+
+            <div class="toolbar">
+              <label class="sr-only" for="search-items">
+                Cerca articoli
+              </label>
+              <input
+                id="search-items"
+                class="search"
+                type="search"
+                placeholder="Cerca per nome o categoria"
+                value={query}
+                onInput={(event) => setQuery(event.currentTarget.value)}
+              />
+              <button
+                class="filter-button"
+                type="button"
+                aria-label={
+                  activeFilterCount > 0 ? `Filtri, ${activeFilterCount} attivi` : 'Filtri'
+                }
+                aria-haspopup="dialog"
+                onClick={() => setFiltersOpen(true)}
+              >
+                <FilterIcon />
+                <span class="filter-button__label">Filtri</span>
+                {activeFilterCount > 0 && (
+                  <span class="filter-button__count" aria-hidden="true">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
             </div>
-          )}
 
-          <div class="app__feedback" role="status" aria-live="polite">
-            {authError && (
-              <p class="alert" role="alert">
-                {authError}
-              </p>
+            {activeFilterCount > 0 && (
+              <div class="active-filters">
+                {urgentOnly && (
+                  <button
+                    class="filter-chip filter-chip--active filter-chip--urgent"
+                    type="button"
+                    aria-label="Togli il filtro Solo urgenti"
+                    onClick={() => setUrgentOnly(false)}
+                  >
+                    Solo urgenti
+                    <CloseIcon />
+                  </button>
+                )}
+                {selectedCategories.map((category) => (
+                  <button
+                    class="filter-chip filter-chip--active"
+                    type="button"
+                    key={category}
+                    aria-label={`Togli il filtro ${category}`}
+                    onClick={() => toggleCategory(category)}
+                  >
+                    {category}
+                    <CloseIcon />
+                  </button>
+                ))}
+                <button class="link-button" type="button" onClick={clearFilters}>
+                  Azzera
+                </button>
+              </div>
             )}
-            {list.error && <p class="alert">{list.error}</p>}
-            {settingsSyncError && (
-              <p class="alert" role="status">
-                {settingsSyncError}
-              </p>
-            )}
-            {list.loading && <p class="hint">Carico la lista…</p>}
-          </div>
 
-          {!list.loading &&
-            (view === 'active' ? (
-              list.counts.active === 0 ? (
+            <div class="app__feedback" role="status" aria-live="polite">
+              {authError && (
+                <p class="alert" role="alert">
+                  {authError}
+                </p>
+              )}
+              {list.error && <p class="alert">{list.error}</p>}
+              {settingsSyncError && (
+                <p class="alert" role="status">
+                  {settingsSyncError}
+                </p>
+              )}
+              {list.loading && <p class="hint">Carico la lista…</p>}
+            </div>
+
+            {!list.loading && view === 'active' && !urgentOnly && urgentItems.length > 0 && (
+              <div class="urgent-banner">
+                <span class="urgent-banner__dot" aria-hidden="true" />
+                <div class="urgent-banner__text">
+                  <strong>
+                    {urgentItems[0]?.name}
+                    {urgentItems.length > 1 ? ` + ${urgentItems.length - 1}` : ''}
+                  </strong>
+                  <small>
+                    {urgentItems.length === 1
+                      ? 'Segnalato urgente'
+                      : `${urgentItems.length} articoli urgenti`}
+                  </small>
+                </div>
+                <button
+                  class="urgent-banner__action"
+                  type="button"
+                  aria-label="Mostra urgenti"
+                  onClick={() => setUrgentOnly(true)}
+                >
+                  Mostra
+                </button>
+              </div>
+            )}
+
+            {!list.loading &&
+              (view === 'active' ? (
+                list.counts.active === 0 ? (
+                  <EmptyState
+                    title="Lista vuota"
+                    hint="Aggiungi il primo articolo: ti chiediamo categoria, quantità e se è urgente."
+                  />
+                ) : activeItems.length === 0 ? (
+                  <EmptyState
+                    title="Nessun risultato"
+                    hint={
+                      hasFilters
+                        ? 'Prova a togliere i filtri o a cambiare la ricerca.'
+                        : 'Non ci sono articoli da prendere.'
+                    }
+                  />
+                ) : urgentOnly ? (
+                  <CategorySection
+                    title="Urgenti"
+                    items={urgentItems}
+                    variant="active"
+                    urgent
+                    showCategory
+                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                    onRestore={(item) => list.restore(item.id)}
+                    onEdit={(item) => setDialog({ mode: 'edit', item })}
+                  />
+                ) : (
+                  activeGroups.map(([category, items]) => (
+                    <CategorySection
+                      key={category}
+                      title={category}
+                      items={items}
+                      variant="active"
+                      onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                      onRestore={(item) => list.restore(item.id)}
+                      onEdit={(item) => setDialog({ mode: 'edit', item })}
+                    />
+                  ))
+                )
+              ) : list.counts.history === 0 ? (
                 <EmptyState
-                  title="Lista vuota"
-                  hint="Aggiungi il primo articolo: ti chiediamo categoria, quantità e se è urgente."
+                  title="Storico vuoto"
+                  hint="Gli articoli presi finiscono qui: puoi rimetterli in lista quando serve."
                 />
-              ) : activeItems.length === 0 ? (
+              ) : historyItems.length === 0 ? (
                 <EmptyState
                   title="Nessun risultato"
-                  hint={
-                    hasFilters
-                      ? 'Prova a togliere i filtri o a cambiare la ricerca.'
-                      : 'Non ci sono articoli da prendere.'
-                  }
+                  hint="Prova a togliere i filtri o a cambiare la ricerca."
                 />
-              ) : urgentOnly ? (
+              ) : (
                 <CategorySection
-                  title="Urgenti"
-                  items={urgentItems}
-                  variant="active"
-                  urgent
+                  title="Presi di recente"
+                  items={historyItems}
+                  variant="history"
                   showCategory
                   onMarkBought={(item) => list.setStatus(item.id, 'bought')}
                   onRestore={(item) => list.restore(item.id)}
                   onEdit={(item) => setDialog({ mode: 'edit', item })}
                 />
-              ) : (
-                activeGroups.map(([category, items]) => (
-                  <CategorySection
-                    key={category}
-                    title={category}
-                    items={items}
-                    variant="active"
-                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                    onRestore={(item) => list.restore(item.id)}
-                    onEdit={(item) => setDialog({ mode: 'edit', item })}
+              ))}
+          </main>
+
+          <aside class="sidebar" aria-label="Riepilogo e controlli">
+            <section class="panel">
+              <h2 class="panel__title">Riepilogo</h2>
+              <dl class="stats">
+                <div>
+                  <dt>Da prendere</dt>
+                  <dd>{list.counts.active}</dd>
+                </div>
+                <div class="stats__urgent">
+                  <dt>Urgenti</dt>
+                  <dd>{list.counts.urgent}</dd>
+                </div>
+                <div>
+                  <dt>Storico</dt>
+                  <dd>{list.counts.history}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="panel">
+              <h2 class="panel__title">Filtri</h2>
+              {view === 'active' && (
+                <label class="filter-option filter-option--urgent">
+                  <input
+                    type="checkbox"
+                    checked={urgentOnly}
+                    onChange={(event) => setUrgentOnly(event.currentTarget.checked)}
                   />
-                ))
-              )
-            ) : list.counts.history === 0 ? (
-              <EmptyState
-                title="Storico vuoto"
-                hint="Gli articoli presi finiscono qui: puoi rimetterli in lista quando serve."
-              />
-            ) : historyItems.length === 0 ? (
-              <EmptyState
-                title="Nessun risultato"
-                hint="Prova a togliere i filtri o a cambiare la ricerca."
-              />
-            ) : (
-              <CategorySection
-                title="Presi di recente"
-                items={historyItems}
-                variant="history"
-                showCategory
-                onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                onRestore={(item) => list.restore(item.id)}
-                onEdit={(item) => setDialog({ mode: 'edit', item })}
-              />
-            ))}
-        </main>
+                  <span>Solo urgenti</span>
+                  <span class="filter-option__count">{list.counts.urgent}</span>
+                </label>
+              )}
+              <p class="field__label">Categorie</p>
+              {filterCategories.length === 0 ? (
+                <p class="hint">Nessuna categoria disponibile.</p>
+              ) : (
+                <ul class="filter-options">
+                  {filterCategories.map(([category, count]) => (
+                    <li key={category}>
+                      <label class="filter-option">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => toggleCategory(category)}
+                        />
+                        <span>{category}</span>
+                        <span class="filter-option__count">{count}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {activeFilterCount > 0 && (
+                <button class="link-button" type="button" onClick={clearFilters}>
+                  Azzera filtri
+                </button>
+              )}
+            </section>
 
-        <aside class="sidebar" aria-label="Riepilogo e controlli">
-          <section class="panel">
-            <h2 class="panel__title">Riepilogo</h2>
-            <dl class="stats">
-              <div>
-                <dt>Da prendere</dt>
-                <dd>{list.counts.active}</dd>
-              </div>
-              <div class="stats__urgent">
-                <dt>Urgenti</dt>
-                <dd>{list.counts.urgent}</dd>
-              </div>
-              <div>
-                <dt>Storico</dt>
-                <dd>{list.counts.history}</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section class="panel">
-            <h2 class="panel__title">Filtri</h2>
-            {view === 'active' && (
-              <label class="filter-option filter-option--urgent">
-                <input
-                  type="checkbox"
-                  checked={urgentOnly}
-                  onChange={(event) => setUrgentOnly(event.currentTarget.checked)}
-                />
-                <span>Solo urgenti</span>
-                <span class="filter-option__count">{list.counts.urgent}</span>
-              </label>
-            )}
-            <p class="field__label">Categorie</p>
-            {filterCategories.length === 0 ? (
-              <p class="hint">Nessuna categoria disponibile.</p>
-            ) : (
-              <ul class="filter-options">
-                {filterCategories.map(([category, count]) => (
-                  <li key={category}>
-                    <label class="filter-option">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => toggleCategory(category)}
-                      />
-                      <span>{category}</span>
-                      <span class="filter-option__count">{count}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {activeFilterCount > 0 && (
-              <button class="link-button" type="button" onClick={clearFilters}>
-                Azzera filtri
-              </button>
-            )}
-          </section>
-
-          <section class="panel">
-            <h2 class="panel__title">Urgenti</h2>
-            {list.urgent.length === 0 ? (
-              <p class="hint">Nessuna urgenza segnalata.</p>
-            ) : (
-              <ul class="urgent-list">
-                {list.urgent.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => setDialog({ mode: 'edit', item })}
-                      aria-label={`Modifica ${item.name}`}
-                    >
-                      <span class="urgent-list__name">{item.name}</span>
-                      {item.quantity && <span class="urgent-list__qty">{item.quantity}</span>}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </aside>
+            <section class="panel">
+              <h2 class="panel__title">Urgenti</h2>
+              {list.urgent.length === 0 ? (
+                <p class="hint">Nessuna urgenza segnalata.</p>
+              ) : (
+                <ul class="urgent-list">
+                  {list.urgent.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => setDialog({ mode: 'edit', item })}
+                        aria-label={`Modifica ${item.name}`}
+                      >
+                        <span class="urgent-list__name">{item.name}</span>
+                        {item.quantity && <span class="urgent-list__qty">{item.quantity}</span>}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </aside>
+        </div>
       </div>
 
       <footer class="app__footer">

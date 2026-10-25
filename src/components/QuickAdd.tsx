@@ -29,21 +29,26 @@ export function QuickAdd({
   return (
     <form class="quick-add" onSubmit={submit} autocomplete="off">
       <div class="quick-add__inner">
-        <label class="sr-only" for="quick-add-name">
-          Nuovo articolo
-        </label>
-        <input
-          id="quick-add-name"
-          class="quick-add__input"
-          type="text"
-          name="name"
-          placeholder="Che cosa manca?"
-          list="item-suggestions"
-          value={name}
-          maxLength={80}
-          enterKeyHint="done"
-          onInput={(event) => setName(event.currentTarget.value)}
-        />
+        <div class="quick-add__field">
+          <label class="sr-only" for="quick-add-name">
+            Nuovo articolo
+          </label>
+          <input
+            id="quick-add-name"
+            class="quick-add__input"
+            type="text"
+            name="name"
+            placeholder="Aggiungi articolo"
+            list="item-suggestions"
+            value={name}
+            maxLength={80}
+            enterKeyHint="done"
+            onInput={(event) => setName(event.currentTarget.value)}
+          />
+          <span class="quick-add__kbd" aria-hidden="true">
+            Invio
+          </span>
+        </div>
         <datalist id="item-suggestions">
           {suggestions.map((suggestion) => (
             <option value={suggestion} key={suggestion} />
@@ -59,7 +64,8 @@ export function QuickAdd({
       </div>
       {quickMode && (
         <p class="quick-add__hint">
-          Aggiunta rapida in <strong>{defaultCategory}</strong> ·{' '}
+          Aggiunta rapida in <strong>{defaultCategory}</strong>
+          <span aria-hidden="true"> · </span>
           <button class="link-button" type="button" onClick={() => onDetails(trimmed)}>
             Dettagli
           </button>

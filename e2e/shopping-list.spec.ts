@@ -235,3 +235,38 @@ test('chiude il dialog cliccando fuori', async ({ page }) => {
 
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
+
+test('filtra con le chip categoria e usa l’avviso urgenze', async ({ page }) => {
+  const main = page.getByRole('main')
+  const chips = main.getByRole('group', { name: 'Filtra per categoria' })
+
+  await expect(chips.getByRole('button', { name: 'Tutte' })).toHaveAttribute('aria-pressed', 'true')
+
+  await chips.getByRole('button', { name: /^Casa/ }).click()
+  await expect(main.getByRole('listitem').filter({ hasText: 'Detersivo piatti' })).toBeVisible()
+  await expect(main.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+
+  await chips.getByRole('button', { name: 'Tutte' }).click()
+  await expect(main.getByRole('listitem').filter({ hasText: 'Latte' })).toBeVisible()
+
+  const banner = page.locator('.urgent-banner')
+  await expect(banner).toContainText('Detersivo piatti')
+  await banner.getByRole('button', { name: 'Mostra urgenti' }).click()
+
+  await expect(page.locator('.urgent-banner')).toHaveCount(0)
+  await expect(main.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+})
+
+test('a 360 px la schermata resta usabile senza overflow orizzontale', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.reload()
+
+  await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
+  await expect(page.getByLabel('Nuovo articolo')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Aggiungi', exact: true })).toBeVisible()
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
+})
