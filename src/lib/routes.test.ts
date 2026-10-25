@@ -17,6 +17,11 @@ describe('routeFromPath', () => {
     expect(routeFromPath('/register/')).toBe('register')
   })
 
+  it('riconosce la pagina privacy', () => {
+    expect(routeFromPath('/privacy')).toBe('privacy')
+    expect(routeFromPath('/privacy/')).toBe('privacy')
+  })
+
   it('tratta /app e i sottopercorsi come area privata', () => {
     expect(routeFromPath('/app')).toBe('app')
     expect(routeFromPath('/app/')).toBe('app')
@@ -36,6 +41,7 @@ describe('isPrivateRoute', () => {
     expect(isPrivateRoute('landing')).toBe(false)
     expect(isPrivateRoute('login')).toBe(false)
     expect(isPrivateRoute('register')).toBe(false)
+    expect(isPrivateRoute('privacy')).toBe(false)
     expect(isPrivateRoute('not-found')).toBe(false)
   })
 })

@@ -38,6 +38,49 @@ test('la landing pubblica è indicizzabile e robots.txt è permissivo', async ({
   expect(robotsText).not.toContain('Disallow')
 })
 
+test('la landing permette di spegnere il bagliore e ricorda la scelta', async ({ page }) => {
+  await page.goto('/')
+
+  const hero = page.locator('.landing__hero')
+  const toggle = page.getByRole('button', { name: 'Effetto cursore' })
+
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(hero).toHaveAttribute('data-glow', 'on')
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await expect(hero).toHaveAttribute('data-glow', 'off')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('spesa.landing.glow.v1')))
+    .toBe('off')
+
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Effetto cursore' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  await expect(page.locator('.landing__hero')).toHaveAttribute('data-glow', 'off')
+})
+
+test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByRole('link', { name: 'Privacy' }).click()
+  await expect(page).toHaveURL(/\/privacy$/)
+  await expect(page).toHaveTitle(/Privacy/i)
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow')
+  await expect(page.getByRole('heading', { level: 1, name: 'Informativa privacy' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: /Quali dati trattiamo/i })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'ciao@spesa.example' }).first()).toHaveAttribute(
+    'href',
+    'mailto:ciao@spesa.example',
+  )
+  await expect(page.getByRole('link', { name: /Repository GitHub/ })).toHaveAttribute(
+    'href',
+    'https://github.com/sartosartofam/spesa',
+  )
+})
+
 test('login e area privata sono noindex, l’area privata richiede accesso', async ({ page }) => {
   await page.goto('/login')
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
@@ -161,7 +204,7 @@ test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {
   await expect(
     page.locator('link[href*="fonts.googleapis.com/css2?family=JetBrains+Mono"]'),
   ).toHaveCount(1)
-  const landingCredit = page.getByRole('link', { name: /Icone: Streamline/ })
+  const landingCredit = page.getByRole('link', { name: /Streamline Pixel/ })
   await expect(landingCredit).toHaveAttribute('href', 'https://streamlinehq.com')
   await expect(landingCredit).toHaveAttribute('target', '_blank')
 
@@ -174,7 +217,7 @@ test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {
   await mockAuth(page)
   await signInAsDemo(page)
 
-  await expect(page.getByRole('link', { name: /Icone: Streamline/ })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Streamline Pixel/ })).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   const settingsCredit = page.getByRole('dialog').getByRole('link', { name: /Streamline/ })

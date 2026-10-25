@@ -1,4 +1,4 @@
-export type AppRoute = 'landing' | 'login' | 'register' | 'app' | 'not-found'
+export type AppRoute = 'landing' | 'login' | 'register' | 'privacy' | 'app' | 'not-found'
 
 /**
  * Risolve il pathname nelle viste dell'app.
@@ -13,6 +13,7 @@ export function routeFromPath(pathname: string): AppRoute {
   if (path === '/' || path === '') return 'landing'
   if (path === '/login') return 'login'
   if (path === '/register') return 'register'
+  if (path === '/privacy') return 'privacy'
   if (path === '/app' || path.startsWith('/app/')) return 'app'
   return 'not-found'
 }

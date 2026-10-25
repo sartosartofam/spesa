@@ -1,5 +1,10 @@
-import { useRef } from 'preact/hooks'
-import { CheckIcon } from '../components/Icons'
+import { useRef, useState } from 'preact/hooks'
+import { CheckIcon, ChevronDownIcon } from '../components/Icons'
+import { LandingGlass } from '../components/landing/LandingGlass'
+import { LandingMockup } from '../components/landing/LandingMockup'
+import { PublicFooter } from '../components/PublicFooter'
+import { PublicHeader } from '../components/PublicHeader'
+import { readLandingGlow, writeLandingGlow } from '../lib/landing-glow'
 import { navigate } from '../lib/routes'
 
 function goToLogin(event: MouseEvent) {
@@ -14,10 +19,11 @@ function goToRegister(event: MouseEvent) {
 
 export function LandingPage() {
   const heroRef = useRef<HTMLElement>(null)
+  const [glowEnabled, setGlowEnabled] = useState(() => readLandingGlow())
 
   function handlePointerMove(event: PointerEvent) {
     const hero = heroRef.current
-    if (!hero) return
+    if (!hero || !glowEnabled) return
 
     const rect = hero.getBoundingClientRect()
     hero.style.setProperty('--glow-x', `${event.clientX - rect.left}px`)
@@ -26,52 +32,41 @@ export function LandingPage() {
 
   function handlePointerLeave() {
     const hero = heroRef.current
-    if (!hero) return
+    if (!hero || !glowEnabled) return
 
     hero.style.setProperty('--glow-x', '50%')
     hero.style.setProperty('--glow-y', '40%')
   }
 
+  function toggleGlow() {
+    const next = !glowEnabled
+    setGlowEnabled(next)
+    writeLandingGlow(next)
+  }
+
   return (
-    <div class="public-shell">
-      <header class="public-header">
-        <a
-          class="public-brand"
-          href="/"
-          onClick={(event) => {
-            event.preventDefault()
-            navigate('/')
-          }}
-        >
-          Spesa
-        </a>
-        <div class="public-header__actions">
-          <a class="button button--ghost" href="/login" onClick={goToLogin}>
-            Accedi
-          </a>
-          <a class="button button--primary" href="/register" onClick={goToRegister}>
-            Registrati
-          </a>
-        </div>
-      </header>
+    <div class="public-shell landing-shell">
+      <PublicHeader overlay />
 
       <main class="landing">
         <section
-          class="landing__hero"
+          class="landing__hero landing-hero"
           aria-labelledby="landing-title"
           ref={heroRef}
+          data-glow={glowEnabled ? 'on' : 'off'}
           onPointerMove={handlePointerMove}
           onPointerLeave={handlePointerLeave}
         >
-          <div class="landing__hero-inner">
+          <div class="landing-hero__grid" aria-hidden="true" />
+          <div class="landing-hero__inner">
             <p class="landing__eyebrow">Lista della spesa condivisa</p>
             <h1 id="landing-title">
-              La lista della spesa di tutta la famiglia, sempre aggiornata.
+              La lista della spesa di tutta la famiglia,{' '}
+              <span class="landing-hero__accent">sempre aggiornata.</span>
             </h1>
             <p class="landing__lead">
               Spesa è la webapp gratuita e senza pubblicità per organizzare la spesa di famiglia.
-              Aggiungi ciò che manca, segna le urgenze e ritrova lo storico degli acquisti in un
-              unico posto, condiviso tra i membri della famiglia.
+              Aggiungi ciò che manca, segna le urgenze e ritrova lo storico in un unico posto.
             </p>
             <div class="landing__actions">
               <a class="button button--primary" href="/register" onClick={goToRegister}>
@@ -80,86 +75,160 @@ export function LandingPage() {
               <a class="button button--ghost" href="/login" onClick={goToLogin}>
                 Accedi
               </a>
-              <a class="button button--ghost" href="#come-funziona">
-                Come funziona
+            </div>
+
+            <div class="landing-hero__meta">
+              <span>
+                <CheckIcon /> Gratis
+              </span>
+              <span>
+                <CheckIcon /> Senza pubblicità
+              </span>
+              <span>
+                <CheckIcon /> Anche da telefono
+              </span>
+            </div>
+
+            <div class="landing-hero__bottom">
+              <a class="landing-scroll" href="#come-funziona">
+                Scopri come funziona
+                <ChevronDownIcon />
               </a>
+              <button
+                class="landing-glow-toggle"
+                type="button"
+                aria-pressed={glowEnabled}
+                onClick={toggleGlow}
+              >
+                <span class="landing-glow-toggle__dot" aria-hidden="true" />
+                Effetto cursore
+              </button>
             </div>
           </div>
         </section>
 
-        <section class="landing__section" id="come-funziona" aria-labelledby="come-funziona-title">
-          <h2 id="come-funziona-title">Una lista sola, per tutta la famiglia</h2>
-          <ul class="landing__features">
-            <li class="landing__feature">
-              <CheckIcon />
-              <div>
-                <h3>Aggiungi in pochi secondi</h3>
-                <p>
-                  Scrivi il nome dell’articolo e, se serve, categoria, quantità e una nota. La lista
-                  resta ordinata e facile da leggere anche al supermercato.
-                </p>
-              </div>
-            </li>
-            <li class="landing__feature">
-              <CheckIcon />
-              <div>
-                <h3>Segnala quello che è finito</h3>
-                <p>
-                  Con un tocco un articolo diventa urgente e sale in evidenza. Così nessuno
-                  dimentica il latte o i pannolini.
-                </p>
-              </div>
-            </li>
-            <li class="landing__feature">
-              <CheckIcon />
-              <div>
-                <h3>Tutti vedono le stesse cose</h3>
-                <p>
-                  La lista è condivisa tra i membri della famiglia: chi è al supermercato e chi è a
-                  casa lavorano sulla stessa lista.
-                </p>
-              </div>
-            </li>
-            <li class="landing__feature">
-              <CheckIcon />
-              <div>
-                <h3>Lo storico non si perde</h3>
-                <p>
-                  Gli articoli presi finiscono nello storico e si possono rimettere in lista quando
-                  servono di nuovo.
-                </p>
-              </div>
-            </li>
-          </ul>
-        </section>
+        <div class="landing-content">
+          <section class="landing-section" id="come-funziona" aria-labelledby="come-funziona-title">
+            <header class="landing-section__head">
+              <p class="landing__eyebrow">Come funziona</p>
+              <h2 id="come-funziona-title">Una lista sola, per tutta la famiglia.</h2>
+              <p>
+                Chi è al supermercato e chi è a casa lavorano sulla stessa lista. Senza chat, senza
+                screenshot, senza dimenticanze.
+              </p>
+            </header>
 
-        <section class="landing__section landing__section--note" aria-labelledby="gratis-title">
-          <h2 id="gratis-title">Gratis e senza pubblicità</h2>
-          <p>
-            Spesa è pensata per le famiglie: ogni famiglia ha il suo spazio riservato e non ci sono
-            annunci pubblicitari. Crea il tuo account e inizia subito.
-          </p>
-          <a class="button button--primary" href="/register" onClick={goToRegister}>
-            Crea la tua famiglia
-          </a>
-        </section>
+            <div class="landing-rows">
+              <article class="landing-row">
+                <div class="landing-row__copy">
+                  <span class="landing-row__number">01</span>
+                  <h3>Aggiungi in pochi secondi</h3>
+                  <p>
+                    Scrivi il nome dell’articolo e, se serve, categoria, quantità e una nota. La
+                    lista resta ordinata e facile da leggere anche al supermercato.
+                  </p>
+                </div>
+                <div class="landing-row__visual">
+                  <LandingMockup kind="quick-add" />
+                </div>
+              </article>
+
+              <article class="landing-row landing-row--reverse">
+                <div class="landing-row__copy">
+                  <span class="landing-row__number">02</span>
+                  <h3>Segnala quello che è finito</h3>
+                  <p>
+                    Con un tocco un articolo diventa urgente e sale in evidenza. Così nessuno
+                    dimentica il latte o i pannolini.
+                  </p>
+                </div>
+                <div class="landing-row__visual">
+                  <LandingMockup kind="urgent" />
+                </div>
+              </article>
+
+              <article class="landing-row">
+                <div class="landing-row__copy">
+                  <span class="landing-row__number">03</span>
+                  <h3>Tutti vedono le stesse cose</h3>
+                  <p>
+                    La lista è condivisa tra i membri della famiglia: chi è al supermercato e chi è
+                    a casa lavorano sulla stessa lista.
+                  </p>
+                </div>
+                <div class="landing-row__visual">
+                  <LandingMockup kind="family" />
+                </div>
+              </article>
+
+              <article class="landing-row landing-row--reverse">
+                <div class="landing-row__copy">
+                  <span class="landing-row__number">04</span>
+                  <h3>Lo storico non si perde</h3>
+                  <p>
+                    Gli articoli presi finiscono nello storico e si possono rimettere in lista
+                    quando servono di nuovo.
+                  </p>
+                </div>
+                <div class="landing-row__visual">
+                  <LandingMockup kind="history" />
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section
+            class="landing-section landing-section--glass"
+            aria-labelledby="landing-glass-title"
+          >
+            <div class="landing-row landing-row--glass">
+              <div class="landing-row__copy">
+                <p class="landing__eyebrow">La routine, senza attrito</p>
+                <h2 id="landing-glass-title">Semplice come bere un bicchiere d’acqua.</h2>
+                <p>
+                  Non serve un manuale, non serve configurare niente. Apri Spesa, scrivi cosa manca
+                  e la famiglia vede la lista aggiornata.
+                </p>
+                <ul class="landing-checks">
+                  <li>
+                    <CheckIcon /> Apri
+                  </li>
+                  <li>
+                    <CheckIcon /> Scrivi
+                  </li>
+                  <li>
+                    <CheckIcon /> Fatto
+                  </li>
+                </ul>
+              </div>
+              <div class="landing-row__visual landing-row__visual--glass">
+                <LandingGlass />
+              </div>
+            </div>
+          </section>
+
+          <section class="landing-section landing-section--cta" aria-labelledby="gratis-title">
+            <div class="landing-cta">
+              <p class="landing__eyebrow">Pronto quando vuoi</p>
+              <h2 id="gratis-title">Gratis, senza pubblicità, senza sorprese.</h2>
+              <p>
+                Ogni famiglia ha il suo spazio riservato. Crea il tuo account e inizia subito: la
+                lista è pronta, il resto viene da sé.
+              </p>
+              <div class="landing__actions">
+                <a class="button button--primary" href="/register" onClick={goToRegister}>
+                  Crea la tua famiglia
+                </a>
+                <a class="button button--ghost" href="/login" onClick={goToLogin}>
+                  Accedi
+                </a>
+              </div>
+            </div>
+          </section>
+        </div>
       </main>
 
-      <footer class="public-footer">
-        <span>Spesa — lista della spesa condivisa per famiglie</span>
-        <span class="public-footer__links">
-          <a href="https://streamlinehq.com" target="_blank" rel="noreferrer noopener">
-            Icone: Streamline (CC BY 4.0)
-            <span class="sr-only"> (si apre in una nuova scheda)</span>
-          </a>
-          <a href="/login" onClick={goToLogin}>
-            Accedi
-          </a>
-          <a href="/register" onClick={goToRegister}>
-            Registrati
-          </a>
-        </span>
-      </footer>
+      <PublicFooter />
     </div>
   )
 }

@@ -8,6 +8,8 @@ export interface Settings {
   /** Preset del percorso negozio attualmente usato. */
   activePresetId: string
   presets: OrderPreset[]
+  /** Effetto luminoso che segue il cursore sulla landing. */
+  landingGlow: boolean
 }
 
 const DEFAULT_PRESET: OrderPreset = {
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultCategory: DEFAULT_CATEGORY,
   activePresetId: DEFAULT_PRESET.id,
   presets: [DEFAULT_PRESET],
+  landingGlow: true,
 }
 
 const STORAGE_KEY = 'spesa.settings.v1'
@@ -103,6 +106,8 @@ export function parseSettings(
           : DEFAULT_CATEGORY,
       activePresetId,
       presets,
+      // Il default è attivo; solo un `false` esplicito lo disattiva.
+      landingGlow: parsed.landingGlow !== false,
     },
     categories,
   )

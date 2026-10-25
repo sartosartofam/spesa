@@ -120,6 +120,16 @@ test('salva le impostazioni alla chiusura e Annulla le scarta', async ({ page })
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   settings = page.getByRole('dialog')
   await expect(settings.getByLabel('Aggiunta rapida')).toBeChecked()
+
+  await settings.getByLabel('Bagliore che segue il cursore').uncheck()
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('spesa.landing.glow.v1')))
+    .toBe('off')
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  settings = page.getByRole('dialog')
+  await expect(settings.getByLabel('Bagliore che segue il cursore')).not.toBeChecked()
 })
 
 test('ripristina le impostazioni solo dopo conferma', async ({ page }) => {

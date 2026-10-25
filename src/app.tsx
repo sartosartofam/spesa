@@ -28,6 +28,7 @@ import {
 } from './lib/categories'
 import { isLiveData } from './lib/data'
 import { familyDisplayName } from './lib/family'
+import { writeLandingGlow } from './lib/landing-glow'
 import { categoryCounts, groupByCategory, matchesQuery, sortActive, sortHistory } from './lib/list'
 import {
   activeCategoryOrder,
@@ -230,6 +231,9 @@ export function App({
   }
 
   function handleSaveSettings(next: Settings) {
+    if (next.landingGlow !== settings.landingGlow) {
+      writeLandingGlow(next.landingGlow)
+    }
     persistAccount({ settings: next, customCategories: account.customCategories })
   }
 
