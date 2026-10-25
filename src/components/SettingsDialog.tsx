@@ -835,7 +835,7 @@ export function SettingsDialog({
             Annulla
           </button>
           <button
-            class="button button--danger-ghost"
+            class="button settings-reset"
             type="button"
             disabled={Boolean(leftFamily)}
             onClick={resetDefaults}

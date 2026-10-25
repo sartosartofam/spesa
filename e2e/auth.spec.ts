@@ -113,7 +113,9 @@ test('login, sessione persistente al reload e logout', async ({ page }) => {
   await signInAsDemo(page)
 
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
-  await expect(page.getByText(DEMO_EMAIL)).toBeVisible()
+  const people = page.getByRole('list', { name: 'Persone nella lista' })
+  await expect(people.getByText('Demo', { exact: true })).toBeVisible()
+  await expect(page.getByText(DEMO_EMAIL)).toHaveCount(0)
 
   await page.reload()
   await expect(page).toHaveURL(/\/app$/)
@@ -139,7 +141,10 @@ test('il logout chiede conferma e Annulla mantiene la sessione', async ({ page }
   await page.getByRole('button', { name: 'Esci' }).click()
 
   await expect(page).toHaveURL(/\/app$/)
-  await expect(page.getByText(DEMO_EMAIL)).toBeVisible()
+  await expect(
+    page.getByRole('list', { name: 'Persone nella lista' }).getByText('Demo', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText(DEMO_EMAIL)).toHaveCount(0)
 
   page.once('dialog', (dialog) => void dialog.accept())
   await page.getByRole('button', { name: 'Esci' }).click()

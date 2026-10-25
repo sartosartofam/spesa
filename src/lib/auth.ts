@@ -3,6 +3,16 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
+interface UserWithDisplayName {
+  user_metadata?: Record<string, unknown> | null
+}
+
+/** Nome leggibile dell'utente autenticato, con fallback neutro. */
+export function userDisplayName(user: UserWithDisplayName | null | undefined): string {
+  const value = user?.user_metadata?.display_name
+  return typeof value === 'string' && value.trim() ? value.trim() : 'Tu'
+}
+
 /** Messaggi di errore di accesso e registrazione, senza dettagli tecnici. */
 export function mapAuthError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
