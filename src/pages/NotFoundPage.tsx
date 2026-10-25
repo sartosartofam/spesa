@@ -1,8 +1,17 @@
+import { useRef } from 'preact/hooks'
+import { useCursorGlow } from '../hooks/useCursorGlow'
+import { readLandingGlow } from '../lib/landing-glow'
 import { navigate } from '../lib/routes'
 
 export function NotFoundPage() {
+  const pageRef = useRef<HTMLDivElement>(null)
+  const glowEnabled = readLandingGlow()
+
+  useCursorGlow(pageRef, glowEnabled)
+
   return (
-    <div class="public-shell">
+    <div class="public-shell not-found-shell" ref={pageRef} data-glow={glowEnabled ? 'on' : 'off'}>
+      <div class="not-found__glow" aria-hidden="true" />
       <main class="not-found" aria-labelledby="not-found-title">
         <p class="not-found__code" aria-hidden="true">
           404

@@ -49,6 +49,17 @@ test('la landing pubblica è indicizzabile e robots.txt è permissivo', async ({
     )
     .toBe(true)
 
+  await page.mouse.move(420, 200)
+  await expect
+    .poll(
+      async () => {
+        const glow = await glowPosition()
+        return Math.abs(glow.x - 420) < 10 && Math.abs(glow.y - 200) < 10
+      },
+      { timeout: 800 },
+    )
+    .toBe(true)
+
   await hero.dispatchEvent('pointerleave')
   await expect
     .poll(
@@ -92,6 +103,9 @@ test('la landing permette di spegnere il bagliore e ricorda la scelta', async ({
     'false',
   )
   await expect(page.locator('.landing__hero')).toHaveAttribute('data-glow', 'off')
+
+  await page.goto('/questa-pagina-non-esiste')
+  await expect(page.locator('.not-found-shell')).toHaveAttribute('data-glow', 'off')
 })
 
 test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async ({ page }) => {
@@ -122,6 +136,32 @@ test('la pagina 404 mostra il codice e riporta alla home', async ({ page }) => {
   await expect(
     page.getByRole('heading', { level: 1, name: 'Questa pagina non esiste.' }),
   ).toBeVisible()
+
+  const shell = page.locator('.not-found-shell')
+  await expect(shell).toHaveAttribute('data-glow', 'on')
+  await expect
+    .poll(async () => {
+      const glow = await shell.evaluate((element) => ({
+        x: Number.parseFloat(element.style.getPropertyValue('--glow-x')),
+        width: element.clientWidth,
+      }))
+      return Math.abs(glow.x - glow.width / 2) < 2
+    })
+    .toBe(true)
+
+  await page.mouse.move(140, 180)
+  await expect
+    .poll(
+      async () => {
+        const glow = await shell.evaluate((element) => ({
+          x: Number.parseFloat(element.style.getPropertyValue('--glow-x')),
+          width: element.clientWidth,
+        }))
+        return glow.x < glow.width / 2 - 20
+      },
+      { timeout: 2_000 },
+    )
+    .toBe(true)
 
   await page.getByRole('link', { name: 'Torna alla pagina iniziale' }).click()
   await expect(page).toHaveURL(/\/$/)

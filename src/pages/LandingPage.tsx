@@ -4,7 +4,7 @@ import { LandingGlass } from '../components/landing/LandingGlass'
 import { LandingMockup } from '../components/landing/LandingMockup'
 import { PublicFooter } from '../components/PublicFooter'
 import { PublicHeader } from '../components/PublicHeader'
-import { useLandingGlow } from '../hooks/useLandingGlow'
+import { useCursorGlow } from '../hooks/useCursorGlow'
 import { readLandingGlow, writeLandingGlow } from '../lib/landing-glow'
 import { navigate } from '../lib/routes'
 
@@ -22,7 +22,7 @@ export function LandingPage() {
   const heroRef = useRef<HTMLElement>(null)
   const [glowEnabled, setGlowEnabled] = useState(() => readLandingGlow())
 
-  useLandingGlow(heroRef, glowEnabled)
+  useCursorGlow(heroRef, glowEnabled)
 
   function toggleGlow() {
     const next = !glowEnabled
