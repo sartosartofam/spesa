@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(15);
 
 -- Funzioni -------------------------------------------------------------------
 
@@ -61,6 +61,47 @@ select ok(
 select ok(
   not has_column_privilege('authenticated', 'public.items', 'created_by', 'UPDATE'),
   'authenticated non può aggiornare items.created_by'
+);
+
+-- Grant per colonna su items (insert) ----------------------------------------
+
+select ok(
+  has_column_privilege('authenticated', 'public.items', 'name', 'INSERT'),
+  'authenticated può inserire items.name'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.items', 'created_at', 'INSERT'),
+  'authenticated non può inserire items.created_at'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.items', 'created_by', 'INSERT'),
+  'authenticated non può forgiare items.created_by'
+);
+
+-- Grant per colonna su push_subscriptions ------------------------------------
+
+select ok(
+  has_column_privilege('authenticated', 'public.push_subscriptions', 'endpoint', 'UPDATE'),
+  'authenticated può aggiornare push_subscriptions.endpoint'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.push_subscriptions', 'member_id', 'UPDATE'),
+  'authenticated non può cambiare il proprietario di una subscription'
+);
+
+-- Grant per colonna su members ----------------------------------------------
+
+select ok(
+  has_column_privilege('authenticated', 'public.members', 'display_name', 'SELECT'),
+  'authenticated può leggere members.display_name'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.members', 'email', 'SELECT'),
+  'authenticated non può leggere members.email'
 );
 
 -- Nuove tabelle in public ----------------------------------------------------
