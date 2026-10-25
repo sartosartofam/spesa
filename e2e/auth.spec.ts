@@ -67,6 +67,7 @@ test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async (
 
   await page.getByRole('link', { name: 'Privacy' }).click()
   await expect(page).toHaveURL(/\/privacy$/)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
   await expect(page).toHaveTitle(/Privacy/i)
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow')
   await expect(page.getByRole('heading', { level: 1, name: 'Informativa privacy' })).toBeVisible()
