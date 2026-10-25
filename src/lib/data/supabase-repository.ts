@@ -149,6 +149,19 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
     )
   }
 
+  /**
+   * Se esiste già un articolo equivalente, unisce i dati su quello e rimuove
+   * la riga sorgente. Restituisce `null` quando non c'è nulla da unire.
+   */
+  async function mergeDuplicate(source: Item, exceptId: string): Promise<Item | null> {
+    const duplicate = await findDuplicate(source, exceptId)
+    if (!duplicate) return null
+
+    const merged = await mergeInto(duplicate, source)
+    await unwrapVoid(client.from('items').delete().eq('id', exceptId))
+    return merged
+  }
+
   /** Unisce `source` dentro `target` sul database e restituisce la riga aggiornata. */
   async function mergeInto(target: Item, source: Item): Promise<Item> {
     const merged = mergeItem(target, source)
@@ -229,12 +242,8 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
         bought_at: status === 'bought' ? (current.bought_at ?? new Date().toISOString()) : null,
       }
 
-      const duplicate = await findDuplicate(updated, id)
-      if (duplicate) {
-        const merged = await mergeInto(duplicate, updated)
-        await unwrapVoid(client.from('items').delete().eq('id', id))
-        return merged
-      }
+      const duplicate = await mergeDuplicate(updated, id)
+      if (duplicate) return duplicate
 
       const row = await unwrap(
         client
@@ -266,12 +275,8 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
         updated_at: new Date().toISOString(),
       }
 
-      const duplicate = await findDuplicate(updated, id)
-      if (duplicate) {
-        const merged = await mergeInto(duplicate, updated)
-        await unwrapVoid(client.from('items').delete().eq('id', id))
-        return merged
-      }
+      const duplicate = await mergeDuplicate(updated, id)
+      if (duplicate) return duplicate
 
       const row = await unwrap(
         client

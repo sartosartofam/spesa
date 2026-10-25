@@ -14,9 +14,9 @@ import { getSupabase, type SpesaSupabaseClient } from './supabase'
  * una cache per account e il fallback quando la sincronizzazione non riesce.
  */
 
-export const ACCOUNT_SETTINGS_VERSION = 1
+const ACCOUNT_SETTINGS_VERSION = 1
 
-export interface AccountSettingsPayload {
+interface AccountSettingsPayload {
   version: number
   quickAdd: boolean
   defaultCategory: string
@@ -42,7 +42,7 @@ function cacheKey(userId: string): string {
 }
 
 /** Impostazioni locali "storiche", condivise dal dispositivo prima della sync. */
-export function readLocalAccountSettings(): AccountSettings {
+function readLocalAccountSettings(): AccountSettings {
   return {
     settings: readSettings(),
     customCategories: readCustomCategories(),
@@ -127,7 +127,7 @@ export function mergeAccountSettings(
 }
 
 /** Client per la sync, oppure null quando l'app usa i dati mock. */
-export function accountSettingsClient(): SpesaSupabaseClient | null {
+function accountSettingsClient(): SpesaSupabaseClient | null {
   if (!isLiveData) return null
   const client = getSupabase()
   if (!client) throw new Error('Supabase non configurato')

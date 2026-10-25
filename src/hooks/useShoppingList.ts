@@ -225,5 +225,3 @@ export function useShoppingList() {
     historyBusy,
   }
 }
-
-export type ShoppingList = ReturnType<typeof useShoppingList>

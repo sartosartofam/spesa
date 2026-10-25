@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(28);
+select plan(31);
 
 -- Dati di partenza. Il test gira come `postgres`, che è owner delle tabelle e
 -- quindi bypassa la RLS: questi insert servono solo a predisporre lo scenario.
@@ -122,6 +122,30 @@ select is(
   (select count(*)::int from public.push_subscriptions),
   1,
   'A vede solo la propria subscription'
+);
+
+select throws_ok(
+  $$ select email from public.members $$,
+  '42501',
+  'permission denied for table members',
+  'A non può leggere le email dei membri'
+);
+
+select throws_ok(
+  $$ insert into public.items (family_id, name, created_at)
+     values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Timestamp forgiato', now()) $$,
+  '42501',
+  'permission denied for table items',
+  'A non può forgiare items.created_at'
+);
+
+select throws_ok(
+  $$ update public.push_subscriptions
+     set member_id = '22222222-2222-2222-2222-222222222222'
+     where id = 'a3333333-3333-3333-3333-333333333333' $$,
+  '42501',
+  'permission denied for table push_subscriptions',
+  'A non può cambiare il proprietario della propria subscription'
 );
 
 with changed as (

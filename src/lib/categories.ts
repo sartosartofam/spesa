@@ -17,7 +17,7 @@ export const CATEGORIES = [
   'Altro',
 ] as const
 
-export type Category = (typeof CATEGORIES)[number]
+type Category = (typeof CATEGORIES)[number]
 
 export const DEFAULT_CATEGORY: Category = 'Dispensa'
 

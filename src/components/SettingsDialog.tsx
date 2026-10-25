@@ -467,8 +467,7 @@ export function SettingsDialog({
                   {newOwner && (
                     <>
                       {' '}
-                      Il ruolo di owner è passato a{' '}
-                      <strong>{newOwner.displayName || newOwner.email}</strong>.
+                      Il ruolo di owner è passato a <strong>{newOwner.displayName}</strong>.
                     </>
                   )}
                 </p>
@@ -537,7 +536,7 @@ export function SettingsDialog({
                     {members.map((member) => (
                       <li class="family-members__item" key={member.id}>
                         <span class="family-members__name">
-                          {member.displayName || member.email}
+                          {member.displayName}
                           {member.id === currentUserId ? ' (tu)' : ''}
                         </span>
                         <span class="family-members__role">

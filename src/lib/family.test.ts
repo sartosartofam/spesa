@@ -30,13 +30,11 @@ describe('normalizeInviteCode', () => {
 describe('familyPeople', () => {
   const ada = {
     id: 'ada',
-    email: 'ada@example.test',
     displayName: 'Ada',
     role: 'owner' as const,
   }
   const bruno = {
     id: 'bruno',
-    email: 'bruno@example.test',
     displayName: 'Bruno',
     role: 'member' as const,
   }

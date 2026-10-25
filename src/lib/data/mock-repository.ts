@@ -123,6 +123,25 @@ export function createMockItemsRepository(): ItemsRepository {
     return item
   }
 
+  /** Applica una modifica, unendo l'articolo in un eventuale duplicato. */
+  function applyChange(id: string, updated: Item): Item {
+    const duplicate = items.find(
+      (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
+    )
+    if (duplicate) {
+      const merged = mergeItem(duplicate, updated)
+      items = items
+        .filter((candidate) => candidate.id !== id)
+        .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
+      persist()
+      return merged
+    }
+
+    items = items.map((item) => (item.id === id ? updated : item))
+    persist()
+    return updated
+  }
+
   return {
     async list(view) {
       await delay()
@@ -166,21 +185,7 @@ export function createMockItemsRepository(): ItemsRepository {
         bought_at: status === 'bought' ? nowIso() : null,
       }
 
-      const duplicate = items.find(
-        (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
-      )
-      if (duplicate) {
-        const merged = mergeItem(duplicate, updated)
-        items = items
-          .filter((candidate) => candidate.id !== id)
-          .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
-        persist()
-        return merged
-      }
-
-      items = items.map((item) => (item.id === id ? updated : item))
-      persist()
-      return updated
+      return applyChange(id, updated)
     },
 
     async update(id, patch) {
@@ -202,21 +207,7 @@ export function createMockItemsRepository(): ItemsRepository {
         updated_at: nowIso(),
       }
 
-      const duplicate = items.find(
-        (candidate) => candidate.id !== id && identityKey(candidate) === identityKey(updated),
-      )
-      if (duplicate) {
-        const merged = mergeItem(duplicate, updated)
-        items = items
-          .filter((candidate) => candidate.id !== id)
-          .map((candidate) => (candidate.id === duplicate.id ? merged : candidate))
-        persist()
-        return merged
-      }
-
-      items = items.map((item) => (item.id === id ? updated : item))
-      persist()
-      return updated
+      return applyChange(id, updated)
     },
 
     async remove(id) {
