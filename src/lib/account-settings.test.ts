@@ -22,7 +22,7 @@ const SETTINGS = {
   activePresetId: 'p1',
   presets: [{ id: 'p1', name: 'Esselunga', order: ['Panetteria', 'Casa'] }],
   landingGlow: false,
-  theme: 'dark-yellow' as const,
+  theme: 'green' as const,
 }
 
 function account(): AccountSettings {
@@ -88,7 +88,7 @@ describe('payload impostazioni account', () => {
     expect(payload.version).toBe(1)
     expect(payload.quickAdd).toBe(true)
     expect(payload.landingGlow).toBe(false)
-    expect(payload.theme).toBe('dark-yellow')
+    expect(payload.theme).toBe('green')
     expect(payload.defaultCategory).toBe('Panetteria')
     expect(payload.customCategories).toEqual(['Panetteria'])
     expect(payload.presets[0]?.order[0]).toBe('Panetteria')
@@ -112,12 +112,19 @@ describe('payload impostazioni account', () => {
 
     expect(parsed.settings.quickAdd).toBe(false)
     expect(parsed.settings.defaultCategory).toBe('Dispensa')
-    expect(parsed.settings.theme).toBe('auto')
+    expect(parsed.settings.theme).toBe('yellow')
     expect(parsed.customCategories).toEqual(['Panetteria'])
     expect(parsed.settings.presets).toHaveLength(2)
     expect(parsed.settings.presets[0]?.order[0]).toBe('Panetteria')
     expect(parsed.settings.presets[0]?.order).not.toContain('Sconosciuta')
     expect(parsed.settings.activePresetId).toBe(parsed.settings.presets[0]?.id)
+  })
+
+  it('migra i temi salvati prima delle palette giallo/verde', () => {
+    expect(parseAccountSettingsPayload({ theme: 'auto' }).settings.theme).toBe('yellow')
+    expect(parseAccountSettingsPayload({ theme: 'light' }).settings.theme).toBe('green')
+    expect(parseAccountSettingsPayload({ theme: 'light-yellow' }).settings.theme).toBe('yellow')
+    expect(parseAccountSettingsPayload({ theme: 'dark-yellow' }).settings.theme).toBe('yellow')
   })
 
   it('ricade sui default per payload nulli o non oggetto', () => {
@@ -151,7 +158,7 @@ describe('payload impostazioni account', () => {
     expect(parsed.customCategories).toEqual(['Panetteria'])
     expect(parsed.settings.quickAdd).toBe(true)
     expect(parsed.settings.landingGlow).toBe(false)
-    expect(parsed.settings.theme).toBe('dark-yellow')
+    expect(parsed.settings.theme).toBe('green')
     expect(parsed.settings.defaultCategory).toBe('Panetteria')
   })
 })
@@ -184,7 +191,7 @@ describe('merge e cache locale', () => {
       activePresetId: 'default',
       presets: [{ id: 'default', name: 'Il mio negozio', order: ['Casa'] }],
       landingGlow: true,
-      theme: 'light',
+      theme: 'green',
     })
 
     expect(localAccountSettings('utente-nuovo').settings.quickAdd).toBe(true)

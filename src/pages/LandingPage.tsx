@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { CheckIcon, ChevronDownIcon } from '../components/Icons'
 import { LandingGlass } from '../components/landing/LandingGlass'
 import { LandingMockup } from '../components/landing/LandingMockup'
@@ -7,6 +7,8 @@ import { PublicHeader } from '../components/PublicHeader'
 import { useCursorGlow } from '../hooks/useCursorGlow'
 import { readLandingGlow, writeLandingGlow } from '../lib/landing-glow'
 import { navigate } from '../lib/routes'
+import type { ThemeId } from '../lib/settings'
+import { applyTheme, readTheme, writeTheme } from '../lib/theme'
 
 function goToLogin(event: MouseEvent) {
   event.preventDefault()
@@ -21,13 +23,23 @@ function goToRegister(event: MouseEvent) {
 export function LandingPage() {
   const heroRef = useRef<HTMLElement>(null)
   const [glowEnabled, setGlowEnabled] = useState(() => readLandingGlow())
+  const [theme, setTheme] = useState<ThemeId>(() => readTheme())
 
   useCursorGlow(heroRef, glowEnabled)
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   function toggleGlow() {
     const next = !glowEnabled
     setGlowEnabled(next)
     writeLandingGlow(next)
+  }
+
+  function selectTheme(next: ThemeId) {
+    setTheme(next)
+    writeTheme(next)
   }
 
   return (
@@ -78,15 +90,44 @@ export function LandingPage() {
                 Scopri come funziona
                 <ChevronDownIcon />
               </a>
-              <button
-                class="landing-glow-toggle"
-                type="button"
-                aria-pressed={glowEnabled}
-                onClick={toggleGlow}
-              >
-                <span class="landing-glow-toggle__dot" aria-hidden="true" />
-                Effetto cursore
-              </button>
+              <div class="landing-hero__preferences">
+                <fieldset class="landing-theme-switch">
+                  <legend class="sr-only">Tema della landing</legend>
+                  <button
+                    class="landing-theme-switch__option"
+                    type="button"
+                    aria-pressed={theme === 'yellow'}
+                    onClick={() => selectTheme('yellow')}
+                  >
+                    <span
+                      class="landing-theme-switch__swatch landing-theme-switch__swatch--yellow"
+                      aria-hidden="true"
+                    />
+                    Giallo
+                  </button>
+                  <button
+                    class="landing-theme-switch__option"
+                    type="button"
+                    aria-pressed={theme === 'green'}
+                    onClick={() => selectTheme('green')}
+                  >
+                    <span
+                      class="landing-theme-switch__swatch landing-theme-switch__swatch--green"
+                      aria-hidden="true"
+                    />
+                    Verde
+                  </button>
+                </fieldset>
+                <button
+                  class="landing-glow-toggle"
+                  type="button"
+                  aria-pressed={glowEnabled}
+                  onClick={toggleGlow}
+                >
+                  <span class="landing-glow-toggle__dot" aria-hidden="true" />
+                  Effetto cursore
+                </button>
+              </div>
             </div>
           </div>
         </section>

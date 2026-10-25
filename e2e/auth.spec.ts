@@ -108,6 +108,47 @@ test('la landing permette di spegnere il bagliore e ricorda la scelta', async ({
   await expect(page.locator('.not-found-shell')).toHaveAttribute('data-glow', 'off')
 })
 
+test('la landing cambia palette e segue chiaro/scuro del sistema', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto('/')
+
+  const html = page.locator('html')
+  const background = () =>
+    page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())
+  const themeColor = page.locator('meta[name="theme-color"]')
+  const green = page.getByRole('button', { name: 'Verde' })
+
+  await expect(html).toHaveAttribute('data-theme', 'yellow')
+  expect(await background()).toBe('#fbf7e8')
+  await expect(themeColor).toHaveAttribute('content', '#8a6500')
+  await expect(green).toHaveAttribute('aria-pressed', 'false')
+
+  await green.click()
+  await expect(html).toHaveAttribute('data-theme', 'green')
+  await expect(green).toHaveAttribute('aria-pressed', 'true')
+  expect(await background()).toBe('#f6f7f5')
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('spesa.theme.v1'))).toBe('green')
+
+  await page.reload()
+  await expect(html).toHaveAttribute('data-theme', 'green')
+  expect(await background()).toBe('#f6f7f5')
+
+  await page.emulateMedia({ colorScheme: 'dark' })
+  expect(await background()).toBe('#121714')
+  await expect(themeColor).toHaveAttribute('content', '#121714')
+
+  await page.getByRole('button', { name: 'Giallo' }).click()
+  await expect(html).toHaveAttribute('data-theme', 'yellow')
+  expect(await background()).toBe('#17140c')
+  await expect(themeColor).toHaveAttribute('content', '#17140c')
+
+  const noOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth <= window.innerWidth,
+  )
+  expect(noOverflow).toBe(true)
+})
+
 test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async ({ page }) => {
   await page.goto('/')
 

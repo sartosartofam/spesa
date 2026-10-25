@@ -23,14 +23,14 @@ describe('settings', () => {
         { id: 'conad', name: 'Conad', order: ['Dispensa', 'Casa'] },
       ],
       landingGlow: false,
-      theme: 'dark-yellow',
+      theme: 'green',
     })
 
     const settings = readSettings()
 
     expect(settings.quickAdd).toBe(true)
     expect(settings.landingGlow).toBe(false)
-    expect(settings.theme).toBe('dark-yellow')
+    expect(settings.theme).toBe('green')
     expect(settings.defaultCategory).toBe('Casa')
     expect(settings.activePresetId).toBe('conad')
     expect(settings.presets.map((preset) => preset.name)).toEqual(['Il mio negozio', 'Conad'])
@@ -44,7 +44,7 @@ describe('settings', () => {
     expect(settings.quickAdd).toBe(false)
     expect(settings.defaultCategory).toBe('Dispensa')
     expect(settings.landingGlow).toBe(true)
-    expect(settings.theme).toBe('auto')
+    expect(settings.theme).toBe('yellow')
     expect(settings.presets).toHaveLength(1)
     expect(settings.activePresetId).toBe(settings.presets[0]?.id)
   })
@@ -92,15 +92,16 @@ describe('settings', () => {
     expect(parseSettings({ landingGlow: false }, categoriesFromCustom([])).landingGlow).toBe(false)
   })
 
-  it('accetta solo temi conosciuti e ricade su auto', () => {
-    expect(parseSettings({}, categoriesFromCustom([])).theme).toBe('auto')
-    expect(parseSettings({ theme: 'light-yellow' }, categoriesFromCustom([])).theme).toBe(
-      'light-yellow',
-    )
-    expect(parseSettings({ theme: 'dark-yellow' }, categoriesFromCustom([])).theme).toBe(
-      'dark-yellow',
-    )
-    expect(parseSettings({ theme: 'viola' }, categoriesFromCustom([])).theme).toBe('auto')
+  it('usa il giallo come default e migra i vecchi temi', () => {
+    const categories = categoriesFromCustom([])
+
+    expect(parseSettings({}, categories).theme).toBe('yellow')
+    expect(parseSettings({ theme: 'green' }, categories).theme).toBe('green')
+    expect(parseSettings({ theme: 'auto' }, categories).theme).toBe('yellow')
+    expect(parseSettings({ theme: 'light' }, categories).theme).toBe('green')
+    expect(parseSettings({ theme: 'light-yellow' }, categories).theme).toBe('yellow')
+    expect(parseSettings({ theme: 'dark-yellow' }, categories).theme).toBe('yellow')
+    expect(parseSettings({ theme: 'viola' }, categories).theme).toBe('yellow')
   })
 
   it('accetta dati non validi senza lanciare', () => {

@@ -36,7 +36,7 @@ import {
   type Settings,
   writeSettings,
 } from './lib/settings'
-import { applyTheme } from './lib/theme'
+import { applyTheme, writeTheme } from './lib/theme'
 import type { Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
@@ -121,12 +121,11 @@ export function App({
   }, [toast])
 
   useLayoutEffect(() => {
+    // La scelta dell'account diventa anche preferenza del dispositivo: così
+    // landing e pagine pubbliche restano coerenti dopo il logout.
+    writeTheme(settings.theme)
     applyTheme(settings.theme)
   }, [settings.theme])
-
-  useEffect(() => {
-    return () => applyTheme('auto')
-  }, [])
 
   function persistAccount(next: AccountSettings) {
     settingsTouched.current = true

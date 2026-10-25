@@ -486,8 +486,8 @@ export function SettingsDialog({
               ))}
             </select>
             <p class="hint">
-              Sistema segue l’impostazione chiaro/scuro del dispositivo. Gli altri temi restano
-              fissi.
+              Il giallo è il tema predefinito. Entrambe le palette seguono chiaro/scuro
+              dall’impostazione del dispositivo.
             </p>
           </div>
         </section>
