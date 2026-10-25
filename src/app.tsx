@@ -70,6 +70,7 @@ export function App({
   const [account, setAccount] = useState<AccountSettings>(() => localAccountSettings(userId))
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsSyncError, setSettingsSyncError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null)
   const settingsTouched = useRef(false)
   const settings = account.settings
   const categories = useMemo(
@@ -111,6 +112,12 @@ export function App({
       cancelled = true
     }
   }, [userId])
+
+  useEffect(() => {
+    if (!toast) return
+    const timeout = window.setTimeout(() => setToast(null), 3200)
+    return () => window.clearTimeout(timeout)
+  }, [toast])
 
   function persistAccount(next: AccountSettings) {
     settingsTouched.current = true
@@ -241,6 +248,16 @@ export function App({
     await list.remove(dialog.item.id)
   }
 
+  async function handleUndo() {
+    const label = await list.undo()
+    if (label) setToast({ id: Date.now(), message: `Annullato: ${label}` })
+  }
+
+  async function handleRedo() {
+    const label = await list.redo()
+    if (label) setToast({ id: Date.now(), message: `Ripetuto: ${label}` })
+  }
+
   function handleSaveSettings(next: Settings) {
     if (next.landingGlow !== settings.landingGlow) {
       writeLandingGlow(next.landingGlow)
@@ -289,6 +306,13 @@ export function App({
       <AppHeader
         counts={list.counts}
         people={people}
+        canUndo={list.canUndo}
+        canRedo={list.canRedo}
+        undoLabel={list.undoLabel}
+        redoLabel={list.redoLabel}
+        historyBusy={list.historyBusy}
+        onUndo={() => void handleUndo()}
+        onRedo={() => void handleRedo()}
         onOpenSettings={() => setSettingsOpen(true)}
         onLogout={onLogout}
       />
@@ -590,6 +614,20 @@ export function App({
           {!isLiveData && <span>modalità demo · dati locali</span>}
         </span>
       </footer>
+
+      {toast && (
+        <div class="toast" role="status" aria-live="polite" aria-atomic="true" key={toast.id}>
+          <span class="toast__message">{toast.message}</span>
+          <button
+            class="toast__close"
+            type="button"
+            aria-label="Chiudi avviso"
+            onClick={() => setToast(null)}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      )}
 
       {dialog && (
         <ItemDialog

@@ -295,6 +295,51 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
       await unwrapVoid(client.from('items').delete().eq('id', id))
     },
 
+    async restoreItem(item: Item) {
+      const existing = await unwrap(client.from('items').select('id').eq('id', item.id))
+
+      if (existing.length > 0) {
+        const row = await unwrap(
+          client
+            .from('items')
+            .update({
+              name: item.name,
+              category: item.category,
+              status: item.status,
+              urgent: item.urgent,
+              note: item.note,
+              quantity: item.quantity,
+            })
+            .eq('id', item.id)
+            .select('*')
+            .single(),
+        )
+        return toItem(row)
+      }
+
+      const familyId = await currentFamilyId()
+      const row = await unwrap(
+        client
+          .from('items')
+          .insert({
+            id: item.id,
+            family_id: familyId,
+            name: item.name,
+            category: item.category,
+            status: item.status,
+            urgent: item.urgent,
+            note: item.note,
+            quantity: item.quantity,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            bought_at: item.bought_at,
+          })
+          .select('*')
+          .single(),
+      )
+      return toItem(row)
+    },
+
     async suggestions() {
       const rows = await unwrap(client.from('items').select('name'))
       const unique = new Set(rows.map((row) => row.name))

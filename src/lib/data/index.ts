@@ -52,6 +52,7 @@ export const itemsRepository: ItemsRepository = {
   setStatus: (id, status) => resolve().setStatus(id, status),
   update: (id, patch) => resolve().update(id, patch),
   remove: (id) => resolve().remove(id),
+  restoreItem: (item) => resolve().restoreItem(item),
   suggestions: () => resolve().suggestions(),
 }
 

@@ -30,6 +30,61 @@ test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ pag
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Test e2e' })).toBeVisible()
 })
 
+test('annulla e ripete un articolo segnato come preso', async ({ page }) => {
+  const mainList = page.getByRole('main')
+  const undo = page.getByRole('button', { name: /^Annulla/ })
+  const redo = page.getByRole('button', { name: /^Ripeti/ })
+  const latte = () => mainList.getByRole('listitem').filter({ hasText: 'Latte' })
+
+  await expect(undo).toBeDisabled()
+  await expect(redo).toBeDisabled()
+
+  await latte().getByRole('button', { name: 'Segna Latte come preso' }).click()
+  await expect(latte()).toHaveCount(0)
+  await expect(undo).toBeEnabled()
+
+  await undo.click()
+  await expect(latte()).toBeVisible()
+  await expect(page.locator('.toast')).toContainText(/Annullato: .*Latte.*segnato come preso/)
+  await expect(redo).toBeEnabled()
+
+  await redo.click()
+  await expect(latte()).toHaveCount(0)
+  await expect(page.locator('.toast')).toContainText('Ripetuto:')
+})
+
+test('annulla un articolo eliminato', async ({ page }) => {
+  const mainList = page.getByRole('main')
+  const pasta = () => mainList.getByRole('listitem').filter({ hasText: 'Pasta' })
+
+  await pasta().getByRole('button', { name: 'Modifica Pasta' }).click()
+  page.once('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: 'Rimuovi articolo' }).click()
+
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(pasta()).toHaveCount(0)
+
+  await page.getByRole('button', { name: /^Annulla/ }).click()
+  await expect(pasta()).toBeVisible()
+  await expect(page.locator('.toast')).toContainText('Annullato: eliminazione di')
+})
+
+test('annulla e ripete un articolo aggiunto', async ({ page }) => {
+  await page.getByLabel('Nuovo articolo').fill('Bozza undo')
+  await page.getByRole('button', { name: 'Aggiungi', exact: true }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Salva' }).click()
+
+  const mainList = page.getByRole('main')
+  const row = () => mainList.getByRole('listitem').filter({ hasText: 'Bozza undo' })
+  await expect(row()).toBeVisible()
+
+  await page.getByRole('button', { name: /^Annulla/ }).click()
+  await expect(row()).toHaveCount(0)
+
+  await page.getByRole('button', { name: /^Ripeti/ }).click()
+  await expect(row()).toBeVisible()
+})
+
 test('ordina i controlli: tabs, aggiunta, categorie e ricerca', async ({ page }) => {
   const main = page.getByRole('main')
   const controls = page.locator('#mobile-controls-body')

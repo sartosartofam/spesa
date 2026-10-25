@@ -17,6 +17,11 @@ export interface ItemsRepository {
     patch: Partial<Pick<Item, 'name' | 'category' | 'note' | 'quantity' | 'urgent'>>,
   ): Promise<Item>
   remove(id: string): Promise<void>
+  /**
+   * Ripristina una riga esattamente com'era, per undo/redo.
+   * Non applica il merge dei duplicati.
+   */
+  restoreItem(item: Item): Promise<Item>
   /** Nomi già usati, per i suggerimenti del campo di aggiunta. */
   suggestions(): Promise<string[]>
 }
