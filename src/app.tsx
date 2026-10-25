@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { AppHeader } from './components/AppHeader'
 import { CategorySection } from './components/CategorySection'
 import { EmptyState } from './components/EmptyState'
-import { CloseIcon } from './components/Icons'
+import { ChevronDownIcon, CloseIcon } from './components/Icons'
 import { ItemDialog, type ItemDraft } from './components/ItemDialog'
 import { ListTabs } from './components/ListTabs'
 import { QuickAdd } from './components/QuickAdd'
@@ -62,6 +62,7 @@ export function App({
   const list = useShoppingList()
   const people = useFamilyPeople(userId, userName, familyId)
   const [view, setView] = useState<ListView>('active')
+  const [controlsOpen, setControlsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [urgentOnly, setUrgentOnly] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -146,6 +147,10 @@ export function App({
   const urgentItems = useMemo(
     () => sortActive(activeItems.filter((item) => item.urgent)),
     [activeItems],
+  )
+  const urgentGroups = useMemo(
+    () => groupByCategory(urgentItems, categoryOrder),
+    [urgentItems, categoryOrder],
   )
   const historyItems = useMemo(
     () =>
@@ -290,65 +295,80 @@ export function App({
 
       <div class="layout">
         <main class="app__main">
-          <QuickAdd
-            suggestions={list.suggestions}
-            quickMode={settings.quickAdd}
-            defaultCategory={settings.defaultCategory}
-            onSubmit={handleQuickAdd}
-            onDetails={handleQuickAddDetails}
-          />
+          <div class={`mobile-controls ${controlsOpen ? 'mobile-controls--open' : ''}`}>
+            <button
+              class="mobile-controls__toggle"
+              type="button"
+              aria-expanded={controlsOpen}
+              aria-controls="mobile-controls-body"
+              onClick={() => setControlsOpen((current) => !current)}
+            >
+              <span>{controlsOpen ? 'Nascondi controlli' : 'Aggiungi e filtra'}</span>
+              <ChevronDownIcon />
+            </button>
 
-          {filterCategories.length > 0 && (
-            <fieldset class="category-chips">
-              <legend class="sr-only">Filtra per categoria</legend>
-              <button
-                class={`category-chip ${
-                  selectedCategories.length === 0 ? 'category-chip--active' : ''
-                }`}
-                type="button"
-                aria-pressed={selectedCategories.length === 0}
-                onClick={() => setSelectedCategories([])}
-              >
-                Tutte
-              </button>
-              {filterCategories.map(([category, count]) => (
-                <button
-                  class={`category-chip ${
-                    selectedCategories.length === 1 && selectedCategories[0] === category
-                      ? 'category-chip--active'
-                      : ''
-                  }`}
-                  type="button"
-                  key={category}
-                  aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
-                  aria-pressed={
-                    selectedCategories.length === 1 && selectedCategories[0] === category
-                  }
-                  onClick={() => selectCategory(category)}
-                >
-                  {category}
-                  <span class="category-chip__count" aria-hidden="true">
-                    {count}
-                  </span>
-                </button>
-              ))}
-            </fieldset>
-          )}
+            <div id="mobile-controls-body" class="mobile-controls__body">
+              <ListTabs view={view} counts={list.counts} onChange={changeView} />
 
-          <ListTabs view={view} counts={list.counts} onChange={changeView} />
+              <QuickAdd
+                suggestions={list.suggestions}
+                quickMode={settings.quickAdd}
+                defaultCategory={settings.defaultCategory}
+                onSubmit={handleQuickAdd}
+                onDetails={handleQuickAddDetails}
+              />
 
-          <div class="toolbar">
-            <label class="sr-only" for="search-items">
-              Cerca articoli
-            </label>
-            <input
-              id="search-items"
-              class="search"
-              type="search"
-              placeholder="Cerca per nome o categoria"
-              value={query}
-              onInput={(event) => setQuery(event.currentTarget.value)}
-            />
+              {filterCategories.length > 0 && (
+                <fieldset class="category-chips">
+                  <legend class="sr-only">Filtra per categoria</legend>
+                  <button
+                    class={`category-chip ${
+                      selectedCategories.length === 0 ? 'category-chip--active' : ''
+                    }`}
+                    type="button"
+                    aria-pressed={selectedCategories.length === 0}
+                    onClick={() => setSelectedCategories([])}
+                  >
+                    Tutte
+                  </button>
+                  {filterCategories.map(([category, count]) => (
+                    <button
+                      class={`category-chip ${
+                        selectedCategories.length === 1 && selectedCategories[0] === category
+                          ? 'category-chip--active'
+                          : ''
+                      }`}
+                      type="button"
+                      key={category}
+                      aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
+                      aria-pressed={
+                        selectedCategories.length === 1 && selectedCategories[0] === category
+                      }
+                      onClick={() => selectCategory(category)}
+                    >
+                      {category}
+                      <span class="category-chip__count" aria-hidden="true">
+                        {count}
+                      </span>
+                    </button>
+                  ))}
+                </fieldset>
+              )}
+
+              <div class="toolbar">
+                <label class="sr-only" for="search-items">
+                  Cerca articoli
+                </label>
+                <input
+                  id="search-items"
+                  class="search"
+                  type="search"
+                  placeholder="Cerca per nome o categoria"
+                  value={query}
+                  onInput={(event) => setQuery(event.currentTarget.value)}
+                />
+              </div>
+            </div>
           </div>
 
           {urgentOnly && (
@@ -422,16 +442,17 @@ export function App({
                   }
                 />
               ) : urgentOnly ? (
-                <CategorySection
-                  title="Urgenti"
-                  items={urgentItems}
-                  variant="active"
-                  urgent
-                  showCategory
-                  onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                  onRestore={(item) => list.restore(item.id)}
-                  onEdit={(item) => setDialog({ mode: 'edit', item })}
-                />
+                urgentGroups.map(([category, items]) => (
+                  <CategorySection
+                    key={category}
+                    title={category}
+                    items={items}
+                    variant="active"
+                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                    onRestore={(item) => list.restore(item.id)}
+                    onEdit={(item) => setDialog({ mode: 'edit', item })}
+                  />
+                ))
               ) : (
                 activeGroups.map(([category, items]) => (
                   <CategorySection

@@ -5,7 +5,6 @@ interface CategorySectionProps {
   title: string
   items: Item[]
   variant: ListView
-  urgent?: boolean
   showCategory?: boolean
   onMarkBought: (item: Item) => void | Promise<void>
   onRestore: (item: Item) => void | Promise<void>
@@ -16,7 +15,6 @@ export function CategorySection({
   title,
   items,
   variant,
-  urgent = false,
   showCategory = false,
   onMarkBought,
   onRestore,
@@ -26,10 +24,7 @@ export function CategorySection({
 
   return (
     <section class="section" aria-labelledby={`section-${slug(title)}`}>
-      <h2
-        class={`section__title ${urgent ? 'section__title--urgent' : ''}`}
-        id={`section-${slug(title)}`}
-      >
+      <h2 class="section__title" id={`section-${slug(title)}`}>
         {title}
         <span class="section__count">{items.length}</span>
       </h2>
