@@ -143,38 +143,6 @@ export function CloseIcon({ class: className }: IconProps) {
   )
 }
 
-export function FilterIcon({ class: className }: IconProps) {
-  return (
-    <svg {...base} class={className}>
-      <title>Filtra</title>
-      <path d="M28.955 4.57h1.52v7.62h-1.52Z" />
-      <path d="M27.435 12.19h1.52v1.52h-1.52Z" />
-      <path d="M27.435 3.05h1.52v1.52h-1.52Z" />
-      <path d="M25.905 13.71h1.53v1.53h-1.53Z" />
-      <path d="M24.385 15.24h1.52v1.52h-1.52Z" />
-      <path d="m24.385 3.05 -16.76 0 0 1.52 -3.05 0 0 3.05 3.05 0 0 1.52 3.04 0 0 1.53 10.67 0 0 -1.53 3.05 0 0 -1.52 3.05 0 0 -3.05 -3.05 0 0 -1.52z" />
-      <path d="M24.385 1.52h3.05v1.53h-3.05Z" />
-      <path d="M22.855 16.76h1.53v1.53h-1.53Z" />
-      <path d="M21.335 18.29h1.52v1.52h-1.52Z" />
-      <path d="M19.815 19.81h1.52v1.52h-1.52Z" />
-      <path d="M18.285 21.33h1.53v7.62h-1.53Z" />
-      <path d="M16.765 28.95h1.52v1.53h-1.52Z" />
-      <path d="M13.715 30.48h3.05V32h-3.05Z" />
-      <path d="M12.195 21.33h1.52v9.15h-1.52Z" />
-      <path d="M10.665 19.81h1.53v1.52h-1.53Z" />
-      <path d="M9.145 18.29h1.52v1.52h-1.52Z" />
-      <path d="M7.625 0h16.76v1.52H7.625Z" />
-      <path d="M7.625 16.76h1.52v1.53h-1.52Z" />
-      <path d="M6.095 15.24h1.53v1.52h-1.53Z" />
-      <path d="M4.575 1.52h3.05v1.53h-3.05Z" />
-      <path d="M4.575 13.71h1.52v1.53h-1.52Z" />
-      <path d="M3.055 12.19h1.52v1.52h-1.52Z" />
-      <path d="M3.055 3.05h1.52v1.52h-1.52Z" />
-      <path d="M1.525 4.57h1.53v7.62H1.525Z" />
-    </svg>
-  )
-}
-
 export function ChevronUpIcon({ class: className }: IconProps) {
   return (
     <svg {...base} class={className}>

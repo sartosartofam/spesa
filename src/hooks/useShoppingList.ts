@@ -114,5 +114,3 @@ export function useShoppingList() {
     restore,
   }
 }
-
-export type ShoppingList = ReturnType<typeof useShoppingList>

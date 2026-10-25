@@ -18,7 +18,7 @@ const DEFAULT_PRESET: OrderPreset = {
   order: [...CATEGORIES],
 }
 
-export const DEFAULT_SETTINGS: Settings = {
+const DEFAULT_SETTINGS: Settings = {
   quickAdd: false,
   defaultCategory: DEFAULT_CATEGORY,
   activePresetId: DEFAULT_PRESET.id,
@@ -37,7 +37,7 @@ export function createDefaultSettings(categories: readonly string[] = readCatego
   }
 }
 
-export function activePreset(settings: Settings): OrderPreset {
+function activePreset(settings: Settings): OrderPreset {
   return (
     settings.presets.find((preset) => preset.id === settings.activePresetId) ??
     settings.presets[0] ??

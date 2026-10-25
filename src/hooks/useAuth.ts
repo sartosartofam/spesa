@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'preact/hooks'
 import { mapAuthError, normalizeEmail } from '../lib/auth'
 import { getSupabase } from '../lib/supabase'
 
-export type AuthStatus = 'loading' | 'anonymous' | 'authenticated'
+type AuthStatus = 'loading' | 'anonymous' | 'authenticated'
 
-export interface AuthState {
+interface AuthState {
   status: AuthStatus
   session: Session | null
   user: User | null

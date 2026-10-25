@@ -5,22 +5,6 @@
 
 export type ItemStatus = 'to_buy' | 'bought'
 
-export interface Family {
-  id: string
-  name: string
-  created_at: string
-}
-
-export interface Member {
-  id: string
-  family_id: string
-  email: string
-  display_name: string
-  /** `owner` | `member` nello schema attuale. */
-  role: string
-  created_at: string
-}
-
 export interface Item {
   id: string
   family_id: string

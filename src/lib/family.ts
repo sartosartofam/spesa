@@ -20,12 +20,11 @@ export interface LeftFamily {
 
 export interface FamilyMember {
   id: string
-  email: string
   displayName: string
   role: 'owner' | 'member'
 }
 
-export interface CurrentFamily {
+interface CurrentFamily {
   id: string
   name: string
 }
@@ -145,13 +144,12 @@ export async function listFamilyMembers(): Promise<FamilyMember[]> {
   const client = liveClient()
   const { data, error } = await client
     .from('members')
-    .select('id, email, display_name, role')
+    .select('id, display_name, role')
     .order('display_name', { ascending: true })
   if (error) throw error
 
   return (data ?? []).map((member) => ({
     id: member.id,
-    email: member.email,
     displayName: member.display_name,
     role: member.role === 'owner' ? 'owner' : 'member',
   }))
@@ -213,23 +211,36 @@ function errorMessage(error: unknown): string {
   return String(error)
 }
 
+const SESSION_RE = /not authenticated|non autenticato|jwt|session/i
+const CONFIG_RE = /supabase non configurato|richiede(?:no)? il backend/i
+const NETWORK_RE = /fetch|network|failed to fetch|load failed|offline/i
+const NETWORK_MESSAGE = 'Impossibile contattare il server. Controlla la connessione e riprova.'
+
+/** Primo messaggio noto della RPC, oppure null. */
+function knownMessage(message: string, known: readonly string[]): string | null {
+  return known.find((text) => message.includes(text)) ?? null
+}
+
+/** Traduce gli errori trasversali (sessione, configurazione, rete). */
+function commonMessage(message: string, config: string, fallback: string): string {
+  if (SESSION_RE.test(message)) return 'Sessione scaduta. Accedi di nuovo.'
+  if (CONFIG_RE.test(message)) return config
+  if (NETWORK_RE.test(message)) return NETWORK_MESSAGE
+  return fallback
+}
+
 /** Messaggio utente per un errore durante la preparazione della famiglia. */
 export function mapFamilyError(error: unknown): string {
   const message = errorMessage(error)
 
-  if (/not authenticated|utente non autenticato|jwt|session/i.test(message)) {
-    return 'Sessione scaduta. Accedi di nuovo.'
-  }
   if (/email non valida/i.test(message)) {
     return 'La tua email non è valida. Contatta chi gestisce l’app.'
   }
-  if (/supabase non configurato/i.test(message)) {
-    return 'Supabase non è configurato. Esegui npm run env:local e riavvia lo sviluppo.'
-  }
-  if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {
-    return 'Impossibile contattare il server. Controlla la connessione e riprova.'
-  }
-  return 'Non è stato possibile preparare la tua famiglia. Riprova.'
+  return commonMessage(
+    message,
+    'Supabase non è configurato. Esegui npm run env:local e riavvia lo sviluppo.',
+    'Non è stato possibile preparare la tua famiglia. Riprova.',
+  )
 }
 
 /** Messaggio utente per un errore durante la rinomina della famiglia. */
@@ -243,19 +254,14 @@ export function mapRenameFamilyError(error: unknown): string {
     'Famiglia non trovata. Ricarica l’app.',
   ]
 
-  const known = knownMessages.find((text) => message.includes(text))
-  if (known) return known
-
-  if (/not authenticated|non autenticato|jwt|session/i.test(message)) {
-    return 'Sessione scaduta. Accedi di nuovo.'
-  }
-  if (/supabase non configurato|richiede il backend/i.test(message)) {
-    return 'La rinomina è disponibile solo con il backend configurato.'
-  }
-  if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {
-    return 'Impossibile contattare il server. Controlla la connessione e riprova.'
-  }
-  return 'Non è stato possibile rinominare la famiglia. Riprova.'
+  return (
+    knownMessage(message, knownMessages) ??
+    commonMessage(
+      message,
+      'La rinomina è disponibile solo con il backend configurato.',
+      'Non è stato possibile rinominare la famiglia. Riprova.',
+    )
+  )
 }
 
 /** Messaggio utente per un errore durante l'uscita dalla famiglia. */
@@ -268,19 +274,14 @@ export function mapLeaveFamilyError(error: unknown): string {
     'Famiglia non valida.',
   ]
 
-  const known = knownMessages.find((text) => message.includes(text))
-  if (known) return known
-
-  if (/not authenticated|non autenticato|jwt|session/i.test(message)) {
-    return 'Sessione scaduta. Accedi di nuovo.'
-  }
-  if (/supabase non configurato|richiede il backend/i.test(message)) {
-    return 'L’uscita dalla famiglia è disponibile solo con il backend configurato.'
-  }
-  if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {
-    return 'Impossibile contattare il server. Controlla la connessione e riprova.'
-  }
-  return 'Non è stato possibile uscire dalla famiglia. Riprova.'
+  return (
+    knownMessage(message, knownMessages) ??
+    commonMessage(
+      message,
+      'L’uscita dalla famiglia è disponibile solo con il backend configurato.',
+      'Non è stato possibile uscire dalla famiglia. Riprova.',
+    )
+  )
 }
 
 /** Messaggio utente per un errore di invito o cambio famiglia. */
@@ -301,17 +302,12 @@ export function mapInviteError(error: unknown): string {
     'Sei già owner.',
   ]
 
-  const known = knownMessages.find((text) => message.includes(text))
-  if (known) return known
-
-  if (/not authenticated|non autenticato|jwt|session/i.test(message)) {
-    return 'Sessione scaduta. Accedi di nuovo.'
-  }
-  if (/supabase non configurato|richiede(?:no)? il backend/i.test(message)) {
-    return 'Gli inviti sono disponibili solo con il backend configurato.'
-  }
-  if (/fetch|network|failed to fetch|load failed|offline/i.test(message)) {
-    return 'Impossibile contattare il server. Controlla la connessione e riprova.'
-  }
-  return 'Non è stato possibile completare l’operazione. Riprova.'
+  return (
+    knownMessage(message, knownMessages) ??
+    commonMessage(
+      message,
+      'Gli inviti sono disponibili solo con il backend configurato.',
+      'Non è stato possibile completare l’operazione. Riprova.',
+    )
+  )
 }

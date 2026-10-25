@@ -11,12 +11,12 @@ export interface OrderPreset {
   order: string[]
 }
 
-export interface PresetImportResult {
+interface PresetImportResult {
   presets: OrderPreset[]
   warnings: string[]
 }
 
-export interface PresetMergeResult {
+interface PresetMergeResult {
   presets: OrderPreset[]
   activePresetId: string
   added: number
@@ -26,7 +26,7 @@ export interface PresetMergeResult {
 const MAX_NAME_LENGTH = 40
 let fallbackId = 0
 
-export function createPresetId(): string {
+function createPresetId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }

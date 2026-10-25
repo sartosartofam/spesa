@@ -3,7 +3,7 @@ import { createMockItemsRepository } from './mock-repository'
 import type { ItemsRepository } from './repository'
 import { createSupabaseItemsRepository } from './supabase-repository'
 
-export type DataMode = 'mock' | 'supabase'
+type DataMode = 'mock' | 'supabase'
 
 /**
  * Punto di composizione dell'accesso ai dati.
@@ -57,5 +57,3 @@ export const itemsRepository: ItemsRepository = {
 
 /** True quando i dati arrivano dal database reale invece che dal mock. */
 export const isLiveData = mode === 'supabase'
-
-export type { ItemsRepository }
