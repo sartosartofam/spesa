@@ -258,6 +258,25 @@ test('salva le impostazioni alla chiusura e Annulla le scarta', async ({ page })
   await expect(settings.getByLabel('Bagliore che segue il cursore')).not.toBeChecked()
 })
 
+test('le impostazioni usano una sola barra di scorrimento', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+
+  const settings = page.getByRole('dialog')
+  await expect(settings).toBeVisible()
+
+  const scrollable = await settings.evaluate((dialog) =>
+    [dialog, ...dialog.querySelectorAll<HTMLElement>('.sheet__body')]
+      .filter((element) => {
+        const style = getComputedStyle(element)
+        return /(auto|scroll)/.test(style.overflowY) && element.scrollHeight > element.clientHeight
+      })
+      .map((element) => element.className),
+  )
+
+  expect(scrollable).toEqual(['sheet__body'])
+})
+
 test('ripristina le impostazioni solo dopo conferma', async ({ page }) => {
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   let settings = page.getByRole('dialog')

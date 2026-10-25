@@ -1321,6 +1321,7 @@ select {
   border-radius: 20px 20px 0 0;
   background: var(--surface);
   color: var(--text);
+  overflow: hidden;
   box-shadow: 0 -12px 40px rgb(0 0 0 / 22%);
 }
 
@@ -1337,6 +1338,7 @@ select {
   max-height: 92dvh;
   padding: 0 1rem calc(1rem + env(safe-area-inset-bottom));
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .sheet__header {
