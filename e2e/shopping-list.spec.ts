@@ -258,40 +258,51 @@ test('salva le impostazioni alla chiusura e Annulla le scarta', async ({ page })
   await expect(settings.getByLabel('Bagliore che segue il cursore')).not.toBeChecked()
 })
 
-test('cambia tema, lo salva e Annulla ripristina quello attivo', async ({ page }) => {
+test('cambia palette, la salva e Annulla ripristina quella attiva', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 })
   await page.emulateMedia({ colorScheme: 'dark' })
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'auto')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'yellow')
 
   const background = () =>
     page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())
+  const themeColor = page.locator('meta[name="theme-color"]')
+
+  expect(await background()).toBe('#17140c')
+  await expect(themeColor).toHaveAttribute('content', '#17140c')
 
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   let dialog = page.getByRole('dialog')
 
-  await dialog.getByLabel('Tema').selectOption('dark-yellow')
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark-yellow')
+  await dialog.getByLabel('Tema').selectOption('green')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'green')
+  expect(await background()).toBe('#121714')
+  await dialog.getByRole('button', { name: 'Chiudi' }).click()
+
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('spesa.theme.v1'))).toBe('green')
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Tema').selectOption('yellow')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'yellow')
   expect(await background()).toBe('#17140c')
-  await dialog.getByRole('button', { name: 'Chiudi' }).click()
-
-  await page.getByRole('button', { name: 'Impostazioni' }).click()
-  dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Tema').selectOption('light-yellow')
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light-yellow')
-  expect(await background()).toBe('#fbf7e8')
   await dialog.getByRole('button', { name: 'Annulla' }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark-yellow')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'green')
+  expect(await background()).toBe('#121714')
 
   await page.getByRole('button', { name: 'Impostazioni' }).click()
   dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Tema').selectOption('light')
+  await dialog.getByLabel('Tema').selectOption('yellow')
   await dialog.getByRole('button', { name: 'Chiudi' }).click()
 
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-  expect(await background()).toBe('#f6f7f5')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'yellow')
+  expect(await background()).toBe('#17140c')
   await page.reload()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-  expect(await background()).toBe('#f6f7f5')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'yellow')
+  expect(await background()).toBe('#17140c')
+
+  await page.emulateMedia({ colorScheme: 'light' })
+  expect(await background()).toBe('#fbf7e8')
+  await expect(themeColor).toHaveAttribute('content', '#8a6500')
 })
 
 test('le impostazioni usano una sola barra di scorrimento', async ({ page }) => {

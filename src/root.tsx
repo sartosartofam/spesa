@@ -7,6 +7,7 @@ import { mapAuthError, userDisplayName } from './lib/auth'
 import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
 import { type AppRoute, navigate } from './lib/routes'
+import { refreshThemeColor, subscribeSystemColorScheme } from './lib/theme'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -108,6 +109,8 @@ export function Root() {
   const loggingOut = useRef(false)
 
   useDocumentMeta(metaFor(route))
+
+  useEffect(() => subscribeSystemColorScheme(refreshThemeColor), [])
 
   useEffect(() => {
     if (auth.status === 'authenticated') {

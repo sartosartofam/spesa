@@ -1,7 +1,7 @@
 import { CATEGORIES, DEFAULT_CATEGORY, readCategories } from './categories'
 import { defaultPreset, normalizePresets, type OrderPreset } from './order-presets'
 
-export type ThemeId = 'auto' | 'light' | 'dark-yellow' | 'light-yellow'
+export type ThemeId = 'yellow' | 'green'
 
 export interface ThemeOption {
   id: ThemeId
@@ -9,16 +9,34 @@ export interface ThemeOption {
 }
 
 export const THEME_OPTIONS: readonly ThemeOption[] = [
-  { id: 'auto', label: 'Sistema' },
-  { id: 'light', label: 'Chiaro' },
-  { id: 'dark-yellow', label: 'Scuro giallo' },
-  { id: 'light-yellow', label: 'Chiaro giallo' },
+  { id: 'yellow', label: 'Giallo (predefinito)' },
+  { id: 'green', label: 'Verde (secondario)' },
 ]
 
 const THEME_IDS = new Set<string>(THEME_OPTIONS.map((option) => option.id))
 
+/**
+ * Valori usati prima delle palette giallo/verde. `auto` era il verde di
+ * sistema, ma il nuovo default è il giallo: chi non aveva scelto un tema
+ * esplicito deve trovare la nuova palette predefinita.
+ */
+const LEGACY_THEMES: Record<string, ThemeId> = {
+  auto: 'yellow',
+  light: 'green',
+  'dark-yellow': 'yellow',
+  'light-yellow': 'yellow',
+}
+
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && THEME_IDS.has(value)
+}
+
+export function normalizeTheme(value: unknown): ThemeId {
+  if (isThemeId(value)) return value
+  if (typeof value === 'string' && Object.hasOwn(LEGACY_THEMES, value)) {
+    return LEGACY_THEMES[value] ?? 'yellow'
+  }
+  return 'yellow'
 }
 
 export interface Settings {
@@ -30,7 +48,7 @@ export interface Settings {
   presets: OrderPreset[]
   /** Effetto luminoso che segue il cursore sulla landing. */
   landingGlow: boolean
-  /** Tema della UI: automatico oppure una palette esplicita. */
+  /** Palette della UI; chiaro/scuro segue sempre il tema di sistema. */
   theme: ThemeId
 }
 
@@ -46,7 +64,7 @@ const DEFAULT_SETTINGS: Settings = {
   activePresetId: DEFAULT_PRESET.id,
   presets: [DEFAULT_PRESET],
   landingGlow: true,
-  theme: 'auto',
+  theme: 'yellow',
 }
 
 const STORAGE_KEY = 'spesa.settings.v1'
@@ -83,7 +101,7 @@ export function normalizeSettings(
 
   return {
     ...settings,
-    theme: isThemeId(settings.theme) ? settings.theme : 'auto',
+    theme: normalizeTheme(settings.theme),
     activePresetId,
     presets,
   }
@@ -132,7 +150,7 @@ export function parseSettings(
       presets,
       // Il default è attivo; solo un `false` esplicito lo disattiva.
       landingGlow: parsed.landingGlow !== false,
-      theme: isThemeId(parsed.theme) ? parsed.theme : DEFAULT_SETTINGS.theme,
+      theme: normalizeTheme(parsed.theme),
     },
     categories,
   )
