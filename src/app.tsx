@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { AppHeader } from './components/AppHeader'
 import { CategorySection } from './components/CategorySection'
 import { EmptyState } from './components/EmptyState'
-import { FiltersDialog } from './components/FiltersDialog'
-import { CloseIcon, FilterIcon } from './components/Icons'
+import { CloseIcon } from './components/Icons'
 import { ItemDialog, type ItemDraft } from './components/ItemDialog'
 import { ListTabs } from './components/ListTabs'
 import { QuickAdd } from './components/QuickAdd'
 import { SettingsDialog } from './components/SettingsDialog'
+import { useFamilyPeople } from './hooks/useFamilyPeople'
 import { useShoppingList } from './hooks/useShoppingList'
 import {
   type AccountSettings,
@@ -41,7 +41,7 @@ import type { Item, ListView } from './lib/types'
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
 
 interface AppProps {
-  userEmail: string
+  userName: string
   userId: string
   familyId: string | null
   familyName: string | null
@@ -51,7 +51,7 @@ interface AppProps {
 }
 
 export function App({
-  userEmail,
+  userName,
   userId,
   familyId,
   familyName,
@@ -60,11 +60,11 @@ export function App({
   onLogout,
 }: AppProps) {
   const list = useShoppingList()
+  const people = useFamilyPeople(userId, userName, familyId)
   const [view, setView] = useState<ListView>('active')
   const [query, setQuery] = useState('')
   const [urgentOnly, setUrgentOnly] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [account, setAccount] = useState<AccountSettings>(() => localAccountSettings(userId))
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -171,8 +171,7 @@ export function App({
     )
   }, [view, list.active, list.history, selectedCategories, categoryOrder])
 
-  const activeFilterCount = selectedCategories.length + (urgentOnly ? 1 : 0)
-  const hasFilters = query.trim().length > 0 || activeFilterCount > 0
+  const hasFilters = query.trim().length > 0 || selectedCategories.length > 0 || urgentOnly
 
   function changeView(next: ListView) {
     setView(next)
@@ -185,11 +184,6 @@ export function App({
         ? current.filter((candidate) => candidate !== category)
         : [...current, category],
     )
-  }
-
-  function clearFilters() {
-    setUrgentOnly(false)
-    setSelectedCategories([])
   }
 
   async function handleQuickAdd(name: string) {
@@ -275,308 +269,230 @@ export function App({
 
   return (
     <div class="app">
-      <div class="app-window">
-        <AppHeader
-          counts={list.counts}
-          isMockData={!isLiveData}
-          userEmail={userEmail}
-          familyName={familyDisplayName(familyName)}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onLogout={onLogout}
-        />
+      <AppHeader
+        counts={list.counts}
+        people={people}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onLogout={onLogout}
+      />
 
-        <div class="layout">
-          <main class="app__main">
-            <QuickAdd
-              suggestions={list.suggestions}
-              quickMode={settings.quickAdd}
-              defaultCategory={settings.defaultCategory}
-              onSubmit={handleQuickAdd}
-              onDetails={handleQuickAddDetails}
-            />
+      <div class="layout">
+        <main class="app__main">
+          <QuickAdd
+            suggestions={list.suggestions}
+            quickMode={settings.quickAdd}
+            defaultCategory={settings.defaultCategory}
+            onSubmit={handleQuickAdd}
+            onDetails={handleQuickAddDetails}
+          />
 
-            {filterCategories.length > 0 && (
-              <fieldset class="category-chips">
-                <legend class="sr-only">Filtra per categoria</legend>
+          {filterCategories.length > 0 && (
+            <fieldset class="category-chips">
+              <legend class="sr-only">Filtra per categoria</legend>
+              <button
+                class={`category-chip ${
+                  selectedCategories.length === 0 ? 'category-chip--active' : ''
+                }`}
+                type="button"
+                aria-pressed={selectedCategories.length === 0}
+                onClick={() => setSelectedCategories([])}
+              >
+                Tutte
+              </button>
+              {filterCategories.map(([category, count]) => (
                 <button
                   class={`category-chip ${
-                    selectedCategories.length === 0 ? 'category-chip--active' : ''
+                    selectedCategories.includes(category) ? 'category-chip--active' : ''
                   }`}
                   type="button"
-                  aria-pressed={selectedCategories.length === 0}
-                  onClick={() => setSelectedCategories([])}
+                  key={category}
+                  aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
+                  aria-pressed={selectedCategories.includes(category)}
+                  onClick={() => toggleCategory(category)}
                 >
-                  Tutte
-                </button>
-                {filterCategories.map(([category, count]) => (
-                  <button
-                    class={`category-chip ${
-                      selectedCategories.includes(category) ? 'category-chip--active' : ''
-                    }`}
-                    type="button"
-                    key={category}
-                    aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
-                    aria-pressed={selectedCategories.includes(category)}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    {category}
-                    <span class="category-chip__count" aria-hidden="true">
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </fieldset>
-            )}
-
-            <ListTabs view={view} counts={list.counts} onChange={changeView} />
-
-            <div class="toolbar">
-              <label class="sr-only" for="search-items">
-                Cerca articoli
-              </label>
-              <input
-                id="search-items"
-                class="search"
-                type="search"
-                placeholder="Cerca per nome o categoria"
-                value={query}
-                onInput={(event) => setQuery(event.currentTarget.value)}
-              />
-              <button
-                class="filter-button"
-                type="button"
-                aria-label={
-                  activeFilterCount > 0 ? `Filtri, ${activeFilterCount} attivi` : 'Filtri'
-                }
-                aria-haspopup="dialog"
-                onClick={() => setFiltersOpen(true)}
-              >
-                <FilterIcon />
-                <span class="filter-button__label">Filtri</span>
-                {activeFilterCount > 0 && (
-                  <span class="filter-button__count" aria-hidden="true">
-                    {activeFilterCount}
+                  {category}
+                  <span class="category-chip__count" aria-hidden="true">
+                    {count}
                   </span>
-                )}
+                </button>
+              ))}
+            </fieldset>
+          )}
+
+          <ListTabs view={view} counts={list.counts} onChange={changeView} />
+
+          <div class="toolbar">
+            <label class="sr-only" for="search-items">
+              Cerca articoli
+            </label>
+            <input
+              id="search-items"
+              class="search"
+              type="search"
+              placeholder="Cerca per nome o categoria"
+              value={query}
+              onInput={(event) => setQuery(event.currentTarget.value)}
+            />
+          </div>
+
+          {urgentOnly && (
+            <div class="active-filters">
+              <button
+                class="filter-chip filter-chip--active filter-chip--urgent"
+                type="button"
+                aria-label="Togli il filtro Solo urgenti"
+                onClick={() => setUrgentOnly(false)}
+              >
+                Solo urgenti
+                <CloseIcon />
               </button>
             </div>
+          )}
 
-            {activeFilterCount > 0 && (
-              <div class="active-filters">
-                {urgentOnly && (
-                  <button
-                    class="filter-chip filter-chip--active filter-chip--urgent"
-                    type="button"
-                    aria-label="Togli il filtro Solo urgenti"
-                    onClick={() => setUrgentOnly(false)}
-                  >
-                    Solo urgenti
-                    <CloseIcon />
-                  </button>
-                )}
-                {selectedCategories.map((category) => (
-                  <button
-                    class="filter-chip filter-chip--active"
-                    type="button"
-                    key={category}
-                    aria-label={`Togli il filtro ${category}`}
-                    onClick={() => toggleCategory(category)}
-                  >
-                    {category}
-                    <CloseIcon />
-                  </button>
-                ))}
-                <button class="link-button" type="button" onClick={clearFilters}>
-                  Azzera
-                </button>
-              </div>
+          <div class="app__feedback" role="status" aria-live="polite">
+            {authError && (
+              <p class="alert" role="alert">
+                {authError}
+              </p>
             )}
+            {list.error && <p class="alert">{list.error}</p>}
+            {settingsSyncError && (
+              <p class="alert" role="status">
+                {settingsSyncError}
+              </p>
+            )}
+            {list.loading && <p class="hint">Carico la lista…</p>}
+          </div>
 
-            <div class="app__feedback" role="status" aria-live="polite">
-              {authError && (
-                <p class="alert" role="alert">
-                  {authError}
-                </p>
-              )}
-              {list.error && <p class="alert">{list.error}</p>}
-              {settingsSyncError && (
-                <p class="alert" role="status">
-                  {settingsSyncError}
-                </p>
-              )}
-              {list.loading && <p class="hint">Carico la lista…</p>}
+          {!list.loading && view === 'active' && !urgentOnly && urgentItems.length > 0 && (
+            <div class="urgent-banner">
+              <span class="urgent-banner__dot" aria-hidden="true" />
+              <div class="urgent-banner__text">
+                <strong>
+                  {urgentItems[0]?.name}
+                  {urgentItems.length > 1 ? ` + ${urgentItems.length - 1}` : ''}
+                </strong>
+                <small>
+                  {urgentItems.length === 1
+                    ? 'Segnalato urgente'
+                    : `${urgentItems.length} articoli urgenti`}
+                </small>
+              </div>
+              <button
+                class="urgent-banner__action"
+                type="button"
+                aria-label="Mostra urgenti"
+                onClick={() => setUrgentOnly(true)}
+              >
+                Mostra
+              </button>
             </div>
+          )}
 
-            {!list.loading && view === 'active' && !urgentOnly && urgentItems.length > 0 && (
-              <div class="urgent-banner">
-                <span class="urgent-banner__dot" aria-hidden="true" />
-                <div class="urgent-banner__text">
-                  <strong>
-                    {urgentItems[0]?.name}
-                    {urgentItems.length > 1 ? ` + ${urgentItems.length - 1}` : ''}
-                  </strong>
-                  <small>
-                    {urgentItems.length === 1
-                      ? 'Segnalato urgente'
-                      : `${urgentItems.length} articoli urgenti`}
-                  </small>
-                </div>
-                <button
-                  class="urgent-banner__action"
-                  type="button"
-                  aria-label="Mostra urgenti"
-                  onClick={() => setUrgentOnly(true)}
-                >
-                  Mostra
-                </button>
-              </div>
-            )}
-
-            {!list.loading &&
-              (view === 'active' ? (
-                list.counts.active === 0 ? (
-                  <EmptyState
-                    title="Lista vuota"
-                    hint="Aggiungi il primo articolo: ti chiediamo categoria, quantità e se è urgente."
-                  />
-                ) : activeItems.length === 0 ? (
-                  <EmptyState
-                    title="Nessun risultato"
-                    hint={
-                      hasFilters
-                        ? 'Prova a togliere i filtri o a cambiare la ricerca.'
-                        : 'Non ci sono articoli da prendere.'
-                    }
-                  />
-                ) : urgentOnly ? (
-                  <CategorySection
-                    title="Urgenti"
-                    items={urgentItems}
-                    variant="active"
-                    urgent
-                    showCategory
-                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                    onRestore={(item) => list.restore(item.id)}
-                    onEdit={(item) => setDialog({ mode: 'edit', item })}
-                  />
-                ) : (
-                  activeGroups.map(([category, items]) => (
-                    <CategorySection
-                      key={category}
-                      title={category}
-                      items={items}
-                      variant="active"
-                      onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                      onRestore={(item) => list.restore(item.id)}
-                      onEdit={(item) => setDialog({ mode: 'edit', item })}
-                    />
-                  ))
-                )
-              ) : list.counts.history === 0 ? (
+          {!list.loading &&
+            (view === 'active' ? (
+              list.counts.active === 0 ? (
                 <EmptyState
-                  title="Storico vuoto"
-                  hint="Gli articoli presi finiscono qui: puoi rimetterli in lista quando serve."
+                  title="Lista vuota"
+                  hint="Aggiungi il primo articolo: ti chiediamo categoria, quantità e se è urgente."
                 />
-              ) : historyItems.length === 0 ? (
+              ) : activeItems.length === 0 ? (
                 <EmptyState
                   title="Nessun risultato"
-                  hint="Prova a togliere i filtri o a cambiare la ricerca."
+                  hint={
+                    hasFilters
+                      ? 'Prova a togliere i filtri o a cambiare la ricerca.'
+                      : 'Non ci sono articoli da prendere.'
+                  }
                 />
-              ) : (
+              ) : urgentOnly ? (
                 <CategorySection
-                  title="Presi di recente"
-                  items={historyItems}
-                  variant="history"
+                  title="Urgenti"
+                  items={urgentItems}
+                  variant="active"
+                  urgent
                   showCategory
                   onMarkBought={(item) => list.setStatus(item.id, 'bought')}
                   onRestore={(item) => list.restore(item.id)}
                   onEdit={(item) => setDialog({ mode: 'edit', item })}
                 />
-              ))}
-          </main>
-
-          <aside class="sidebar" aria-label="Riepilogo e controlli">
-            <section class="panel">
-              <h2 class="panel__title">Riepilogo</h2>
-              <dl class="stats">
-                <div>
-                  <dt>Da prendere</dt>
-                  <dd>{list.counts.active}</dd>
-                </div>
-                <div class="stats__urgent">
-                  <dt>Urgenti</dt>
-                  <dd>{list.counts.urgent}</dd>
-                </div>
-                <div>
-                  <dt>Storico</dt>
-                  <dd>{list.counts.history}</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section class="panel">
-              <h2 class="panel__title">Filtri</h2>
-              {view === 'active' && (
-                <label class="filter-option filter-option--urgent">
-                  <input
-                    type="checkbox"
-                    checked={urgentOnly}
-                    onChange={(event) => setUrgentOnly(event.currentTarget.checked)}
+              ) : (
+                activeGroups.map(([category, items]) => (
+                  <CategorySection
+                    key={category}
+                    title={category}
+                    items={items}
+                    variant="active"
+                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                    onRestore={(item) => list.restore(item.id)}
+                    onEdit={(item) => setDialog({ mode: 'edit', item })}
                   />
-                  <span>Solo urgenti</span>
-                  <span class="filter-option__count">{list.counts.urgent}</span>
-                </label>
-              )}
-              <p class="field__label">Categorie</p>
-              {filterCategories.length === 0 ? (
-                <p class="hint">Nessuna categoria disponibile.</p>
-              ) : (
-                <ul class="filter-options">
-                  {filterCategories.map(([category, count]) => (
-                    <li key={category}>
-                      <label class="filter-option">
-                        <input
-                          type="checkbox"
-                          checked={selectedCategories.includes(category)}
-                          onChange={() => toggleCategory(category)}
-                        />
-                        <span>{category}</span>
-                        <span class="filter-option__count">{count}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {activeFilterCount > 0 && (
-                <button class="link-button" type="button" onClick={clearFilters}>
-                  Azzera filtri
-                </button>
-              )}
-            </section>
+                ))
+              )
+            ) : list.counts.history === 0 ? (
+              <EmptyState
+                title="Storico vuoto"
+                hint="Gli articoli presi finiscono qui: puoi rimetterli in lista quando serve."
+              />
+            ) : historyItems.length === 0 ? (
+              <EmptyState
+                title="Nessun risultato"
+                hint="Prova a togliere i filtri o a cambiare la ricerca."
+              />
+            ) : (
+              <CategorySection
+                title="Presi di recente"
+                items={historyItems}
+                variant="history"
+                showCategory
+                onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                onRestore={(item) => list.restore(item.id)}
+                onEdit={(item) => setDialog({ mode: 'edit', item })}
+              />
+            ))}
+        </main>
 
-            <section class="panel">
-              <h2 class="panel__title">Urgenti</h2>
-              {list.urgent.length === 0 ? (
-                <p class="hint">Nessuna urgenza segnalata.</p>
-              ) : (
-                <ul class="urgent-list">
-                  {list.urgent.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        onClick={() => setDialog({ mode: 'edit', item })}
-                        aria-label={`Modifica ${item.name}`}
-                      >
-                        <span class="urgent-list__name">{item.name}</span>
-                        {item.quantity && <span class="urgent-list__qty">{item.quantity}</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </aside>
-        </div>
+        <aside class="sidebar" aria-label="Riepilogo e controlli">
+          <section class="panel">
+            <h2 class="panel__title">Riepilogo</h2>
+            <dl class="stats">
+              <div>
+                <dt>Da prendere</dt>
+                <dd>{list.counts.active}</dd>
+              </div>
+              <div class="stats__urgent">
+                <dt>Urgenti</dt>
+                <dd>{list.counts.urgent}</dd>
+              </div>
+              <div>
+                <dt>Storico</dt>
+                <dd>{list.counts.history}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="panel">
+            <h2 class="panel__title">Urgenti</h2>
+            {list.urgent.length === 0 ? (
+              <p class="hint">Nessuna urgenza segnalata.</p>
+            ) : (
+              <ul class="urgent-list">
+                {list.urgent.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => setDialog({ mode: 'edit', item })}
+                      aria-label={`Modifica ${item.name}`}
+                    >
+                      <span class="urgent-list__name">{item.name}</span>
+                      {item.quantity && <span class="urgent-list__qty">{item.quantity}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
       </div>
 
       <footer class="app__footer">
@@ -609,19 +525,6 @@ export function App({
           onFamilyRenamed={onFamilyRenamed}
           onClose={() => setSettingsOpen(false)}
           onSave={handleSaveSettings}
-        />
-      )}
-
-      {filtersOpen && (
-        <FiltersDialog
-          categories={filterCategories}
-          selectedCategories={selectedCategories}
-          urgentOnly={urgentOnly}
-          showUrgent={view === 'active'}
-          onToggleUrgent={(next) => setUrgentOnly(next)}
-          onToggleCategory={toggleCategory}
-          onClear={clearFilters}
-          onClose={() => setFiltersOpen(false)}
         />
       )}
     </div>

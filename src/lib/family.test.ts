@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   familyDisplayName,
+  familyPeople,
   formatInviteExpiry,
   mapFamilyError,
   mapInviteError,
@@ -23,6 +24,38 @@ describe('familyDisplayName', () => {
 describe('normalizeInviteCode', () => {
   it('toglie spazi e porta il codice in maiuscolo', () => {
     expect(normalizeInviteCode('  ab12cd34ef56  ')).toBe('AB12CD34EF56')
+  })
+})
+
+describe('familyPeople', () => {
+  const ada = {
+    id: 'ada',
+    email: 'ada@example.test',
+    displayName: 'Ada',
+    role: 'owner' as const,
+  }
+  const bruno = {
+    id: 'bruno',
+    email: 'bruno@example.test',
+    displayName: 'Bruno',
+    role: 'member' as const,
+  }
+
+  it('mostra i nomi dei membri e segnala l’utente corrente', () => {
+    expect(familyPeople([ada, bruno], 'bruno', 'Bruno')).toEqual([
+      { id: 'ada', name: 'Ada', role: 'owner', isCurrentUser: false },
+      { id: 'bruno', name: 'Bruno', role: 'member', isCurrentUser: true },
+    ])
+  })
+
+  it('aggiunge l’utente corrente se l’elenco remoto non lo contiene', () => {
+    expect(familyPeople([ada], 'bruno', '  Bruno  ')).toEqual([
+      { id: 'bruno', name: 'Bruno', role: 'member', isCurrentUser: true },
+      { id: 'ada', name: 'Ada', role: 'owner', isCurrentUser: false },
+    ])
+    expect(familyPeople([], 'bruno', '')).toEqual([
+      { id: 'bruno', name: 'Tu', role: 'member', isCurrentUser: true },
+    ])
   })
 })
 

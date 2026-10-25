@@ -23,7 +23,7 @@ test('aggiunge un articolo con dettagli e lo sposta nello storico', async ({ pag
   await expect(activeRow).toBeVisible()
   await expect(activeRow).toContainText('2 pacchi')
 
-  await activeRow.getByRole('button', { name: 'Preso', exact: true }).click()
+  await activeRow.getByRole('button', { name: 'Segna Test e2e come preso' }).click()
   await page.getByRole('tab', { name: /Storico/ }).click()
 
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Test e2e' })).toBeVisible()
@@ -41,19 +41,15 @@ test('marca un articolo come urgente e lo filtra', async ({ page }) => {
   const activeRow = mainList.getByRole('listitem').filter({ hasText: 'Urgente e2e' })
   await expect(activeRow).toContainText('Urgente')
 
-  await page.getByRole('button', { name: /Filtri/ }).click()
-  const filters = page.getByRole('dialog')
-  await filters.getByRole('checkbox', { name: /Solo urgenti/ }).check()
-  await filters.getByRole('button', { name: 'Chiudi filtri' }).click()
+  const banner = page.locator('.urgent-banner')
+  await banner.getByRole('button', { name: 'Mostra urgenti' }).click()
 
   await expect(activeRow).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Togli il filtro Solo urgenti' })).toBeVisible()
 
-  await page.getByRole('button', { name: /Filtri/ }).click()
-  await expect(
-    page.getByRole('dialog').getByRole('checkbox', { name: /Solo urgenti/ }),
-  ).toBeChecked()
-  await page.getByRole('dialog').getByRole('button', { name: 'Chiudi filtri' }).click()
+  await page.getByRole('button', { name: 'Togli il filtro Solo urgenti' }).click()
+  await expect(banner).toBeVisible()
 })
 
 test('filtra per più categorie contemporaneamente', async ({ page }) => {
@@ -72,13 +68,11 @@ test('filtra per più categorie contemporaneamente', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Salva' }).click()
   await expect(dialog).toHaveCount(0)
 
-  await page.getByRole('button', { name: /Filtri/ }).click()
-  const filters = page.getByRole('dialog')
-  await filters.getByRole('checkbox', { name: /Casa/ }).check()
-  await filters.getByRole('checkbox', { name: /Dispensa/ }).check()
-  await filters.getByRole('button', { name: 'Chiudi filtri' }).click()
-
   const mainList = page.getByRole('main')
+  const chips = mainList.getByRole('group', { name: 'Filtra per categoria' })
+  await chips.getByRole('button', { name: /^Casa/ }).click()
+  await chips.getByRole('button', { name: /^Dispensa/ }).click()
+
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Casa e2e' })).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Dispensa e2e' })).toBeVisible()
   await expect(mainList.getByRole('listitem').filter({ hasText: 'Latte' })).toHaveCount(0)

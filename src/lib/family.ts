@@ -30,6 +30,45 @@ export interface CurrentFamily {
   name: string
 }
 
+/** Persona mostrata nell'header, senza esporre l'email. */
+export interface FamilyPerson {
+  id: string
+  name: string
+  role: 'owner' | 'member'
+  isCurrentUser: boolean
+}
+
+/**
+ * Prepara i nomi da mostrare nell'header. Se l'elenco remoto non contiene
+ * ancora l'utente corrente (caricamento o offline), lo aggiunge in testa.
+ */
+export function familyPeople(
+  members: readonly FamilyMember[],
+  currentUserId: string,
+  currentUserName: string,
+): FamilyPerson[] {
+  const people = members.map((member) => ({
+    id: member.id,
+    name: member.displayName.trim() || 'Membro',
+    role: member.role,
+    isCurrentUser: member.id === currentUserId,
+  }))
+
+  if (!currentUserId || people.some((person) => person.id === currentUserId)) {
+    return people
+  }
+
+  return [
+    {
+      id: currentUserId,
+      name: currentUserName.trim() || 'Tu',
+      role: 'member',
+      isCurrentUser: true,
+    },
+    ...people,
+  ]
+}
+
 function liveClient() {
   if (!isLiveData) throw new Error('Questa operazione richiede il backend Supabase.')
   const client = getSupabase()

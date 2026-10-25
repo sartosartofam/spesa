@@ -58,26 +58,13 @@ export function ItemRow({
       <div class="item__aside">
         {showQuantity && <span class="item__qty">{quantity}</span>}
         <div class="item__actions">
-          <button class="button button--ghost" type="button" onClick={() => onEdit(item)}>
+          <button
+            class="button button--ghost button--compact"
+            type="button"
+            onClick={() => onEdit(item)}
+          >
             Modifica
           </button>
-          {isHistory ? (
-            <button
-              class="button button--ghost item__action-main"
-              type="button"
-              onClick={() => void onRestore(item)}
-            >
-              Rimetti
-            </button>
-          ) : (
-            <button
-              class="button button--primary item__action-main"
-              type="button"
-              onClick={() => void onMarkBought(item)}
-            >
-              Preso
-            </button>
-          )}
         </div>
       </div>
     </li>

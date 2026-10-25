@@ -3,7 +3,7 @@ import { App } from './app'
 import { useAuth } from './hooks/useAuth'
 import { type DocumentMeta, useDocumentMeta } from './hooks/useDocumentMeta'
 import { useRoute } from './hooks/useRoute'
-import { mapAuthError } from './lib/auth'
+import { mapAuthError, userDisplayName } from './lib/auth'
 import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
 import { type AppRoute, navigate } from './lib/routes'
@@ -211,7 +211,7 @@ export function Root() {
     return (
       <App
         key={auth.user?.id}
-        userEmail={auth.user?.email ?? ''}
+        userName={userDisplayName(auth.user)}
         userId={auth.user?.id ?? ''}
         familyId={familyId}
         familyName={familyName}

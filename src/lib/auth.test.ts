@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { mapAuthError, normalizeEmail } from './auth'
+import { mapAuthError, normalizeEmail, userDisplayName } from './auth'
 
 describe('normalizeEmail', () => {
   it('toglie spazi e porta tutto in minuscolo', () => {
     expect(normalizeEmail('  Ada@Example.Test  ')).toBe('ada@example.test')
     expect(normalizeEmail('demo@spesa.test')).toBe('demo@spesa.test')
+  })
+})
+
+describe('userDisplayName', () => {
+  it('usa il nome salvato nei metadati', () => {
+    expect(userDisplayName({ user_metadata: { display_name: '  Ada  ' } })).toBe('Ada')
+  })
+
+  it('ha un fallback quando il nome manca', () => {
+    expect(userDisplayName(null)).toBe('Tu')
+    expect(userDisplayName({ user_metadata: {} })).toBe('Tu')
+    expect(userDisplayName({ user_metadata: { display_name: '   ' } })).toBe('Tu')
   })
 })
 
