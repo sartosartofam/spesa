@@ -1,10 +1,6 @@
-import { useState } from 'preact/hooks'
 import {
   CONTACT_EMAIL,
   CONTACT_LABEL,
-  DONATION_HOLDER,
-  DONATION_IBAN,
-  DONATION_LABEL,
   GITHUB_URL,
   STREAMLINE_LABEL,
   STREAMLINE_URL,
@@ -17,19 +13,8 @@ function goTo(path: string, event: MouseEvent) {
 }
 
 export function PublicFooter() {
-  const [copyMessage, setCopyMessage] = useState<string | null>(null)
-
-  async function copyIban() {
-    try {
-      await navigator.clipboard.writeText(DONATION_IBAN)
-      setCopyMessage('IBAN copiato.')
-    } catch {
-      setCopyMessage('Copia manuale non disponibile: seleziona l’IBAN qui sopra.')
-    }
-  }
-
   return (
-    <footer class="public-footer public-footer--rich">
+    <footer class="public-footer">
       <div class="public-footer__inner">
         <div class="public-footer__brand">
           <a class="public-brand" href="/" onClick={(event) => goTo('/', event)}>
@@ -63,24 +48,6 @@ export function PublicFooter() {
           <h2>Contatti</h2>
           <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
           <p>{CONTACT_LABEL} per segnalazioni, idee o problemi.</p>
-        </div>
-
-        <div class="public-footer__col public-footer__support">
-          <h2>{DONATION_LABEL}</h2>
-          <p>Se Spesa ti è utile, puoi offrirmi un caffè con un bonifico.</p>
-          <p class="public-footer__iban">
-            <span>IBAN</span>
-            <code>{DONATION_IBAN}</code>
-          </p>
-          <p class="public-footer__holder">{DONATION_HOLDER}</p>
-          <button class="button button--ghost" type="button" onClick={() => void copyIban()}>
-            Copia IBAN
-          </button>
-          {copyMessage && (
-            <p class="hint" role="status">
-              {copyMessage}
-            </p>
-          )}
         </div>
       </div>
 
