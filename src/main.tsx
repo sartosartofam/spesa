@@ -1,6 +1,7 @@
 import { render } from 'preact'
 import '@fontsource-variable/jetbrains-mono'
 import './app.css'
+import { registerServiceWorker } from './lib/pwa'
 import { applyTheme, readTheme } from './lib/theme'
 import { Root } from './root'
 
@@ -12,3 +13,4 @@ if (!root) throw new Error('Elemento #app non trovato in index.html')
 applyTheme(readTheme())
 
 render(<Root />, root)
+registerServiceWorker()

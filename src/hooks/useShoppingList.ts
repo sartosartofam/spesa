@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { isLiveData, itemsRepository } from '../lib/data'
 import { type ListHistoryEntry, type ListSnapshot, snapshotOperations } from '../lib/history'
 import { sortHistory } from '../lib/list'
+import { readCachedList, writeCachedList } from '../lib/list-cache'
 import { subscribeToItems } from '../lib/realtime'
 import { getSupabase } from '../lib/supabase'
 import type { Item, ItemStatus, NewItem } from '../lib/types'
@@ -72,12 +73,25 @@ export function useShoppingList(familyId: string | null = null) {
           itemsRepository.list('history'),
           itemsRepository.suggestions(),
         ])
+        if (isLiveData) writeCachedList(familyId, active, history, suggestions)
         const next = { active, history, suggestions, loading: false, error: null }
         stateRef.current = next
         setState(next)
         return next
       } catch (error) {
-        const next = { ...stateRef.current, loading: false, error: messageOf(error) }
+        const cached = isLiveData ? readCachedList(familyId) : null
+        const hasCurrentData =
+          stateRef.current.active.length > 0 || stateRef.current.history.length > 0
+        const next =
+          cached && !hasCurrentData
+            ? {
+                active: cached.active,
+                history: cached.history,
+                suggestions: cached.suggestions,
+                loading: false,
+                error: 'Sei offline: mostro l’ultima lista salvata.',
+              }
+            : { ...stateRef.current, loading: false, error: messageOf(error) }
         stateRef.current = next
         setState(next)
         return next

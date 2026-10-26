@@ -157,6 +157,24 @@ Il repository viene scelto in `src/lib/data/index.ts`:
 
 Il client e il repository sono creati in modo lazy: un ambiente non configurato non fa crashare la landing. Il merge dei duplicati è applicato lato client; il vincolo/trigger equivalente lato database resta un follow-up backend.
 
+### PWA e modalità offline
+
+Il manifest è in `public/manifest.webmanifest` e usa icone PNG 192/512, una variante maskable e `apple-touch-icon.png`. Il service worker (`public/sw.js`) viene registrato **solo nella build di produzione** e mette in cache l'app shell e gli asset con hash letti da `index.html`.
+
+- Il primo caricamento online prepara la shell; i successivi aggiornamenti usano network-first per le navigazioni e cache-first per gli asset.
+- Le richieste REST/Auth/Realtime verso Supabase non passano mai dalla cache.
+- In modalità Supabase l'ultima lista letta con successo viene salvata per famiglia in `localStorage`. Se il primo caricamento fallisce, l'app mostra l'ultima copia con un avviso offline. Logout e cambio famiglia cancellano queste copie.
+- Non c'è una coda di scrittura: offline si consulta la lista, ma aggiunte e modifiche richiedono la rete.
+
+Per provare la PWA:
+
+```bash
+npm run build
+npm run preview
+```
+
+Apri <http://127.0.0.1:4173>, installa l'app dal browser e prova a ricaricare con la rete disattivata. In produzione serve HTTPS (localhost è ammesso per lo sviluppo). Le icone si rigenerano con `rsvg-convert` a partire da `public/icon.svg` e `public/icon-maskable.svg`; i PNG sono committati.
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.

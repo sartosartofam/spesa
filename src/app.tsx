@@ -8,6 +8,7 @@ import { ListTabs } from './components/ListTabs'
 import { QuickAdd } from './components/QuickAdd'
 import { SettingsDialog } from './components/SettingsDialog'
 import { useFamilyPeople } from './hooks/useFamilyPeople'
+import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { useShoppingList } from './hooks/useShoppingList'
 import {
   type AccountSettings,
@@ -65,6 +66,7 @@ export function App({
 }: AppProps) {
   const list = useShoppingList(familyId)
   const people = useFamilyPeople(userId, userName, familyId)
+  const online = useOnlineStatus()
   const [view, setView] = useState<ListView>('active')
   const [controlsOpen, setControlsOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -430,6 +432,13 @@ export function App({
             {settingsSyncError && (
               <p class="alert" role="status">
                 {settingsSyncError}
+              </p>
+            )}
+            {!online && (
+              <p class="notice" role="status">
+                {isLiveData
+                  ? 'Sei offline: puoi consultare l’ultima lista salvata. Le modifiche richiedono la rete.'
+                  : 'Sei offline: la modalità demo continua a usare i dati locali.'}
               </p>
             )}
             {list.loading && <p class="hint">Carico la lista…</p>}
