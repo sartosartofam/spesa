@@ -49,6 +49,7 @@ Ogni voce è una issue separata, con branch `feat/backend-*` o `feat/frontend-*`
 ## Fase 3 — Produzione
 
 - Supabase cloud + Vercel; RLS review umana.
+- Eseguire il checklist [docs/SECURITY.md](SECURITY.md) prima del go-live.
 - Keepalive: secrets GitHub Actions + cron Raspberry Pi.
 - Backup settimanale effettivo e test di ripristino.
 - Promozione `dev` → `main` solo umana.
