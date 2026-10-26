@@ -33,6 +33,8 @@ describe('configurazione di sicurezza del frontend', () => {
 
     expect(csp).toContain("default-src 'self'")
     expect(csp).toContain("script-src 'self'")
+    expect(csp).toContain("style-src 'self'")
+    expect(csp).not.toContain("'unsafe-inline'")
     expect(csp).not.toContain("'unsafe-eval'")
     expect(csp).toContain("frame-ancestors 'none'")
     expect(csp).toContain("object-src 'none'")
