@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { mapAuthError, normalizeEmail, userDisplayName } from './auth'
+import { mapAuthError, normalizeEmail, passwordResetRedirectUrl, userDisplayName } from './auth'
 
 describe('normalizeEmail', () => {
   it('toglie spazi e porta tutto in minuscolo', () => {
     expect(normalizeEmail('  Ada@Example.Test  ')).toBe('ada@example.test')
     expect(normalizeEmail('demo@spesa.test')).toBe('demo@spesa.test')
+  })
+})
+
+describe('passwordResetRedirectUrl', () => {
+  it('costruisce l’URL di ritorno senza slash duplicati', () => {
+    expect(passwordResetRedirectUrl('http://localhost:5173')).toBe(
+      'http://localhost:5173/reset-password',
+    )
+    expect(passwordResetRedirectUrl('https://spesa.example/')).toBe(
+      'https://spesa.example/reset-password',
+    )
   })
 })
 
@@ -42,6 +53,12 @@ describe('mapAuthError', () => {
   it('traduce password troppo corta', () => {
     expect(mapAuthError(new Error('Password should be at least 12 characters'))).toBe(
       'La password deve avere almeno 12 caratteri.',
+    )
+  })
+
+  it('chiede una password diversa da quella attuale', () => {
+    expect(mapAuthError(new Error('New password should be different from the old password.'))).toBe(
+      'La nuova password deve essere diversa da quella attuale.',
     )
   })
 

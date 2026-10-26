@@ -402,6 +402,92 @@ test('la registrazione rifiuta password diverse senza chiamare il server', async
   await expect(page).toHaveURL(/\/register$/)
 })
 
+test('il recupero password invia il link e non rivela se l’account esiste', async ({ page }) => {
+  let recoverBody: { email?: string } | undefined
+  let redirectTo: string | null = null
+
+  await mockAuth(page, {
+    onRecover: (body, redirect) => {
+      recoverBody = body
+      redirectTo = redirect
+    },
+  })
+
+  await page.goto('/login')
+  await page.getByRole('link', { name: 'Password dimenticata?' }).click()
+  await expect(page).toHaveURL(/\/forgot-password$/)
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
+  await expect(page.getByRole('heading', { name: 'Password dimenticata?' })).toBeVisible()
+
+  await page.getByLabel('Email').fill('  Demo@Spesa.Test ')
+  await page.getByRole('button', { name: 'Invia link di recupero' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Controlla la tua email' })).toBeVisible()
+  await expect(page.getByRole('status')).toContainText(
+    'Se demo@spesa.test è associato a un account',
+  )
+  expect(recoverBody?.email).toBe('demo@spesa.test')
+  expect(redirectTo).toContain('/reset-password')
+})
+
+test('il link di recupero scaduto chiede un nuovo invio', async ({ page }) => {
+  await page.goto('/reset-password')
+
+  await expect(page.getByRole('heading', { name: 'Link non valido o scaduto' })).toBeVisible()
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
+  await page.getByRole('link', { name: 'Richiedi un nuovo link' }).click()
+  await expect(page).toHaveURL(/\/forgot-password$/)
+})
+
+test('dal link di recupero si imposta una nuova password', async ({ page }) => {
+  let updatedPassword: string | undefined
+
+  await mockAuth(page, {
+    onUpdatePassword: (body) => {
+      updatedPassword = body.password
+    },
+  })
+  await signInAsDemo(page)
+  await page.goto('/reset-password')
+
+  await expect(page.getByRole('heading', { name: 'Imposta una nuova password' })).toBeVisible()
+  await page.getByLabel('Nuova password', { exact: true }).fill('password-nuova-123')
+  await page.getByLabel('Conferma nuova password').fill('password-nuova-123')
+  await page.getByRole('button', { name: 'Aggiorna password' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Password aggiornata' })).toBeVisible()
+  await expect(page.getByRole('status')).toContainText('La nuova password è attiva')
+  expect(updatedPassword).toBe('password-nuova-123')
+
+  await page.getByRole('link', { name: 'Vai alla lista' }).click()
+  await expect(page).toHaveURL(/\/app$/)
+  await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
+})
+
+test('il form di reset rifiuta password corte o diverse senza chiamare il server', async ({
+  page,
+}) => {
+  let calls = 0
+  await mockAuth(page, {
+    onUpdatePassword: () => {
+      calls += 1
+    },
+  })
+  await signInAsDemo(page)
+  await page.goto('/reset-password')
+
+  await page.getByLabel('Nuova password', { exact: true }).fill('corta123')
+  await page.getByLabel('Conferma nuova password').fill('corta123')
+  await page.getByRole('button', { name: 'Aggiorna password' }).click()
+  await expect(page.getByRole('alert')).toContainText('La password deve avere almeno 12 caratteri.')
+
+  await page.getByLabel('Nuova password', { exact: true }).fill('password-nuova-123')
+  await page.getByLabel('Conferma nuova password').fill('password-diversa')
+  await page.getByRole('button', { name: 'Aggiorna password' }).click()
+  await expect(page.getByRole('alert')).toContainText('Le password non coincidono.')
+  expect(calls).toBe(0)
+})
+
 test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 })
   await page.goto('/')
