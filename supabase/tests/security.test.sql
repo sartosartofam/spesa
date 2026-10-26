@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(17);
 
 -- Funzioni -------------------------------------------------------------------
 
@@ -14,6 +14,24 @@ select ok(
 select ok(
   has_function_privilege('authenticated', 'public.current_family_id()', 'execute'),
   'authenticated può eseguire current_family_id'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.restore_item(uuid,text,text,public.item_status,boolean,text,text,timestamptz,timestamptz)',
+    'execute'
+  ),
+  'anon non può eseguire restore_item'
+);
+
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.restore_item(uuid,text,text,public.item_status,boolean,text,text,timestamptz,timestamptz)',
+    'execute'
+  ),
+  'authenticated può eseguire restore_item'
 );
 
 select ok(
@@ -40,7 +58,8 @@ select is(
         'promote_family_owner',
         'redeem_family_invite',
         'rename_family',
-        'leave_family'
+        'leave_family',
+        'restore_item'
       )
       and (
         has_function_privilege('anon', p.oid, 'execute')

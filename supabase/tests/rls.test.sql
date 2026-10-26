@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(31);
+select plan(35);
 
 -- Dati di partenza. Il test gira come `postgres`, che è owner delle tabelle e
 -- quindi bypassa la RLS: questi insert servono solo a predisporre lo scenario.
@@ -227,6 +227,48 @@ select lives_ok(
   'A può inserire un articolo nella propria famiglia'
 );
 
+select lives_ok(
+  $$ select public.restore_item(
+    'a5555555-5555-4555-8555-555555555555'::uuid,
+    'Ripristinato A',
+    'Dispensa',
+    'to_buy'::public.item_status,
+    false,
+    'nota ripristinata',
+    '2',
+    '2026-10-01T10:00:00Z'::timestamptz,
+    null
+  ) $$,
+  'A può ripristinare un articolo eliminato nella propria famiglia'
+);
+
+select is(
+  (
+    select created_at
+    from public.items
+    where id = 'a5555555-5555-4555-8555-555555555555'
+  ),
+  '2026-10-01T10:00:00Z'::timestamptz,
+  'il ripristino conserva created_at'
+);
+
+select throws_ok(
+  $$ select public.restore_item(
+    'b2222222-2222-2222-2222-222222222222'::uuid,
+    'HACK',
+    null,
+    'to_buy'::public.item_status,
+    false,
+    null,
+    null,
+    now(),
+    null
+  ) $$,
+  '42501',
+  'Articolo non trovato',
+  'A non può ripristinare un articolo di B'
+);
+
 select throws_ok(
   $$ insert into public.push_subscriptions (member_id, endpoint, keys)
      values (
@@ -291,6 +333,23 @@ select is(
   (select count(*)::int from public.push_subscriptions),
   0,
   'un utente senza famiglia non vede subscription'
+);
+
+select throws_ok(
+  $$ select public.restore_item(
+    'c6666666-6666-4666-8666-666666666666'::uuid,
+    'Senza famiglia',
+    null,
+    'to_buy'::public.item_status,
+    false,
+    null,
+    null,
+    now(),
+    null
+  ) $$,
+  '42501',
+  'Utente senza famiglia',
+  'un utente senza famiglia non può ripristinare articoli'
 );
 
 reset role;
