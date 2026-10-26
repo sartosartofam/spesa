@@ -28,6 +28,18 @@ Ultimo aggiornamento: ottobre 2026.
 - JetBrains Mono è self-hosted: nessuna richiesta a Google Fonts.
 - `npm audit` pulito al momento dell'ultima verifica.
 
+## Perché non hashiamo i dati applicativi
+
+L'hashing è utile per i token bearer, non per i dati che l'app deve mostrare e
+interrogare. Nomi degli articoli, categorie, quantità, note, email e chiavi push
+servono in chiaro per UI, ricerca, ordinamento, join e realtime: hasharli
+romperebbe il prodotto e non sarebbe una vera cifratura.
+
+La protezione di quei dati dipende da RLS, TLS, accesso minimo al database e
+backup cifrati. I token che darebbero accesso a una famiglia (codici invito e,
+in futuro, token di export) sono invece hashati, perché non devono essere
+leggibili da un dump e non servono mai in chiaro dopo la creazione.
+
 ## Bloccanti prima del go-live
 
 ### Supabase Cloud
