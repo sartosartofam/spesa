@@ -24,7 +24,7 @@ export type Database = {
       }
       family_invites: {
         Row: {
-          code: string
+          code_hash: string
           created_at: string
           created_by: string
           expires_at: string
@@ -35,7 +35,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
-          code: string
+          code_hash: string
           created_at?: string
           created_by: string
           expires_at?: string
@@ -45,7 +45,7 @@ export type Database = {
           used_by?: string | null
         }
         Update: {
-          code?: string
+          code_hash?: string
           created_at?: string
           created_by?: string
           expires_at?: string

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(38);
 
 -- Permessi --------------------------------------------------------------------
 
@@ -127,7 +127,11 @@ select set_config(
 set local role authenticated;
 
 select lives_ok(
-  'select * from public.create_family_invite()',
+  $$select set_config(
+    'test.invite_code',
+    (select invite_code from public.create_family_invite()),
+    true
+  )$$,
   'A crea un invito per la propria famiglia'
 );
 
@@ -145,14 +149,32 @@ select is(
 );
 
 select matches(
+  current_setting('test.invite_code'),
+  '^[A-F0-9]{32}$',
+  'il codice restituito ha 32 caratteri esadecimali maiuscoli'
+);
+
+select matches(
   (
-    select code
+    select code_hash
     from public.family_invites
     where family_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
       and used_at is null
   ),
-  '^[A-F0-9]{12}$',
-  'il codice ha 12 caratteri esadecimali maiuscoli'
+  '^[a-f0-9]{64}$',
+  'nel database viene salvato solo lo SHA-256 del codice'
+);
+
+select is(
+  (
+    select count(*)::int
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'family_invites'
+      and column_name = 'code'
+  ),
+  0,
+  'la colonna con il codice in chiaro non esiste più'
 );
 
 select ok(
@@ -163,17 +185,6 @@ select ok(
       and used_at is null
   ),
   'l''invito scade dopo circa 7 giorni'
-);
-
-select set_config(
-  'test.invite_code',
-  (
-    select code
-    from public.family_invites
-    where family_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-      and used_at is null
-  ),
-  true
 );
 
 select set_config(
@@ -243,7 +254,10 @@ select ok(
     select used_at is not null
       and used_by = '33333333-3333-3333-3333-333333333333'
     from public.family_invites
-    where code = current_setting('test.invite_code')
+    where code_hash = encode(
+      sha256(convert_to(current_setting('test.invite_code'), 'UTF8')),
+      'hex'
+    )
   ),
   'l''invito viene marcato come usato'
 );
@@ -276,14 +290,14 @@ reset role;
 insert into public.family_invites (
   family_id,
   created_by,
-  code,
+  code_hash,
   created_at,
   expires_at
 )
 values (
   'cccccccc-cccc-cccc-cccc-cccccccccccc',
   '44444444-4444-4444-4444-444444444444',
-  'AAAAAAAAAAAA',
+  encode(sha256(convert_to('AAAAAAAAAAAA', 'UTF8')), 'hex'),
   now() - interval '2 days',
   now() - interval '1 day'
 );
@@ -314,25 +328,15 @@ select set_config(
 set local role authenticated;
 
 select lives_ok(
-  'select * from public.create_family_invite()',
+  $$select set_config(
+    'test.invite_code_c',
+    (select invite_code from public.create_family_invite()),
+    true
+  )$$,
   'C crea un invito per la famiglia C'
 );
 
 reset role;
-
-select set_config(
-  'test.invite_code_c',
-  (
-    select code
-    from public.family_invites
-    where family_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-      and used_at is null
-      and expires_at > now()
-    order by created_at desc
-    limit 1
-  ),
-  true
-);
 
 select set_config(
   'request.jwt.claims',
@@ -455,25 +459,15 @@ select set_config(
 set local role authenticated;
 
 select lives_ok(
-  'select * from public.create_family_invite()',
+  $$select set_config(
+    'test.invite_code_d',
+    (select invite_code from public.create_family_invite()),
+    true
+  )$$,
   'C crea un secondo invito per la famiglia C'
 );
 
 reset role;
-
-select set_config(
-  'test.invite_code_d',
-  (
-    select code
-    from public.family_invites
-    where family_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
-      and used_at is null
-      and expires_at > now()
-    order by created_at desc
-    limit 1
-  ),
-  true
-);
 
 select set_config(
   'request.jwt.claims',
@@ -498,6 +492,29 @@ select results_eq(
   $$values ('cccccccc-cccc-cccc-cccc-cccccccccccc'::uuid, 'member'::text)$$,
   'D entra nella famiglia C'
 );
+
+-- Limite inviti attivi --------------------------------------------------------
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}',
+  true
+);
+set local role authenticated;
+
+select lives_ok(
+  'select public.create_family_invite() from generate_series(1, 10)',
+  'C crea dieci inviti attivi'
+);
+
+select throws_ok(
+  'select * from public.create_family_invite()',
+  'P0001',
+  'Troppi inviti attivi. Usa o attendi la scadenza di uno di quelli esistenti.',
+  'l''undicesimo invito attivo viene rifiutato'
+);
+
+reset role;
 
 select * from finish();
 rollback;
