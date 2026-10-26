@@ -55,6 +55,11 @@ Ultimo aggiornamento: ottobre 2026.
 - [ ] Fare una review RLS con **due famiglie reali/fittizie** e con `anon`:
       nessun dato deve trapelare tra famiglie.
 - [ ] Controllare che `keepalive` resti leggibile solo in `select` da `anon`.
+- [ ] Se migri un database già esistente, revoca gli inviti attivi creati prima
+      dell'hardening: restano validi fino alla scadenza per compatibilità, ma
+      erano codici da 12 hex.
+- [ ] Nei log applicativi non far comparire codici invito, token, password o
+      email complete.
 
 Query utile da eseguire nel SQL editor di produzione:
 
