@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
-import { itemsRepository } from '../lib/data'
+import { isLiveData, itemsRepository } from '../lib/data'
 import { type ListHistoryEntry, type ListSnapshot, snapshotOperations } from '../lib/history'
 import { sortHistory } from '../lib/list'
+import { subscribeToItems } from '../lib/realtime'
+import { getSupabase } from '../lib/supabase'
 import type { Item, ItemStatus, NewItem } from '../lib/types'
+
+interface RefreshOptions {
+  /** Un aggiornamento in background non deve mostrare lo stato di caricamento. */
+  silent?: boolean
+}
 
 interface ShoppingListState {
   active: Item[]
@@ -38,7 +45,7 @@ function itemName(state: ShoppingListState, id: string): string {
   )
 }
 
-export function useShoppingList() {
+export function useShoppingList(familyId: string | null = null) {
   const [state, setState] = useState<ShoppingListState>(EMPTY_STATE)
   const stateRef = useRef(state)
   const [undoStack, setUndoStack] = useState<ListHistoryEntry[]>([])
@@ -54,29 +61,89 @@ export function useShoppingList() {
     })
   }, [])
 
-  const refresh = useCallback(async (): Promise<ShoppingListState> => {
-    commit((current) => ({ ...current, loading: true, error: null }))
-    try {
-      const [active, history, suggestions] = await Promise.all([
-        itemsRepository.list('active'),
-        itemsRepository.list('history'),
-        itemsRepository.suggestions(),
-      ])
-      const next = { active, history, suggestions, loading: false, error: null }
-      stateRef.current = next
-      setState(next)
-      return next
-    } catch (error) {
-      const next = { ...stateRef.current, loading: false, error: messageOf(error) }
-      stateRef.current = next
-      setState(next)
-      return next
-    }
-  }, [commit])
+  const refresh = useCallback(
+    async (options: RefreshOptions = {}): Promise<ShoppingListState> => {
+      if (!options.silent) {
+        commit((current) => ({ ...current, loading: true, error: null }))
+      }
+      try {
+        const [active, history, suggestions] = await Promise.all([
+          itemsRepository.list('active'),
+          itemsRepository.list('history'),
+          itemsRepository.suggestions(),
+        ])
+        const next = { active, history, suggestions, loading: false, error: null }
+        stateRef.current = next
+        setState(next)
+        return next
+      } catch (error) {
+        const next = { ...stateRef.current, loading: false, error: messageOf(error) }
+        stateRef.current = next
+        setState(next)
+        return next
+      }
+    },
+    [commit],
+  )
 
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  // Realtime è la sorgente principale degli aggiornamenti tra membri. Il
+  // refresh al focus copre riconnessioni e browser che sospendono i WebSocket.
+  useEffect(() => {
+    if (!isLiveData) return
+
+    let disposed = false
+    let timer: number | null = null
+
+    function scheduleRefresh() {
+      if (disposed) return
+      if (timer !== null) window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        timer = null
+        if (!disposed) void refresh({ silent: true })
+      }, 120)
+    }
+
+    let unsubscribe: (() => void) | null = null
+    try {
+      const client = getSupabase()
+      if (client) {
+        unsubscribe = subscribeToItems({
+          client,
+          familyId,
+          onChange: scheduleRefresh,
+          // Dopo una riconnessione può essersi perso un evento: riallineiamo.
+          onStatus: (status) => {
+            if (status === 'SUBSCRIBED') scheduleRefresh()
+          },
+        })
+      }
+    } catch {
+      // La connessione può fallire: il refresh al focus resta disponibile.
+    }
+
+    function handleFocus() {
+      scheduleRefresh()
+    }
+
+    function handleVisibility() {
+      if (!document.hidden) scheduleRefresh()
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      disposed = true
+      if (timer !== null) window.clearTimeout(timer)
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+      unsubscribe?.()
+    }
+  }, [familyId, refresh])
 
   const run = useCallback(
     async (action: () => Promise<unknown>, label: string) => {
