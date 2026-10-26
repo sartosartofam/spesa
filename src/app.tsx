@@ -63,7 +63,7 @@ export function App({
   onLogout,
   onDeleteAccount,
 }: AppProps) {
-  const list = useShoppingList()
+  const list = useShoppingList(familyId)
   const people = useFamilyPeople(userId, userName, familyId)
   const [view, setView] = useState<ListView>('active')
   const [controlsOpen, setControlsOpen] = useState(false)
