@@ -45,8 +45,18 @@ interface SignUpBody {
   data?: Record<string, unknown>
 }
 
+interface RecoverBody {
+  email?: string
+}
+
+interface UpdatePasswordBody {
+  password?: string
+}
+
 interface MockAuthOptions {
   onSignUp?: (body: SignUpBody) => void
+  onRecover?: (body: RecoverBody, redirectTo: string | null) => void
+  onUpdatePassword?: (body: UpdatePasswordBody) => void
 }
 
 function signUpUser(body: SignUpBody) {
@@ -106,12 +116,25 @@ export async function mockAuth(page: Page, options: MockAuthOptions = {}): Promi
       }
     }
 
+    if (url.pathname.endsWith('/recover')) {
+      const body = request.postDataJSON() as RecoverBody
+      options.onRecover?.(body, url.searchParams.get('redirect_to'))
+      await route.fulfill(json({}))
+      return
+    }
+
     if (url.pathname.endsWith('/logout')) {
       await route.fulfill({ status: 204 })
       return
     }
 
     if (url.pathname.endsWith('/user')) {
+      if (request.method() === 'PUT') {
+        const body = request.postDataJSON() as UpdatePasswordBody
+        options.onUpdatePassword?.(body)
+        await route.fulfill(json({ ...DEMO_USER, updated_at: new Date().toISOString() }))
+        return
+      }
       await route.fulfill(json(DEMO_USER))
       return
     }

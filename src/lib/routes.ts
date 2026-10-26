@@ -1,4 +1,12 @@
-export type AppRoute = 'landing' | 'login' | 'register' | 'privacy' | 'app' | 'not-found'
+export type AppRoute =
+  | 'landing'
+  | 'login'
+  | 'register'
+  | 'forgot-password'
+  | 'reset-password'
+  | 'privacy'
+  | 'app'
+  | 'not-found'
 
 /**
  * Risolve il pathname nelle viste dell'app.
@@ -6,6 +14,7 @@ export type AppRoute = 'landing' | 'login' | 'register' | 'privacy' | 'app' | 'n
  * Le route sono volutamente minime (ADR-0005): niente router esterno, solo
  * History API. `/app` e i suoi sottopercorsi sono privati; `/` è la landing
  * pubblica indicizzabile, `/login` e `/register` sono le pagine di autenticazione.
+ * `/forgot-password` e `/reset-password` completano il recupero password.
  */
 export function routeFromPath(pathname: string): AppRoute {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
@@ -13,6 +22,8 @@ export function routeFromPath(pathname: string): AppRoute {
   if (path === '/' || path === '') return 'landing'
   if (path === '/login') return 'login'
   if (path === '/register') return 'register'
+  if (path === '/forgot-password') return 'forgot-password'
+  if (path === '/reset-password') return 'reset-password'
   if (path === '/privacy') return 'privacy'
   if (path === '/app' || path.startsWith('/app/')) return 'app'
   return 'not-found'

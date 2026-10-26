@@ -17,6 +17,13 @@ describe('routeFromPath', () => {
     expect(routeFromPath('/register/')).toBe('register')
   })
 
+  it('riconosce le pagine di recupero password', () => {
+    expect(routeFromPath('/forgot-password')).toBe('forgot-password')
+    expect(routeFromPath('/forgot-password/')).toBe('forgot-password')
+    expect(routeFromPath('/reset-password')).toBe('reset-password')
+    expect(routeFromPath('/reset-password/')).toBe('reset-password')
+  })
+
   it('riconosce la pagina privacy', () => {
     expect(routeFromPath('/privacy')).toBe('privacy')
     expect(routeFromPath('/privacy/')).toBe('privacy')
@@ -41,6 +48,8 @@ describe('isPrivateRoute', () => {
     expect(isPrivateRoute('landing')).toBe(false)
     expect(isPrivateRoute('login')).toBe(false)
     expect(isPrivateRoute('register')).toBe(false)
+    expect(isPrivateRoute('forgot-password')).toBe(false)
+    expect(isPrivateRoute('reset-password')).toBe(false)
     expect(isPrivateRoute('privacy')).toBe(false)
     expect(isPrivateRoute('not-found')).toBe(false)
   })

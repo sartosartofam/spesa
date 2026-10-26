@@ -1347,6 +1347,14 @@ select {
   font-size: 0.85rem;
 }
 
+.notice {
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  color: var(--brand-strong);
+  font-size: 0.85rem;
+}
+
 .empty {
   display: flex;
   flex-direction: column;
@@ -3006,6 +3014,20 @@ code {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+}
+
+.auth-card__forgot {
+  align-self: flex-end;
+  margin-top: -0.35rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.auth-card__forgot:hover {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 .auth-card .button {

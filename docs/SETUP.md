@@ -97,11 +97,26 @@ Al primo accesso autenticato il frontend chiama la RPC `ensure_current_family()`
 
 In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana. **La conferma email va testata con un indirizzo reale prima del push in produzione**; fino ad allora i test si fanno in locale con Mailpit.
 
+### Recupero password
+
+Da `/login`, il link **Password dimenticata?** apre `/forgot-password`. Inserendo l'email, Supabase invia un link di recupero che riporta a `/reset-password`. In locale l'email si legge su Mailpit (<http://127.0.0.1:54324>), come per la conferma.
+
+Il link contiene una sessione temporanea di recovery. La pagina `/reset-password` chiede una nuova password di almeno 12 caratteri e la salva con `updateUser`. Se il link è scaduto o manca la sessione, la pagina invita a richiederne uno nuovo. Per sicurezza il link è `noindex` e non viene mai mostrato nella UI.
+
+La configurazione locale include già gli URL di redirect:
+
+- `http://localhost:5173/reset-password`
+- `http://127.0.0.1:5173/reset-password`
+
+In produzione vanno aggiunti come redirect URL esatti nel progetto Supabase cloud, insieme al Site URL. Vedi [SECURITY.md](SECURITY.md).
+
 Con `npm run dev`:
 
 - `/` è la landing pubblica;
 - `/login` è la pagina di accesso;
 - `/register` è la pagina di registrazione;
+- `/forgot-password` richiede il link di recupero;
+- `/reset-password` imposta la nuova password dal link ricevuto;
 - `/app` è l’area riservata e richiede una sessione attiva.
 
 Per provare il login usa uno degli utenti demo qui sopra, oppure registra un nuovo account.

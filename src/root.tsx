@@ -9,11 +9,13 @@ import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
 import { type AppRoute, navigate } from './lib/routes'
 import { refreshThemeColor, subscribeSystemColorScheme } from './lib/theme'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 
 const LANDING_DESCRIPTION =
   'Spesa è la lista della spesa condivisa per famiglie: gratuita, senza pubblicità e sempre aggiornata. Aggiungi articoli, segnala le urgenze e consulta lo storico.'
@@ -37,6 +39,20 @@ function metaFor(route: AppRoute): DocumentMeta {
     return {
       title: 'Registrati | Spesa',
       description: 'Crea il tuo account e la tua famiglia personale su Spesa.',
+      robots: 'noindex, nofollow',
+    }
+  }
+  if (route === 'forgot-password') {
+    return {
+      title: 'Recupera password | Spesa',
+      description: 'Richiedi il link per reimpostare la password del tuo account Spesa.',
+      robots: 'noindex, nofollow',
+    }
+  }
+  if (route === 'reset-password') {
+    return {
+      title: 'Imposta una nuova password | Spesa',
+      description: 'Imposta una nuova password per il tuo account Spesa.',
       robots: 'noindex, nofollow',
     }
   }
@@ -199,6 +215,19 @@ export function Root() {
   if (route === 'login') {
     if (auth.status === 'authenticated') return <LoadingPage />
     return <LoginPage onSignIn={auth.signIn} initialError={auth.error} />
+  }
+
+  if (route === 'forgot-password') {
+    return <ForgotPasswordPage onRequest={auth.requestPasswordReset} />
+  }
+
+  if (route === 'reset-password') {
+    return (
+      <ResetPasswordPage
+        onUpdate={auth.updatePassword}
+        sessionAvailable={auth.status === 'authenticated'}
+      />
+    )
   }
 
   if (route === 'privacy') {

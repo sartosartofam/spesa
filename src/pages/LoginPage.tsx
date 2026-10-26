@@ -84,6 +84,17 @@ export function LoginPage({ onSignIn, initialError }: LoginPageProps) {
             />
           </div>
 
+          <a
+            class="auth-card__forgot"
+            href="/forgot-password"
+            onClick={(event) => {
+              event.preventDefault()
+              navigate('/forgot-password')
+            }}
+          >
+            Password dimenticata?
+          </a>
+
           <button class="button button--primary" type="submit" disabled={submitting}>
             {submitting ? 'Accesso in corso…' : 'Accedi'}
           </button>

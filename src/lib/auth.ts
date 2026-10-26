@@ -3,6 +3,11 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
+/** URL a cui Supabase rimanda dopo il link di recupero password. */
+export function passwordResetRedirectUrl(origin: string): string {
+  return `${origin.replace(/\/+$/, '')}/reset-password`
+}
+
 interface UserWithDisplayName {
   user_metadata?: Record<string, unknown> | null
 }
@@ -25,6 +30,9 @@ export function mapAuthError(error: unknown): string {
   }
   if (/user already registered|already registered|email.*already.*registered/i.test(message)) {
     return 'Se l’indirizzo è valido, riceverai un’email di conferma. Se hai già un account, prova ad accedere.'
+  }
+  if (/same password|same_password|different from the old password/i.test(message)) {
+    return 'La nuova password deve essere diversa da quella attuale.'
   }
   if (/password.*(at least|length|weak|short)|weak_password/i.test(message)) {
     return 'La password deve avere almeno 12 caratteri.'

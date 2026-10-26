@@ -1,6 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { useCallback, useEffect, useState } from 'preact/hooks'
-import { mapAuthError, normalizeEmail } from '../lib/auth'
+import { mapAuthError, normalizeEmail, passwordResetRedirectUrl } from '../lib/auth'
 import { getSupabase } from '../lib/supabase'
 
 type AuthStatus = 'loading' | 'anonymous' | 'authenticated'
@@ -129,5 +129,26 @@ export function useAuth() {
     if (error) throw error
   }, [])
 
-  return { ...state, signIn, signUp, signOut }
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const client = authClient()
+    const { error } = await client.auth.resetPasswordForEmail(normalizeEmail(email), {
+      redirectTo: passwordResetRedirectUrl(window.location.origin),
+    })
+    if (error) throw error
+  }, [])
+
+  const updatePassword = useCallback(async (password: string) => {
+    const client = authClient()
+    const { error } = await client.auth.updateUser({ password })
+    if (error) throw error
+  }, [])
+
+  return {
+    ...state,
+    signIn,
+    signUp,
+    signOut,
+    requestPasswordReset,
+    updatePassword,
+  }
 }
