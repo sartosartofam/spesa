@@ -66,6 +66,52 @@ function createFakeApi(seed: Row[] = []): {
       return jsonResponse(FAMILY_ID)
     }
 
+    if (url.pathname.endsWith('/rpc/restore_item')) {
+      if (api.rpcError) throw api.rpcError
+      const args = JSON.parse(String(init?.body ?? '{}')) as {
+        p_id: string
+        p_name: string
+        p_category: string | null
+        p_status: Row['status']
+        p_urgent: boolean
+        p_note: string | null
+        p_quantity: string | null
+        p_created_at: string
+        p_bought_at: string | null
+      }
+      const now = new Date().toISOString()
+      const existing = api.rows.find((row) => row.id === args.p_id)
+
+      if (existing) {
+        existing.name = args.p_name
+        existing.category = args.p_category
+        existing.note = args.p_note
+        existing.quantity = args.p_quantity
+        existing.urgent = args.p_urgent
+        applyStatusRules(existing, args.p_status, now)
+        existing.updated_at = now
+        return jsonResponse(existing)
+      }
+
+      const status = args.p_status
+      const row: Row = {
+        id: args.p_id,
+        family_id: FAMILY_ID,
+        name: args.p_name,
+        category: args.p_category,
+        status,
+        urgent: status === 'bought' ? false : Boolean(args.p_urgent),
+        note: args.p_note,
+        quantity: args.p_quantity,
+        created_by: MEMBER_ID,
+        created_at: args.p_created_at ?? now,
+        updated_at: now,
+        bought_at: status === 'bought' ? (args.p_bought_at ?? now) : null,
+      }
+      api.rows.push(row)
+      return jsonResponse(row)
+    }
+
     if (!url.pathname.endsWith('/rest/v1/items')) {
       return jsonResponse({ message: 'not found' }, 404)
     }
@@ -371,8 +417,15 @@ describe('supabase items repository', () => {
     const restored = await repository.restoreItem(item)
 
     expect(restored.id).toBe(item.id)
+    expect(restored.created_at).toBe(item.created_at)
     expect(api.rows).toHaveLength(1)
     expect(api.rows[0]?.name).toBe('Pane')
+    expect(
+      api.requests.filter((request) => request === 'POST /rest/v1/rpc/restore_item'),
+    ).toHaveLength(2)
+    expect(
+      api.requests.filter((request) => request.startsWith('POST /rest/v1/items')),
+    ).toHaveLength(1)
   })
 
   it('mappa i permessi negati in un messaggio chiaro', async () => {

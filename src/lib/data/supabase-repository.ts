@@ -14,6 +14,8 @@ import type { ItemsRepository } from './repository'
  *   filtra per `family_id` in lettura e non può leggere altre famiglie;
  * - in inserimento `family_id` arriva dall'RPC `current_family_id()`, mentre
  *   `created_by` è valorizzato dal database con `auth.uid()`;
+ * - il ripristino per undo/redo passa dall'RPC `restore_item`, perché il
+ *   client non ha i grant per reinserire id e timestamp;
  * - il merge dei duplicati resta lato client (vedi `item-merge.ts`), in attesa
  *   di un vincolo/trigger lato database.
  */
@@ -301,46 +303,20 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
     },
 
     async restoreItem(item: Item) {
-      const existing = await unwrap(client.from('items').select('id').eq('id', item.id))
-
-      if (existing.length > 0) {
-        const row = await unwrap(
-          client
-            .from('items')
-            .update({
-              name: item.name,
-              category: item.category,
-              status: item.status,
-              urgent: item.urgent,
-              note: item.note,
-              quantity: item.quantity,
-            })
-            .eq('id', item.id)
-            .select('*')
-            .single(),
-        )
-        return toItem(row)
-      }
-
-      const familyId = await currentFamilyId()
+      // Il client non ha più i grant per reinserire id e timestamp: il
+      // ripristino passa da una RPC che deriva la famiglia dall'utente.
       const row = await unwrap(
-        client
-          .from('items')
-          .insert({
-            id: item.id,
-            family_id: familyId,
-            name: item.name,
-            category: item.category,
-            status: item.status,
-            urgent: item.urgent,
-            note: item.note,
-            quantity: item.quantity,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            bought_at: item.bought_at,
-          })
-          .select('*')
-          .single(),
+        client.rpc('restore_item', {
+          p_id: item.id,
+          p_name: item.name,
+          p_category: item.category,
+          p_status: item.status,
+          p_urgent: item.urgent,
+          p_note: item.note,
+          p_quantity: item.quantity,
+          p_created_at: item.created_at,
+          p_bought_at: item.bought_at,
+        } as unknown as Database['public']['Functions']['restore_item']['Args']),
       )
       return toItem(row)
     },

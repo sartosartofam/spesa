@@ -287,6 +287,39 @@ export type Database = {
           family_name: string
         }[]
       }
+      restore_item: {
+        Args: {
+          p_bought_at: string
+          p_category: string
+          p_created_at: string
+          p_id: string
+          p_name: string
+          p_note: string
+          p_quantity: string
+          p_status: Database['public']['Enums']['item_status']
+          p_urgent: boolean
+        }
+        Returns: {
+          bought_at: string | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          family_id: string
+          id: string
+          name: string
+          note: string | null
+          quantity: string | null
+          status: Database['public']['Enums']['item_status']
+          updated_at: string
+          urgent: boolean
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'items'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       item_status: 'to_buy' | 'bought'
