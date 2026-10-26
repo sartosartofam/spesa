@@ -52,8 +52,8 @@ leggibili da un dump e non servono mai in chiaro dopo la creazione.
 
 ### Privacy e dati personali
 
-- [ ] Sostituire in `src/lib/landing-content.ts` i segnaposto di titolare,
-      email di contatto e IBAN con i dati reali.
+- [ ] Sostituire in `src/lib/landing-content.ts` l'IBAN e l'intestatario delle
+      donazioni con i dati reali.
 - [ ] Rileggere l'informativa `/privacy` con i dati reali e aggiornare la data.
 - [ ] Provare la cancellazione account in staging con un utente vero:
       l'account deve sparire, la lista personale deve essere eliminata e, se ci

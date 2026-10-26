@@ -168,9 +168,10 @@ test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async (
   await expect(
     page.getByText(/Le donazioni tramite link esterni o bonifico non comportano la raccolta/i),
   ).toBeVisible()
-  await expect(page.getByRole('link', { name: 'ciao@spesa.example' }).first()).toHaveAttribute(
+  await expect(page.getByText('Sartori M.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'sartosartofam@gmail.com' }).first()).toHaveAttribute(
     'href',
-    'mailto:ciao@spesa.example',
+    'mailto:sartosartofam@gmail.com',
   )
   await expect(page.getByRole('link', { name: /Repository GitHub/ })).toHaveAttribute(
     'href',
