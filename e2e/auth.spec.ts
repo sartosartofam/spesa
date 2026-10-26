@@ -318,6 +318,22 @@ test('la registrazione pubblica normalizza l’email e chiede la conferma', asyn
   })
 })
 
+test('la registrazione rifiuta password sotto 12 caratteri senza chiamare il server', async ({
+  page,
+}) => {
+  await page.goto('/register')
+
+  await page.getByLabel('Nome', { exact: true }).fill('Ada')
+  await page.getByLabel('Nome della famiglia').fill('Famiglia Ada')
+  await page.getByLabel('Email').fill('ada@example.test')
+  await page.getByLabel('Password', { exact: true }).fill('corta123')
+  await page.getByLabel('Conferma password').fill('corta123')
+  await page.getByRole('button', { name: 'Crea account' }).click()
+
+  await expect(page.getByRole('alert')).toContainText('La password deve avere almeno 12 caratteri.')
+  await expect(page).toHaveURL(/\/register$/)
+})
+
 test('la registrazione rifiuta password diverse senza chiamare il server', async ({ page }) => {
   await page.goto('/register')
 

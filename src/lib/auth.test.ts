@@ -33,15 +33,15 @@ describe('mapAuthError', () => {
     )
   })
 
-  it('traduce email già registrata', () => {
+  it('non rivela se un indirizzo è già registrato', () => {
     expect(mapAuthError(new Error('User already registered'))).toBe(
-      'Esiste già un account con questa email. Prova ad accedere.',
+      'Se l’indirizzo è valido, riceverai un’email di conferma. Se hai già un account, prova ad accedere.',
     )
   })
 
   it('traduce password troppo corta', () => {
-    expect(mapAuthError(new Error('Password should be at least 8 characters'))).toBe(
-      'La password deve avere almeno 8 caratteri.',
+    expect(mapAuthError(new Error('Password should be at least 12 characters'))).toBe(
+      'La password deve avere almeno 12 caratteri.',
     )
   })
 

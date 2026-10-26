@@ -24,10 +24,10 @@ export function mapAuthError(error: unknown): string {
     return 'Email non confermata. Controlla la tua casella e clicca il link di conferma.'
   }
   if (/user already registered|already registered|email.*already.*registered/i.test(message)) {
-    return 'Esiste già un account con questa email. Prova ad accedere.'
+    return 'Se l’indirizzo è valido, riceverai un’email di conferma. Se hai già un account, prova ad accedere.'
   }
   if (/password.*(at least|length|weak|short)|weak_password/i.test(message)) {
-    return 'La password deve avere almeno 8 caratteri.'
+    return 'La password deve avere almeno 12 caratteri.'
   }
   if (/signups? not allowed|signup.*disabled|signup_disabled/i.test(message)) {
     return 'Le registrazioni sono chiuse. Contatta chi gestisce l’app.'

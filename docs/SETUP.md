@@ -88,7 +88,8 @@ La registrazione è aperta. Da `/register` si crea un account con nome, nome del
 
 - `[auth] enable_signup = true`;
 - `[auth.email] enable_confirmations = true`;
-- `minimum_password_length = 8`.
+- `minimum_password_length = 12`;
+- `[auth.email] secure_password_change = true`.
 
 Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: apri <http://127.0.0.1:54324>, prendi l'ultimo messaggio e clicca il link. Dopo la conferma accedi da `/login`.
 
