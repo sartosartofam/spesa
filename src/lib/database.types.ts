@@ -256,6 +256,7 @@ export type Database = {
         }[]
       }
       current_family_id: { Args: Record<PropertyKey, never>; Returns: string }
+      delete_current_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       ensure_current_family: { Args: Record<PropertyKey, never>; Returns: string }
       leave_family: {
         Args: { p_family_id: string }

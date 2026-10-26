@@ -26,6 +26,14 @@ Ultimo aggiornamento: ottobre 2026.
 - Header di sicurezza in `vercel.json`: CSP, HSTS, `X-Content-Type-Options`,
   `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP e CORP.
 - JetBrains Mono è self-hosted: nessuna richiesta a Google Fonts.
+- Informativa privacy pubblica su `/privacy`, raggiungibile da landing, login,
+  registrazione, area riservata e impostazioni.
+- Cancellazione account tramite RPC `delete_current_account()`: elimina solo
+  `auth.uid()`, gestisce famiglia condivisa e fa scattare le cascade dei dati
+  personali.
+- `robots.txt` permissivo; landing e privacy indicizzabili, login, registrazione
+  e area riservata con `noindex, nofollow`.
+- Donazioni solo tramite IBAN o link, senza widget o iframe di terze parti.
 - `npm audit` pulito al momento dell'ultima verifica.
 
 ## Perché non hashiamo i dati applicativi
@@ -41,6 +49,20 @@ in futuro, token di export) sono invece hashati, perché non devono essere
 leggibili da un dump e non servono mai in chiaro dopo la creazione.
 
 ## Bloccanti prima del go-live
+
+### Privacy e dati personali
+
+- [ ] Sostituire in `src/lib/landing-content.ts` i segnaposto di titolare,
+      email di contatto e IBAN con i dati reali.
+- [ ] Rileggere l'informativa `/privacy` con i dati reali e aggiornare la data.
+- [ ] Provare la cancellazione account in staging con un utente vero:
+      l'account deve sparire, la lista personale deve essere eliminata e, se ci
+      sono altri membri, la famiglia deve restare con un owner.
+- [ ] Verificare che login, registrazione e `/app` rispondano con
+      `noindex, nofollow` e che la landing resti indicizzabile.
+- [ ] Non introdurre banner cookie finché restano solo cookie tecnici; se in
+      futuro si aggiungono analytics o tracker, serve una cookie policy e un
+      consenso.
 
 ### Supabase Cloud
 

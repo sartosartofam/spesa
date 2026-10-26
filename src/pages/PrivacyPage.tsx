@@ -9,11 +9,10 @@ import {
 } from '../lib/landing-content'
 
 /**
- * Bozza di informativa privacy.
+ * Informativa privacy pubblica.
  *
- * Il testo descrive i dati effettivamente trattati dall'app, ma prima della
- * pubblicazione va riletto e validato (titolare, tempi di conservazione,
- * fornitori e trasferimenti extra UE).
+ * Titolare, email e IBAN sono segnaposto in `landing-content.ts`: vanno
+ * sostituiti con i dati reali prima della pubblicazione in produzione.
  */
 export function PrivacyPage({ authenticated = false }: { authenticated?: boolean }) {
   return (
@@ -49,6 +48,10 @@ export function PrivacyPage({ authenticated = false }: { authenticated?: boolean
                 gestite da Supabase Auth. La password non è leggibile da Spesa.
               </li>
               <li>
+                <strong>Dati tecnici di sessione:</strong> log necessari per autenticazione,
+                sicurezza e diagnostica, conservati dai fornitori del servizio.
+              </li>
+              <li>
                 <strong>Dati della famiglia:</strong> nome della famiglia, ruolo e appartenenza dei
                 membri.
               </li>
@@ -63,10 +66,6 @@ export function PrivacyPage({ authenticated = false }: { authenticated?: boolean
               <li>
                 <strong>Preferenze:</strong> impostazioni dell’interfaccia e scelte salvate nel
                 browser, come l’effetto luminoso della landing.
-              </li>
-              <li>
-                <strong>Dati tecnici:</strong> log di accesso ed errori conservati dai fornitori di
-                hosting e database per sicurezza e diagnostica.
               </li>
             </ul>
           </section>
@@ -96,37 +95,53 @@ export function PrivacyPage({ authenticated = false }: { authenticated?: boolean
           <section>
             <h2>4. Cookie e memoria locale</h2>
             <p>
-              Spesa non usa cookie pubblicitari, analytics di terze parti o tracker. Usa la memoria
-              locale del browser per la sessione, le preferenze dell’interfaccia e la cache delle
-              impostazioni dell’account. Questi dati restano sul dispositivo e servono solo a far
-              funzionare l’app.
+              Usiamo esclusivamente cookie tecnici necessari al funzionamento (sessione di login).
+              Non utilizziamo cookie di profilazione o tracciamento di terze parti.
+            </p>
+            <p>
+              Per la sessione, le preferenze dell’interfaccia e la cache delle impostazioni usiamo
+              anche la memoria locale del browser. Questi dati restano sul dispositivo e servono
+              solo a far funzionare l’app. Non è quindi necessario un banner cookie.
             </p>
           </section>
 
           <section>
             <h2>5. Per quanto tempo conserviamo i dati</h2>
             <p>
-              I dati dell’account e della lista restano finché l’account esiste, salvo cancellazione
-              anticipata. Le notifiche push restano attive finché non le revochi. I log tecnici sono
-              conservati per il tempo necessario alla sicurezza e agli obblighi dei fornitori. I
-              backup tecnici possono contenere copie temporanee dei dati e vengono sostituiti
-              periodicamente.
+              Conserviamo i dati dell’account e della lista fino alla cancellazione dell’account,
+              salvo cancellazione anticipata dei singoli contenuti. Le notifiche push restano attive
+              finché non le revochi. I log tecnici sono conservati per il tempo necessario alla
+              sicurezza e agli obblighi dei fornitori. I backup tecnici possono contenere copie
+              temporanee dei dati e vengono sostituiti periodicamente.
             </p>
           </section>
 
           <section>
             <h2>6. Destinatari e trasferimenti</h2>
             <p>
-              I dati sono trattati dai fornitori necessari al servizio: Supabase per database e
-              autenticazione e Vercel per l’hosting del frontend. Non vendiamo dati e non li
-              condividiamo per finalità di marketing. Se un fornitore tratta dati fuori dallo Spazio
-              economico europeo, il trasferimento avviene sulla base delle clausole contrattuali
-              standard o di altre garanzie previste dal GDPR.
+              I dati sono trattati da Supabase per database e autenticazione e da Vercel per
+              l’hosting del frontend, in qualità di responsabili del trattamento. Non vendiamo dati
+              e non li condividiamo per finalità di marketing. Se un fornitore tratta dati fuori
+              dallo Spazio economico europeo, il trasferimento avviene sulla base delle clausole
+              contrattuali standard o di altre garanzie previste dal GDPR.
             </p>
           </section>
 
           <section>
-            <h2>7. Sicurezza</h2>
+            <h2>7. Donazioni</h2>
+            <p>
+              Le donazioni tramite link esterni o bonifico non comportano la raccolta di dati
+              personali da parte di questo sito. I dati eventualmente forniti alla piattaforma
+              esterna sono gestiti secondo la sua informativa.
+            </p>
+            <p>
+              Le donazioni sono puramente volontarie e non danno diritto ad alcun servizio. Il
+              progetto resta gratuito e senza pubblicità anche senza donazioni.
+            </p>
+          </section>
+
+          <section>
+            <h2>8. Sicurezza</h2>
             <p>
               L’accesso alla lista è limitato ai membri della famiglia tramite RLS e autenticazione.
               Le comunicazioni avvengono in HTTPS. L’accesso ai sistemi è riservato e protetto da
@@ -136,18 +151,20 @@ export function PrivacyPage({ authenticated = false }: { authenticated?: boolean
           </section>
 
           <section>
-            <h2>8. I tuoi diritti</h2>
+            <h2>9. I tuoi diritti</h2>
             <p>
               Puoi chiedere accesso, rettifica, cancellazione, limitazione del trattamento,
               opposizione e portabilità dei dati. Puoi revocare il consenso alle notifiche push e
-              cancellare l’account in qualsiasi momento. Per esercitare i diritti scrivi a{' '}
+              cancellare l’account e i dati associati in qualsiasi momento da{' '}
+              <strong>Impostazioni → Account e privacy → Elimina account e dati</strong>. Per
+              esercitare gli altri diritti scrivi a{' '}
               <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Puoi anche proporre reclamo
               all’Autorità Garante per la protezione dei dati personali.
             </p>
           </section>
 
           <section>
-            <h2>9. Modifiche</h2>
+            <h2>10. Modifiche</h2>
             <p>
               Se questa informativa cambia in modo sostanziale, aggiorneremo la data in alto e, se
               necessario, ti avviseremo nell’app. La versione pubblicata qui è quella applicabile.
@@ -155,7 +172,7 @@ export function PrivacyPage({ authenticated = false }: { authenticated?: boolean
           </section>
 
           <section>
-            <h2>10. Crediti</h2>
+            <h2>11. Crediti</h2>
             <p>
               Le icone pixel usate nell’interfaccia sono di{' '}
               <a href={STREAMLINE_URL} target="_blank" rel="noreferrer noopener">

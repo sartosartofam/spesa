@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
+import { mapDeleteAccountError } from '../lib/account-deletion'
 import { isLiveData } from '../lib/data'
 import {
   createFamilyInvite,
@@ -43,6 +44,7 @@ interface SettingsDialogProps {
   familyId: string | null
   familyName: string | null
   onFamilyRenamed: (name: string) => void
+  onDeleteAccount: () => Promise<void>
   onClose: () => void
   onSave: (settings: Settings) => void
 }
@@ -54,6 +56,7 @@ export function SettingsDialog({
   familyId,
   familyName,
   onFamilyRenamed,
+  onDeleteAccount,
   onClose,
   onSave,
 }: SettingsDialogProps) {
@@ -87,6 +90,8 @@ export function SettingsDialog({
   const [savingFamilyName, setSavingFamilyName] = useState(false)
   const [leftFamily, setLeftFamily] = useState<LeftFamily | null>(null)
   const [leavingFamily, setLeavingFamily] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null)
 
   useEffect(() => {
     applyTheme(theme)
@@ -146,7 +151,7 @@ export function SettingsDialog({
   }
 
   async function saveAndClose() {
-    if (savingFamilyName || leftFamily) return
+    if (savingFamilyName || leftFamily || deletingAccount) return
 
     const next = currentSettings()
     const nextFamilyName = familyNameDraft.trim()
@@ -220,6 +225,27 @@ export function SettingsDialog({
       setInviteError(mapLeaveFamilyError(error))
     } finally {
       setLeavingFamily(false)
+    }
+  }
+
+  async function deleteAccount() {
+    if (deletingAccount) return
+
+    if (
+      !window.confirm(
+        'Eliminare definitivamente l’account e tutti i dati associati? L’operazione non può essere annullata.',
+      )
+    ) {
+      return
+    }
+
+    setDeletingAccount(true)
+    setDeleteAccountError(null)
+    try {
+      await onDeleteAccount()
+    } catch (error) {
+      setDeleteAccountError(mapDeleteAccountError(error))
+      setDeletingAccount(false)
     }
   }
 
@@ -404,7 +430,7 @@ export function SettingsDialog({
             class="icon-button"
             type="button"
             aria-label="Chiudi"
-            disabled={savingFamilyName || Boolean(leftFamily)}
+            disabled={savingFamilyName || Boolean(leftFamily) || deletingAccount}
             onClick={() => void saveAndClose()}
           >
             <CloseIcon />
@@ -843,6 +869,42 @@ export function SettingsDialog({
             Le impostazioni seguono il tuo account e non sono condivise con la famiglia. Se la
             sincronizzazione non riesce restano su questo dispositivo.
           </p>
+        </section>
+
+        <section class="settings-section" aria-labelledby="settings-account-title">
+          <h3 class="settings-section__title" id="settings-account-title">
+            Account e privacy
+          </h3>
+          <p class="hint">
+            Puoi leggere l’{' '}
+            <a href="/privacy" target="_blank" rel="noreferrer noopener">
+              Informativa Privacy
+              <span class="sr-only"> (si apre in una nuova scheda)</span>
+            </a>
+            . L’account e i dati personali possono essere eliminati in qualsiasi momento.
+          </p>
+
+          <div class="family-leave">
+            <p class="hint">
+              L’eliminazione è definitiva. Se sei l’unico membro, vengono eliminate anche la
+              famiglia e la lista condivisa; altrimenti la famiglia resta e il ruolo di owner passa
+              a un altro membro.
+            </p>
+            <button
+              class="button button--danger-ghost"
+              type="button"
+              disabled={deletingAccount}
+              onClick={() => void deleteAccount()}
+            >
+              {deletingAccount ? 'Eliminazione in corso…' : 'Elimina account e dati'}
+            </button>
+          </div>
+
+          {deleteAccountError && (
+            <p class="alert" role="alert">
+              {deleteAccountError}
+            </p>
+          )}
         </section>
 
         <section class="settings-section" aria-labelledby="settings-credits-title">

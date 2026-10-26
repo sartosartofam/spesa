@@ -59,7 +59,8 @@ select is(
         'redeem_family_invite',
         'rename_family',
         'leave_family',
-        'restore_item'
+        'restore_item',
+        'delete_current_account'
       )
       and (
         has_function_privilege('anon', p.oid, 'execute')

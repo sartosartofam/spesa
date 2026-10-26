@@ -334,6 +334,18 @@ select {
   align-items: center;
 }
 
+.app__footer-meta a {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.app__footer-meta a:hover {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 @media (min-width: 56rem) {
   .app {
     gap: 1.15rem;
@@ -3009,6 +3021,24 @@ code {
 
 .auth-card__back:hover {
   color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.auth-card__privacy {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-card__privacy a {
+  color: var(--brand);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.auth-card__privacy a:hover {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }

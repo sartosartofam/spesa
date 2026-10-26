@@ -91,6 +91,16 @@ export function LoginPage({ onSignIn, initialError }: LoginPageProps) {
 
         <a
           class="auth-card__back"
+          href="/privacy"
+          onClick={(event) => {
+            event.preventDefault()
+            navigate('/privacy')
+          }}
+        >
+          Informativa Privacy
+        </a>
+        <a
+          class="auth-card__back"
           href="/register"
           onClick={(event) => {
             event.preventDefault()
