@@ -1,4 +1,5 @@
 import { render } from 'preact'
+import '@fontsource-variable/jetbrains-mono'
 import './app.css'
 import { applyTheme, readTheme } from './lib/theme'
 import { Root } from './root'
