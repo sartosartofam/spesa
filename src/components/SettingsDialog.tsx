@@ -19,6 +19,7 @@ import {
   redeemFamilyInvite,
   renameFamily,
 } from '../lib/family'
+import { clearListCaches } from '../lib/list-cache'
 import {
   createPreset,
   mergeImportedPresets,
@@ -220,6 +221,7 @@ export function SettingsDialog({
 
     try {
       const result = await leaveFamily(familyId)
+      clearListCaches()
       setLeftFamily(result)
     } catch (error) {
       setInviteError(mapLeaveFamilyError(error))
@@ -381,6 +383,7 @@ export function SettingsDialog({
 
     try {
       const family = await redeemFamilyInvite(code)
+      clearListCaches()
       setRedeemedFamily(family)
       setInviteCode('')
       setInvite(null)

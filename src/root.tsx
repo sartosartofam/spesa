@@ -7,6 +7,7 @@ import { deleteCurrentAccount } from './lib/account-deletion'
 import { mapAuthError, userDisplayName } from './lib/auth'
 import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
+import { clearListCaches } from './lib/list-cache'
 import { type AppRoute, navigate } from './lib/routes'
 import { refreshThemeColor, subscribeSystemColorScheme } from './lib/theme'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -186,6 +187,7 @@ export function Root() {
     loggingOut.current = true
     try {
       await auth.signOut()
+      clearListCaches()
       navigate('/', { replace: true })
     } catch (error) {
       loggingOut.current = false
