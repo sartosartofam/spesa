@@ -336,9 +336,9 @@ test('font e attribuzione Streamline reggono a 360 px', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 })
   await page.goto('/')
 
-  await expect(
-    page.locator('link[href*="fonts.googleapis.com/css2?family=JetBrains+Mono"]'),
-  ).toHaveCount(1)
+  await expect(page.locator('link[href*="fonts.googleapis.com"]')).toHaveCount(0)
+  const fontFamily = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+  expect(fontFamily).toContain('JetBrains Mono')
   const landingCredit = page.getByRole('link', { name: /Streamline Pixel/ })
   await expect(landingCredit).toHaveAttribute('href', 'https://streamlinehq.com')
   await expect(landingCredit).toHaveAttribute('target', '_blank')

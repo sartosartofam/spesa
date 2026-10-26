@@ -8,5 +8,8 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
+    // Non inlineare i font come data URI: la CSP usa `font-src 'self'` e
+    // vuole che i font arrivino solo dall'origine dell'app.
+    assetsInlineLimit: 0,
   },
 })
