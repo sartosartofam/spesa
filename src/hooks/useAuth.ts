@@ -123,9 +123,9 @@ export function useAuth() {
     return { needsConfirmation: !data.session }
   }, [])
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (scope: 'global' | 'local' | 'others' = 'global') => {
     const client = authClient()
-    const { error } = await client.auth.signOut()
+    const { error } = await client.auth.signOut({ scope })
     if (error) throw error
   }, [])
 

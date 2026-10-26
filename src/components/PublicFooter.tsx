@@ -67,12 +67,18 @@ export function PublicFooter() {
 
         <div class="public-footer__col public-footer__support">
           <h2>{DONATION_LABEL}</h2>
-          <p>Se Spesa ti è utile, puoi offrirmi un caffè con un bonifico.</p>
+          <p>
+            Questo progetto è gratuito e senza pubblicità. Se ti è utile e desideri offrirmi un
+            caffè, puoi farlo qui:
+          </p>
           <p class="public-footer__iban">
             <span>IBAN</span>
             <code>{DONATION_IBAN}</code>
           </p>
           <p class="public-footer__holder">{DONATION_HOLDER}</p>
+          <p class="hint">
+            Le donazioni sono puramente volontarie e non danno diritto ad alcun servizio.
+          </p>
           <button class="button button--ghost" type="button" onClick={() => void copyIban()}>
             Copia IBAN
           </button>

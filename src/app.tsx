@@ -30,6 +30,7 @@ import { isLiveData } from './lib/data'
 import { familyDisplayName } from './lib/family'
 import { writeLandingGlow } from './lib/landing-glow'
 import { categoryCounts, groupByCategory, matchesQuery, sortActive, sortHistory } from './lib/list'
+import { navigate } from './lib/routes'
 import {
   activeCategoryOrder,
   normalizeSettings,
@@ -49,6 +50,7 @@ interface AppProps {
   onFamilyRenamed: (name: string) => void
   authError: string | null
   onLogout: () => void
+  onDeleteAccount: () => Promise<void>
 }
 
 export function App({
@@ -59,6 +61,7 @@ export function App({
   onFamilyRenamed,
   authError,
   onLogout,
+  onDeleteAccount,
 }: AppProps) {
   const list = useShoppingList()
   const people = useFamilyPeople(userId, userName, familyId)
@@ -620,6 +623,15 @@ export function App({
         <span>{familyDisplayName(familyName)}</span>
         <span class="app__footer-meta">
           {!isLiveData && <span>modalità demo · dati locali</span>}
+          <a
+            href="/privacy"
+            onClick={(event) => {
+              event.preventDefault()
+              navigate('/privacy')
+            }}
+          >
+            Informativa Privacy
+          </a>
         </span>
       </footer>
 
@@ -658,6 +670,7 @@ export function App({
           familyId={familyId}
           familyName={familyName}
           onFamilyRenamed={onFamilyRenamed}
+          onDeleteAccount={onDeleteAccount}
           onClose={() => setSettingsOpen(false)}
           onSave={handleSaveSettings}
         />

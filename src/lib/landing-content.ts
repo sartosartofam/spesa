@@ -23,4 +23,4 @@ export const DATA_CONTROLLER = 'Nome Cognome'
 export const STREAMLINE_URL = 'https://streamlinehq.com'
 export const STREAMLINE_LABEL = 'Streamline Pixel (CC BY 4.0)'
 
-export const PRIVACY_LAST_UPDATED = '25 ottobre 2026'
+export const PRIVACY_LAST_UPDATED = '26 ottobre 2026'

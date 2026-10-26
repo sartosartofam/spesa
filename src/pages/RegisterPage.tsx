@@ -201,6 +201,20 @@ export function RegisterPage({ onSignUp, initialError }: RegisterPageProps) {
           </button>
         </form>
 
+        <p class="auth-card__privacy">
+          Registrandoti accetti l’
+          <a
+            href="/privacy"
+            onClick={(event) => {
+              event.preventDefault()
+              navigate('/privacy')
+            }}
+          >
+            Informativa Privacy
+          </a>
+          .
+        </p>
+
         <a
           class="auth-card__back"
           href="/login"

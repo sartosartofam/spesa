@@ -159,6 +159,15 @@ test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async (
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow')
   await expect(page.getByRole('heading', { level: 1, name: 'Informativa privacy' })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: /Quali dati trattiamo/i })).toBeVisible()
+  await expect(
+    page.getByText(
+      /Usiamo esclusivamente cookie tecnici necessari al funzionamento \(sessione di login\)/,
+    ),
+  ).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: /Donazioni/i })).toBeVisible()
+  await expect(
+    page.getByText(/Le donazioni tramite link esterni o bonifico non comportano la raccolta/i),
+  ).toBeVisible()
   await expect(page.getByRole('link', { name: 'ciao@spesa.example' }).first()).toHaveAttribute(
     'href',
     'mailto:ciao@spesa.example',
@@ -167,6 +176,50 @@ test('la privacy è pubblica, indicizzabile e raggiungibile dal footer', async (
     'href',
     'https://github.com/sartosartofam/spesa',
   )
+})
+
+test('login e registrazione rimandano all’informativa privacy', async ({ page }) => {
+  await page.goto('/login')
+
+  await page.getByRole('link', { name: 'Informativa Privacy' }).click()
+  await expect(page).toHaveURL(/\/privacy$/)
+  await expect(page).toHaveTitle(/Privacy/i)
+
+  await page.goto('/register')
+  await expect(page.getByText('Registrandoti accetti l’Informativa Privacy.')).toBeVisible()
+  await page.getByRole('link', { name: 'Informativa Privacy' }).click()
+  await expect(page).toHaveURL(/\/privacy$/)
+})
+
+test('la cancellazione account elimina i dati locali e riporta alla landing', async ({ page }) => {
+  await mockAuth(page)
+  await signInAsDemo(page)
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('heading', { name: 'Account e privacy' })).toBeVisible()
+  await expect(dialog.getByRole('link', { name: /Informativa Privacy/ })).toHaveAttribute(
+    'target',
+    '_blank',
+  )
+
+  page.once('dialog', (confirmation) => void confirmation.accept())
+  await dialog.getByRole('button', { name: 'Elimina account e dati' }).click()
+
+  await expect(page).toHaveURL(/\/$/)
+  await expect(
+    page.getByRole('heading', { level: 1, name: /lista della spesa di tutta la famiglia/i }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Object.keys(localStorage).filter((key) => key.startsWith('spesa.')).length,
+      ),
+    )
+    .toBe(0)
+
+  await page.goto('/app')
+  await expect(page).toHaveURL(/\/login$/)
 })
 
 test('la pagina 404 mostra il codice e riporta alla home', async ({ page }) => {

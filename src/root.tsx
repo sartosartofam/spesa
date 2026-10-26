@@ -3,6 +3,7 @@ import { App } from './app'
 import { useAuth } from './hooks/useAuth'
 import { type DocumentMeta, useDocumentMeta } from './hooks/useDocumentMeta'
 import { useRoute } from './hooks/useRoute'
+import { deleteCurrentAccount } from './lib/account-deletion'
 import { mapAuthError, userDisplayName } from './lib/auth'
 import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
@@ -176,6 +177,18 @@ export function Root() {
     }
   }
 
+  async function handleDeleteAccount() {
+    await deleteCurrentAccount()
+    loggingOut.current = true
+    try {
+      // L'account server non esiste più: basta rimuovere la sessione locale.
+      await auth.signOut('local')
+    } catch {
+      // La cancellazione è già avvenuta; non blocchiamo l'uscita per un logout fallito.
+    }
+    navigate('/', { replace: true })
+  }
+
   if (auth.status === 'loading') return <LoadingPage />
 
   if (route === 'landing') {
@@ -221,6 +234,7 @@ export function Root() {
         onFamilyRenamed={setFamilyName}
         authError={logoutError}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
       />
     )
   }
