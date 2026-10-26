@@ -33,8 +33,8 @@ export function RegisterPage({ onSignUp, initialError }: RegisterPageProps) {
       setError('Inserisci il nome della famiglia.')
       return
     }
-    if (password.length < 8) {
-      setError('La password deve avere almeno 8 caratteri.')
+    if (password.length < 12) {
+      setError('La password deve avere almeno 12 caratteri.')
       return
     }
     if (password !== confirmPassword) {
@@ -172,13 +172,12 @@ export function RegisterPage({ onSignUp, initialError }: RegisterPageProps) {
               type="password"
               autocomplete="new-password"
               required
-              minLength={8}
               value={password}
               onInput={(event) => setPassword(event.currentTarget.value)}
               aria-describedby="register-password-hint"
             />
             <span class="hint" id="register-password-hint">
-              Almeno 8 caratteri.
+              Almeno 12 caratteri.
             </span>
           </div>
 
@@ -192,7 +191,6 @@ export function RegisterPage({ onSignUp, initialError }: RegisterPageProps) {
               type="password"
               autocomplete="new-password"
               required
-              minLength={8}
               value={confirmPassword}
               onInput={(event) => setConfirmPassword(event.currentTarget.value)}
             />
