@@ -11,8 +11,8 @@ import {
 /**
  * Informativa privacy pubblica.
  *
- * Titolare, email e IBAN sono segnaposto in `landing-content.ts`: vanno
- * sostituiti con i dati reali prima della pubblicazione in produzione.
+ * Titolare ed email di contatto sono in `landing-content.ts`. L'IBAN delle
+ * donazioni è ancora un segnaposto e va sostituito prima della produzione.
  */
 export function PrivacyPage({ authenticated = false }: { authenticated?: boolean }) {
   return (
