@@ -172,15 +172,18 @@ Cosa è già nel codice:
       escluso dai destinatari.
 - [x] Log solo con id subscription e status, mai endpoint o chiavi complete.
 - [x] Logout e cancellazione account rimuovono la subscription del dispositivo.
+- [x] Rate limit dell'invio: 12 richieste al minuto per utente via RPC
+      `consume_rate_limit` (tabella dedicata con RLS e nessuna policy,
+      `service_role` only); oltre il budget la function risponde `429`
+      prima di interrogare il resto.
 
 Cosa resta da fare prima del go-live:
 
 - [ ] Generare le chiavi VAPID definitive e mettere `VAPID_PUBLIC_KEY`,
       `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` solo nei secret Supabase.
 - [ ] Mettere `VITE_VAPID_PUBLIC_KEY` su Vercel e fare il deploy della Edge
-      Function `send-push`.
-- [ ] Rate limitare l'invio (per esempio per membro e per minuto) e monitorare
-      i fallimenti nei log della function.
+      Function `send-push`, poi monitorare i fallimenti e le `429`
+      (`rate_limited`) nei log della function.
 - [ ] Provare l'opt-in e la consegna da almeno due dispositivi reali, incluso un
       iPhone con la PWA installata.
 - [ ] Verificare che una subscription revocata non riceva più notifiche.
