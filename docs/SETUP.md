@@ -247,6 +247,44 @@ Note:
 
 **Mai** mettere `VAPID_PRIVATE_KEY` nel frontend, in Vercel o in Git. La chiave pubblica è pubblica per definizione; la privata resta solo nella Edge Function.
 
+### Backup e restore (ADR-0003)
+
+La Edge Function `supabase/functions/export/index.ts` produce lo snapshot JSON delle tabelle applicative (`families`, `members`, `items`, `family_invites`, `push_subscriptions`, `user_settings`, `keepalive`). L'autenticazione è un token dedicato (secret `EXPORT_TOKEN`), **non** un JWT utente: `verify_jwt` è disattivato solo per questa function. Il chiamante (in produzione un cron del Pi) poi carica il JSON su R2/B2.
+
+In locale:
+
+```bash
+printf 'EXPORT_TOKEN=chiave-fittizia-local\n' > /tmp/opencode/export.env
+npx supabase functions serve export --env-file /tmp/opencode/export.env
+
+curl -s -X POST http://127.0.0.1:54321/functions/v1/export \
+  -H 'authorization: Bearer chiave-fittizia-local' > export.json
+```
+
+Senza env-file la function risponde `503 export_not_configured`; con token assente o sbagliato risponde `401`.
+
+Il ripristino di prova è lo script `scripts/backup/restore-local.mjs`, solo per Supabase locale (rifiuta URL non locali) e con `service_role` letta da `supabase status`:
+
+```bash
+npm run db:reset
+node scripts/backup/restore-local.mjs export.json
+```
+
+Lo script fa upsert in ordine di dipendenza e stampa i conteggi per tabella. Limiti dichiarati del restore:
+
+- **`auth.users` non è nell'export**: lo schema `auth` non è percorribile via REST, nemmeno con `service_role`. Dopo un restore reale vanno ricreati gli account Auth con gli stessi id (admin API) e fatta ripartire la password con l'email di reset.
+- `rate_limits` non è nell'export: è contatore runtime, non dato.
+- Le email dei membri ci sono (per il restore), ma nel normale uso l'app non mostra mai email altrimenti.
+
+In produzione (azione umana):
+
+1. Imposta il secret `EXPORT_TOKEN` (almeno 32 byte casuali) nei secret Supabase della function.
+2. Fai il deploy della function `export`.
+3. Programma il cron del Pi: `POST` con `Authorization: Bearer <EXPORT_TOKEN>`, salvataggio del JSON e upload su bucket R2/B2 cifrato (per esempio con `rclone`).
+4. Monitora i `4xx`/`5xx` del cron; ruota il token se esposto.
+
+Mai `service_role` sul Pi: chiama solo la function col token.
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.
