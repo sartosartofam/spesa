@@ -42,9 +42,11 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 
 ### 1. Backup ed export — `chore/backup`
 
-- [ ] Edge Function `export` con token dedicato (ADR-0003).
-- [ ] Export JSON su Cloudflare R2 / Backblaze B2.
-- [ ] Documento di restore e ripristino di prova.
+- [x] Edge Function `export` con token dedicato (ADR-0003): snapshot JSON delle 7 tabelle applicative, `401` senza token valido, `503 export_not_configured` senza secret, confronto su SHA-256.
+- [x] Grant `select, insert, update` su `keepalive` a `service_role` (mancavano per export e restore), con test pgTAP nella suite keepalive.
+- [x] Script di restore di prova `scripts/backup/restore-local.mjs` (solo locale, guard sull'host).
+- [x] Restore di prova **riuscito**: export → `db:reset` → upsert con conteggi e relazioni verificati su tutte le 7 tabelle, inclusi invito, subscription push e impostazioni utente.
+- [ ] Export JSON effettivo su Cloudflare R2 / Backblaze B2: cron Pi + secret `EXPORT_TOKEN` + deploy function = azione umana (vedi `docs/SETUP.md` → "Backup e restore").
 
 ### 2. Produzione — umano
 

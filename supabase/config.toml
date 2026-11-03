@@ -393,6 +393,11 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Export backup (ADR-0003): autenticazione con token dedicato, non con un
+# JWT utente; il gateway non deve quindi richiedere il JWT.
+[functions.export]
+verify_jwt = false
+
 [functions.send-push]
 verify_jwt = true
 

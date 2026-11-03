@@ -49,9 +49,11 @@ servono in chiaro per UI, ricerca, ordinamento, join e realtime: hasharli
 romperebbe il prodotto e non sarebbe una vera cifratura.
 
 La protezione di quei dati dipende da RLS, TLS, accesso minimo al database e
-backup cifrati. I token che darebbero accesso a una famiglia (codici invito e,
-in futuro, token di export) sono invece hashati, perché non devono essere
-leggibili da un dump e non servono mai in chiaro dopo la creazione.
+backup cifrati. I codici invito sono hashati, perché non devono essere
+leggibili da un dump e non servono mai in chiaro dopo la creazione. Il token
+di export invece vive come secret (Supabase in produzione, env locale): è
+confrontato a runtime via SHA-256, ma resta un secret configurabile e
+ruotabile, non un dato del database.
 
 ## Bloccanti prima del go-live
 
@@ -148,17 +150,22 @@ where table_schema = 'public'
 
 ### Backup ed export
 
-- [ ] Implementare la Edge Function `export` descritta in ADR-0003 con un token
-      dedicato, generato con almeno 32 byte casuali.
-- [ ] Salvare solo l'hash del token di export, ruotarlo periodicamente e
-      conservarlo come secret della Edge Function.
+- [x] Edge Function `export` (ADR-0003) implementata in
+      `supabase/functions/export/index.ts`, con token dedicato letto dal
+      secret `EXPORT_TOKEN`; confronto costante nel tempo su SHA-256 e
+      risposta 401 per token assente o sbagliato. Nessun JWT utente viene
+      richiesto (`verify_jwt = false` in `supabase/config.toml`).
+- [ ] Ruotare periodicamente il secret `EXPORT_TOKEN` e conservarlo solo nei
+      secret Supabase di produzione.
 - [ ] Usare un bucket privato su Cloudflare R2 o Backblaze B2, con credenziali
       minime e cifratura at rest.
 - [ ] Programmare l'export settimanale e monitorare i fallimenti.
-- [ ] Eseguire un **restore di prova** in locale: importare il JSON, verificare
-      conteggi, relazioni e RLS, poi documentare l'esito.
+- [x] Eseguito un **restore di prova** in locale con
+      `scripts/backup/restore-local.mjs`: export → reset → upsert di tutte le
+      tabelle (families, members, items, family_invites, push_subscriptions,
+      user_settings, keepalive) con conteggi e relazioni verificati.
 - [ ] Non mettere mai la `service_role` sul Raspberry Pi o nel frontend: il Pi
-      chiama solo l'Edge Function protetta dal token.
+      chiama solo la Edge Function protetta dal token.
 
 ### Web Push
 
