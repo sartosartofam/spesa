@@ -6,15 +6,27 @@ import { useShoppingList } from './useShoppingList'
 
 const repository = vi.hoisted(() => ({
   list: vi.fn(),
+  add: vi.fn(),
+  update: vi.fn(),
   suggestions: vi.fn(),
+}))
+
+const push = vi.hoisted(() => ({
+  sendPushNotification: vi.fn(async () => undefined),
 }))
 
 vi.mock('../lib/data', () => ({
   isLiveData: true,
   itemsRepository: {
     list: repository.list,
+    add: repository.add,
+    update: repository.update,
     suggestions: repository.suggestions,
   },
+}))
+
+vi.mock('../lib/push', () => ({
+  sendPushNotification: push.sendPushNotification,
 }))
 
 vi.mock('../lib/supabase', () => ({
@@ -44,6 +56,16 @@ function Probe() {
     <div>
       <span data-testid="names">{list.active.map((entry) => entry.name).join(',')}</span>
       <span data-testid="error">{list.error ?? ''}</span>
+      <button type="button" data-testid="add" onClick={() => void list.add({ name: 'Latte' })}>
+        Aggiungi
+      </button>
+      <button
+        type="button"
+        data-testid="urgent"
+        onClick={() => void list.update('1', { urgent: true })}
+      >
+        Urgente
+      </button>
     </div>
   )
 }
@@ -60,7 +82,10 @@ describe('useShoppingList offline', () => {
   beforeEach(() => {
     localStorage.clear()
     repository.list.mockReset()
+    repository.add.mockReset()
+    repository.update.mockReset()
     repository.suggestions.mockReset()
+    push.sendPushNotification.mockClear()
   })
 
   afterEach(() => {
@@ -96,5 +121,41 @@ describe('useShoppingList offline', () => {
     const cached = JSON.parse(localStorage.getItem('spesa.list.v1.famiglia-a') ?? '{}')
     expect(cached.active[0].name).toBe('Pane')
     expect(cached.suggestions).toEqual(['Pane'])
+  })
+
+  it('notifica gli altri membri dopo un’aggiunta riuscita', async () => {
+    repository.list.mockImplementation(async (view: 'active' | 'history') =>
+      view === 'active' ? [item('1', 'Pane')] : [],
+    )
+    repository.suggestions.mockResolvedValue(['Pane'])
+    repository.add.mockResolvedValue(item('2', 'Latte'))
+
+    mount()
+    await expect
+      .poll(() => document.querySelector('[data-testid="names"]')?.textContent)
+      .toBe('Pane')
+
+    ;(document.querySelector('[data-testid="add"]') as HTMLButtonElement).click()
+
+    await expect.poll(() => push.sendPushNotification.mock.calls.length).toBe(1)
+    expect(push.sendPushNotification).toHaveBeenCalledWith('2', 'created')
+  })
+
+  it('notifica l’urgenza solo quando il flag passa da falso a vero', async () => {
+    repository.list.mockImplementation(async (view: 'active' | 'history') =>
+      view === 'active' ? [item('1', 'Pane')] : [],
+    )
+    repository.suggestions.mockResolvedValue(['Pane'])
+    repository.update.mockResolvedValue({ ...item('1', 'Pane'), urgent: true })
+
+    mount()
+    await expect
+      .poll(() => document.querySelector('[data-testid="names"]')?.textContent)
+      .toBe('Pane')
+
+    ;(document.querySelector('[data-testid="urgent"]') as HTMLButtonElement).click()
+
+    await expect.poll(() => push.sendPushNotification.mock.calls.length).toBe(1)
+    expect(push.sendPushNotification).toHaveBeenCalledWith('1', 'urgent')
   })
 })

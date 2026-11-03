@@ -175,6 +175,77 @@ npm run preview
 
 Apri <http://127.0.0.1:4173>, installa l'app dal browser e prova a ricaricare con la rete disattivata. In produzione serve HTTPS (localhost è ammesso per lo sviluppo). Le icone si rigenerano con `rsvg-convert` a partire da `public/icon.svg` e `public/icon-maskable.svg`; i PNG sono committati.
 
+### Web Push
+
+Le notifiche push sono implementate ma **spente finché non vengono configurate le chiavi VAPID**. Senza `VITE_VAPID_PUBLIC_KEY` la sezione **Impostazioni → Notifiche** resta nascosta e l'app non chiama la Edge Function.
+
+Il flusso è questo:
+
+- il browser crea una `PushSubscription` e la salva in `push_subscriptions` (RLS self-only);
+- dopo un'aggiunta riuscita o il passaggio di `urgent` da `false` a `true`, il client chiama la Edge Function `send-push`;
+- la function verifica il JWT, controlla che l'utente appartenga alla famiglia dell'articolo, esclude l'autore e invia solo alle subscription degli altri membri;
+- la function usa `service_role` solo lato server, applica un'allowlist agli endpoint push noti, valida le chiavi e cancella le subscription che rispondono `404`/`410`;
+- la notifica è best-effort: un errore push non blocca l'azione sulla lista.
+
+Il payload contiene solo titolo, testo breve, `itemId` e il percorso `/app`. Non contiene email, note o altri dati sensibili. Il click sulla notifica apre l'app.
+
+#### Configurazione locale
+
+Genera una coppia VAPID usa-e-getta:
+
+```bash
+npx web-push generate-vapid-keys --json
+```
+
+Copia la chiave pubblica in `.env.local`:
+
+```bash
+VITE_VAPID_PUBLIC_KEY=<chiave-pubblica>
+```
+
+Poi crea `supabase/functions/.env` (ignorato da Git) con i tre valori lato server:
+
+```bash
+VAPID_PUBLIC_KEY=<chiave-pubblica>
+VAPID_PRIVATE_KEY=<chiave-privata>
+VAPID_SUBJECT=mailto:tuo-indirizzo@example.test
+```
+
+Avvia lo stack e la function:
+
+```bash
+npm run db:start
+npx supabase functions serve send-push --env-file supabase/functions/.env
+```
+
+La function ascolta su `http://127.0.0.1:54321/functions/v1/send-push`. Con `verify_jwt = true` in `supabase/config.toml`, il gateway richiede il JWT della sessione. Se le chiavi VAPID mancano, la function risponde con `{ ok: true, skipped: true, reason: "push_not_configured" }` senza inviare nulla.
+
+Per provare davvero l'opt-in serve la build di produzione, perché il service worker è registrato solo lì:
+
+```bash
+npm run build
+npm run preview
+```
+
+Apri <http://127.0.0.1:4173>, accedi, apri **Impostazioni → Notifiche** e attiva il dispositivo. Su iPhone le notifiche funzionano solo dopo aver aggiunto l'app alla schermata Home (iOS 16.4 o successivo). Il browser deve supportare `PushManager` e la pagina deve essere in un contesto sicuro: `localhost` va bene, un IP in HTTP no.
+
+Note:
+
+- in modalità mock o senza chiave VAPID la sezione Notifiche non compare;
+- non c'è una coda offline: se la rete manca, la notifica viene semplicemente persa;
+- logout e cancellazione account disiscrivono il dispositivo e rimuovono la riga server;
+- gli e2e verificano solo il feature gate, perché non hanno chiavi VAPID e non possono ricevere push reali.
+
+#### Produzione (azione umana)
+
+1. Genera le chiavi VAPID definitive e conserva la privata solo nei secret Supabase.
+2. Su Vercel aggiungi la sola variabile pubblica `VITE_VAPID_PUBLIC_KEY`.
+3. Su Supabase imposta i secret `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` per la Edge Function.
+4. Fai il deploy della function `send-push` con il flusso di release scelto.
+5. Prova l'opt-in da un dispositivo reale e verifica la notifica su aggiunta e su urgenza.
+
+**Mai** mettere `VAPID_PRIVATE_KEY` nel frontend, in Vercel o in Git. La chiave pubblica è pubblica per definizione; la privata resta solo nella Edge Function.
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.

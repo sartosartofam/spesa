@@ -114,3 +114,81 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(cacheFirstAsset(request))
   }
 })
+
+function safeNotificationPath(value) {
+  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')
+    ? value
+    : '/app'
+}
+
+function pushNotificationData(event) {
+  const fallback = {
+    title: 'Spesa',
+    body: 'La lista è stata aggiornata.',
+    url: '/app',
+    tag: 'spesa-update',
+  }
+
+  if (!event.data) return fallback
+
+  try {
+    const payload = event.data.json()
+    if (typeof payload !== 'object' || payload === null) return fallback
+    return {
+      title:
+        typeof payload.title === 'string' && payload.title.trim()
+          ? payload.title.trim().slice(0, 80)
+          : fallback.title,
+      body:
+        typeof payload.body === 'string' && payload.body.trim()
+          ? payload.body.trim().slice(0, 200)
+          : fallback.body,
+      url: safeNotificationPath(payload.url),
+      tag:
+        typeof payload.tag === 'string' && payload.tag.trim()
+          ? payload.tag.trim().slice(0, 64)
+          : fallback.tag,
+    }
+  } catch {
+    return fallback
+  }
+}
+
+self.addEventListener('push', (event) => {
+  const data = pushNotificationData(event)
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: data.tag,
+      data: { url: data.url },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const path = safeNotificationPath(event.notification.data?.url)
+  const target = new URL(path, self.location.origin)
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      })
+
+      for (const client of clients) {
+        const current = new URL(client.url)
+        if (current.origin === target.origin && current.pathname === target.pathname) {
+          await client.focus()
+          return
+        }
+      }
+
+      await self.clients.openWindow(target.href)
+    })(),
+  )
+})

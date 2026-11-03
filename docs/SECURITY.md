@@ -34,6 +34,11 @@ Ultimo aggiornamento: ottobre 2026.
 - `robots.txt` permissivo; landing e privacy indicizzabili, login, registrazione
   e area riservata con `noindex, nofollow`.
 - Donazioni solo tramite IBAN o link, senza widget o iframe di terze parti.
+- La Edge Function `send-push` usa `service_role` solo lato server, verifica JWT e
+  appartenenza alla famiglia, esclude l'autore e non espone endpoint o chiavi.
+- Le notifiche push applicano un'allowlist agli endpoint noti, validano le chiavi,
+  rimuovono le subscription `404`/`410` e non inseriscono dati sensibili nel
+  payload.
 - `npm audit` pulito al momento dell'ultima verifica.
 
 ## Perché non hashiamo i dati applicativi
@@ -113,9 +118,10 @@ where table_schema = 'public'
 
 ### Vercel
 
-- [ ] Impostare solo variabili pubbliche: `VITE_SUPABASE_URL` e
-      `VITE_SUPABASE_PUBLISHABLE_KEY`. **Mai** `service_role`, `SECRET_KEY`,
-      token di export o chiavi VAPID private.
+- [ ] Impostare solo variabili pubbliche: `VITE_SUPABASE_URL`,
+      `VITE_SUPABASE_PUBLISHABLE_KEY` e, se Web Push è attivo,
+      `VITE_VAPID_PUBLIC_KEY`. **Mai** `service_role`, `SECRET_KEY`, token di
+      export o `VAPID_PRIVATE_KEY`.
 - [ ] Verificare gli header con `curl -I https://<dominio>/` e controllare che
       CSP, HSTS, `X-Frame-Options` e `Permissions-Policy` siano presenti.
 - [ ] Se usi un dominio Supabase custom, aggiungilo a `connect-src` nella CSP:
@@ -156,12 +162,28 @@ where table_schema = 'public'
 
 ### Web Push
 
-- [ ] Generare le chiavi VAPID; la chiave privata resta solo nella Edge Function.
-- [ ] Applicare un'allowlist degli endpoint push noti e rifiutare URL arbitrari
-      (protezione SSRF).
-- [ ] Rimuovere le subscription scadute (`404`/`410`).
-- [ ] Non inserire dati sensibili nel payload della notifica.
-- [ ] Rate limitare l'invio e loggare solo metadati, non endpoint completi.
+Cosa è già nel codice:
+
+- [x] Allowlist degli endpoint push noti, HTTPS obbligatorio e rifiuto degli URL
+      arbitrari (protezione SSRF), sia nel client sia nella Edge Function.
+- [x] Rimozione delle subscription scadute (`404`/`410`).
+- [x] Payload senza email, note o altri dati sensibili.
+- [x] JWT obbligatorio, controllo dell'appartenenza alla famiglia e autore
+      escluso dai destinatari.
+- [x] Log solo con id subscription e status, mai endpoint o chiavi complete.
+- [x] Logout e cancellazione account rimuovono la subscription del dispositivo.
+
+Cosa resta da fare prima del go-live:
+
+- [ ] Generare le chiavi VAPID definitive e mettere `VAPID_PUBLIC_KEY`,
+      `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` solo nei secret Supabase.
+- [ ] Mettere `VITE_VAPID_PUBLIC_KEY` su Vercel e fare il deploy della Edge
+      Function `send-push`.
+- [ ] Rate limitare l'invio (per esempio per membro e per minuto) e monitorare
+      i fallimenti nei log della function.
+- [ ] Provare l'opt-in e la consegna da almeno due dispositivi reali, incluso un
+      iPhone con la PWA installata.
+- [ ] Verificare che una subscription revocata non riceva più notifiche.
 
 ### Segnalazioni e incidenti
 
@@ -208,7 +230,8 @@ Poi provare in staging/produzione:
 - isolamento tra due famiglie;
 - aggiunta, spunta, urgenza e storico;
 - accesso anonimo negato a liste e membri;
-- invio push e revoca subscription, quando disponibili.
+- opt-in push, notifica su aggiunta/urgenza e revoca, con chiavi VAPID
+  configurate.
 
 ## Note
 
