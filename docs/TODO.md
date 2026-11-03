@@ -28,11 +28,9 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
   - Service worker: handler `push` e `notificationclick` (apre `/app`, focus della finestra già aperta).
   - Disiscrizione su logout e cancellazione account.
   - Test: unit (172) e e2e (43) verdi; pgTAP 250 verdi; function provata in locale con risposta `push_not_configured`.
-  - **Resta umano**: generare le chiavi VAPID, impostare `VITE_VAPID_PUBLIC_KEY` su Vercel e i secret `VAPID_*` su Supabase, fare il deploy della function e provare la consegna reale. Vedi `docs/SETUP.md` e `docs/SECURITY.md`.
+  - **Consegna reale rinviata dopo il deploy**: per ora non generiamo le chiavi VAPID né attiviamo Web Push in produzione, e anche in futuro resta un opt-in silenzioso, non una fonte di notifiche inondatorie. Decisione presa il 3 novembre 2026: il codice resta feature-gated (niente `VITE_VAPID_PUBLIC_KEY` = sezione Notifiche nascosta, nessuna chiamata alla function). La consegna reale, se un giorno servirà, resta documentata in `docs/SETUP.md` e `docs/SECURITY.md`.
 
-## In questa PR
-
-- [ ] PR (`feat/backend-push-rate-limit`) — rate limit dell’invio push:
+- [x] PR **#89** (`feat/backend-push-rate-limit`) — rate limit dell'invio push:
   - tabella `public.rate_limits` (contatori per chiave) con RLS attiva e nessuna policy: i ruoli API non la vedono;
   - RPC `public.consume_rate_limit(p_key, p_max, p_window_seconds)` `security definer`, `search_path = ''`, grant `execute` solo a `service_role`;
   - budget `send-push`: 12 unità per 60 secondi per utente (`send-push:<user.id>`); oltre il budget la function risponde `429 rate_limited` prima di interrogare articoli e subscription;
@@ -52,7 +50,7 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 
 - [ ] Verifica e hardening produzione (issue #22): Supabase Cloud, Vercel, GitHub.
 - [ ] RLS review umana con due famiglie reali/fittizie.
-- [ ] Configurazione Web Push in produzione (chiavi VAPID, secret, deploy function).
+- [x] Configurazione Web Push in produzione: **rinviata dopo il deploy** (decisione 3 novembre 2026). Le chiavi VAPID non servono per l'uso attuale della lista e, anche in futuro, puntiamo a un opt-in discreto: niente notifiche inondatorie dalla webapp. Quando si deciderà di attivarle, seguire `docs/SETUP.md` (Web Push) per chiavi, secret e deploy function.
 - [ ] Keepalive e backup effettivi.
 - [ ] Promozione `dev` → `main` solo umana.
 
@@ -63,7 +61,7 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 - [ ] SEO/OG/sitemap per la landing.
 - [ ] Aggiornare i documenti storici invecchiati (`docs/studio-di-progetto.md`).
 - [ ] IBAN e intestatario donazioni reali (ora segnaposto).
-- [ ] Badge in-app per notifiche perse (iOS) e Sentry free tier (opzionali).
+- [ ] Badge in-app per notifiche perse (iOS) e Sentry free tier (opzionali; il badge iOS vale solo se un giorno si attiva il Web Push).
 
 ## Comandi di verifica
 
@@ -79,5 +77,5 @@ npx supabase test db
 - Le impostazioni sono per account, non per famiglia.
 - `user_settings` è protetta da RLS self-only e da test di isolamento tra utenti.
 - `dev` è il branch di integrazione; `main` solo promozione umana.
-- Nessuna chiave VAPID o `service_role` nel repository: il push reale va configurato solo in produzione.
+- Nessuna chiave VAPID o `service_role` nel repository. Le chiavi VAPID non vengono generate neanche ora: l'attivazione del Web Push reale è rinviata dopo il deploy (decisione 3 novembre 2026).
 - Al ritorno: `git switch dev && git pull --ff-only origin dev` e controllare le PR aperte.
