@@ -21,9 +21,9 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 - [x] PR **#86** (`feat/password-reset`): recupero password con `resetPasswordForEmail` + `updateUser`, route pubbliche `/forgot-password` e `/reset-password` con `noindex`, link dal login, redirect locali, test unit ed e2e.
 - [x] PR **#87** (`feat/pwa`): PWA base con manifest, icone 192/512/maskable/apple-touch, service worker in produzione (network-first navigazioni, cache-first asset), cache dell’ultima lista per famiglia, banner offline, test unit ed e2e.
 
-## In questo branch
+## In questa PR
 
-- [x] `feat/push` — Web Push completo ma **feature-gated**:
+- [x] PR **#88** (`feat/push`) — Web Push completo ma **feature-gated**:
   - `src/lib/push.ts`: opt-in/revoca, base64url, mappa errori utente, allowlist endpoint.
   - `src/hooks/usePushNotifications.ts` + sezione **Impostazioni → Notifiche** (nascosta senza `VITE_VAPID_PUBLIC_KEY`).
   - Trigger push su aggiunta riuscita e su passaggio `urgent` da `false` a `true`, best-effort e mai bloccante.
