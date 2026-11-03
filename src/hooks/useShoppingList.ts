@@ -3,6 +3,7 @@ import { isLiveData, itemsRepository } from '../lib/data'
 import { type ListHistoryEntry, type ListSnapshot, snapshotOperations } from '../lib/history'
 import { sortHistory } from '../lib/list'
 import { readCachedList, writeCachedList } from '../lib/list-cache'
+import { sendPushNotification } from '../lib/push'
 import { subscribeToItems } from '../lib/realtime'
 import { getSupabase } from '../lib/supabase'
 import type { Item, ItemStatus, NewItem } from '../lib/types'
@@ -160,16 +161,18 @@ export function useShoppingList(familyId: string | null = null) {
   }, [familyId, refresh])
 
   const run = useCallback(
-    async (action: () => Promise<unknown>, label: string) => {
+    async <T>(action: () => Promise<T>, label: string): Promise<T | null> => {
       const before = snapshotOf(stateRef.current)
       try {
-        await action()
+        const result = await action()
         const next = await refresh()
         const entry: ListHistoryEntry = { label, before, after: snapshotOf(next) }
         setUndoStack((current) => [...current, entry].slice(-MAX_HISTORY))
         setRedoStack([])
+        return result
       } catch (error) {
         commit((current) => ({ ...current, error: messageOf(error) }))
+        return null
       }
     },
     [commit, refresh],
@@ -178,7 +181,12 @@ export function useShoppingList(familyId: string | null = null) {
   const add = useCallback(
     async (input: NewItem) => {
       const name = input.name.trim() || 'articolo'
-      await run(() => itemsRepository.add(input), `aggiunta di “${name}”`)
+      const item = await run(() => itemsRepository.add(input), `aggiunta di “${name}”`)
+      if (item) {
+        void sendPushNotification(item.id, 'created').catch(() => {
+          // Una notifica persa non deve far fallire l'aggiunta.
+        })
+      }
     },
     [run],
   )
@@ -189,7 +197,13 @@ export function useShoppingList(familyId: string | null = null) {
       patch: Partial<Pick<Item, 'name' | 'category' | 'note' | 'quantity' | 'urgent'>>,
     ) => {
       const name = patch.name?.trim() || itemName(stateRef.current, id)
-      await run(() => itemsRepository.update(id, patch), `modifica di “${name}”`)
+      const wasUrgent = stateRef.current.active.find((item) => item.id === id)?.urgent ?? false
+      const updated = await run(() => itemsRepository.update(id, patch), `modifica di “${name}”`)
+      if (updated && patch.urgent === true && !wasUrgent) {
+        void sendPushNotification(updated.id, 'urgent').catch(() => {
+          // Una notifica persa non deve far fallire la modifica.
+        })
+      }
     },
     [run],
   )

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 import { mapDeleteAccountError } from '../lib/account-deletion'
 import { isLiveData } from '../lib/data'
 import {
@@ -62,6 +63,7 @@ export function SettingsDialog({
   onSave,
 }: SettingsDialogProps) {
   const dialogRef = useModalDialog(saveAndClose)
+  const push = usePushNotifications(currentUserId)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const leaveResultRef = useRef<HTMLButtonElement>(null)
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
@@ -520,6 +522,59 @@ export function SettingsDialog({
             </p>
           </div>
         </section>
+
+        {push.configured && (
+          <section class="settings-section" aria-labelledby="settings-push-title">
+            <h3 class="settings-section__title" id="settings-push-title">
+              Notifiche
+            </h3>
+            <p class="hint">
+              Avvisa questo dispositivo quando un altro membro aggiunge un articolo o segnala che è
+              finito.
+            </p>
+
+            {push.loading ? (
+              <p class="hint">Controllo lo stato delle notifiche…</p>
+            ) : (
+              <div class="family-leave">
+                <button
+                  class="button button--ghost"
+                  type="button"
+                  disabled={push.busy}
+                  onClick={() => void (push.enabled ? push.disable() : push.enable())}
+                >
+                  {push.busy
+                    ? 'Attendere…'
+                    : push.enabled
+                      ? 'Disattiva notifiche su questo dispositivo'
+                      : 'Attiva notifiche su questo dispositivo'}
+                </button>
+              </div>
+            )}
+
+            {push.permission === 'denied' && (
+              <p class="hint">
+                Le notifiche sono bloccate dal browser. Riattivale dalle impostazioni del sito e
+                ricarica la pagina.
+              </p>
+            )}
+            {push.error && (
+              <p class="alert" role="alert">
+                {push.error}
+              </p>
+            )}
+            {push.message && (
+              <p class="hint" role="status">
+                {push.message}
+              </p>
+            )}
+
+            <p class="hint">
+              Su iPhone le notifiche funzionano dopo aver aggiunto Spesa alla schermata Home. Puoi
+              disattivarle in qualsiasi momento da qui o dalle impostazioni del browser.
+            </p>
+          </section>
+        )}
 
         {isLiveData && (
           <section class="settings-section" aria-labelledby="settings-family-title">

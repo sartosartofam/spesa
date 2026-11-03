@@ -32,6 +32,15 @@ test('manifest, icone e service worker sono disponibili', async ({ page, request
     .toBe(true)
 })
 
+test('senza chiave VAPID la sezione notifiche resta nascosta', async ({ page }) => {
+  await mockAuth(page)
+  await signInAsDemo(page)
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  await expect(page.getByRole('heading', { name: 'Impostazioni' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Notifiche' })).toHaveCount(0)
+})
+
 test('la shell e la lista restano consultabili offline', async ({ page, context }) => {
   await mockAuth(page)
   await signInAsDemo(page)

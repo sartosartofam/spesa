@@ -8,6 +8,7 @@ import { mapAuthError, userDisplayName } from './lib/auth'
 import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
 import { clearListCaches } from './lib/list-cache'
+import { unsubscribeFromPush } from './lib/push'
 import { type AppRoute, navigate } from './lib/routes'
 import { refreshThemeColor, subscribeSystemColorScheme } from './lib/theme'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -186,6 +187,11 @@ export function Root() {
     setLogoutError(null)
     loggingOut.current = true
     try {
+      try {
+        await unsubscribeFromPush(auth.user?.id ?? null)
+      } catch {
+        // La disiscrizione push non deve bloccare il logout.
+      }
       await auth.signOut()
       clearListCaches()
       navigate('/', { replace: true })
@@ -198,6 +204,11 @@ export function Root() {
   async function handleDeleteAccount() {
     await deleteCurrentAccount()
     loggingOut.current = true
+    try {
+      await unsubscribeFromPush(null)
+    } catch {
+      // La riga server è già stata eliminata con l'account.
+    }
     try {
       // L'account server non esiste più: basta rimuovere la sessione locale.
       await auth.signOut('local')
