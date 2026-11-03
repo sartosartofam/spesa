@@ -20,9 +20,6 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 - [x] PR **#85** (`feat/realtime`): subscription Postgres changes su `items` con filtro `family_id`, refresh silenzioso con debounce, fallback su focus/visibility e riconnessione; migrazione publication e test pgTAP.
 - [x] PR **#86** (`feat/password-reset`): recupero password con `resetPasswordForEmail` + `updateUser`, route pubbliche `/forgot-password` e `/reset-password` con `noindex`, link dal login, redirect locali, test unit ed e2e.
 - [x] PR **#87** (`feat/pwa`): PWA base con manifest, icone 192/512/maskable/apple-touch, service worker in produzione (network-first navigazioni, cache-first asset), cache dell’ultima lista per famiglia, banner offline, test unit ed e2e.
-
-## In questa PR
-
 - [x] PR **#88** (`feat/push`) — Web Push completo ma **feature-gated**:
   - `src/lib/push.ts`: opt-in/revoca, base64url, mappa errori utente, allowlist endpoint.
   - `src/hooks/usePushNotifications.ts` + sezione **Impostazioni → Notifiche** (nascosta senza `VITE_VAPID_PUBLIC_KEY`).
@@ -32,6 +29,16 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
   - Disiscrizione su logout e cancellazione account.
   - Test: unit (172) e e2e (43) verdi; pgTAP 250 verdi; function provata in locale con risposta `push_not_configured`.
   - **Resta umano**: generare le chiavi VAPID, impostare `VITE_VAPID_PUBLIC_KEY` su Vercel e i secret `VAPID_*` su Supabase, fare il deploy della function e provare la consegna reale. Vedi `docs/SETUP.md` e `docs/SECURITY.md`.
+
+## In questa PR
+
+- [ ] PR (`feat/backend-push-rate-limit`) — rate limit dell’invio push:
+  - tabella `public.rate_limits` (contatori per chiave) con RLS attiva e nessuna policy: i ruoli API non la vedono;
+  - RPC `public.consume_rate_limit(p_key, p_max, p_window_seconds)` `security definer`, `search_path = ''`, grant `execute` solo a `service_role`;
+  - budget `send-push`: 12 unità per 60 secondi per utente (`send-push:<user.id>`); oltre il budget la function risponde `429 rate_limited` prima di interrogare articoli e subscription;
+  - test pgTAP: struttura, permessi anon/authenticated, budget, chiavi indipendenti, scadenza simulata, parametri invalidi, vincolo di lunghezza;
+  - verificato in locale: 12 chiamate passano, la 13ª riceve `429`;
+  - tipi rigenerati (`npm run db:types`); unit, e2e, pgTAP e `npm run verify` verdi.
 
 ## Prossimi task
 
@@ -51,7 +58,6 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 
 ### 3. Rifiniture e backlog
 
-- [ ] Rate limit per l’invio push nella Edge Function (ora assente).
 - [ ] E2e con backend reale (oggi mock): CRUD Supabase, realtime e push in una suite dedicata.
 - [ ] Vincolo/trigger anti-duplicati lato database (il merge duplicati è solo client).
 - [ ] SEO/OG/sitemap per la landing.

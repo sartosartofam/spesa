@@ -19,6 +19,12 @@ const ALLOWED_SUFFIXES = ['notify.windows.com', 'push.apple.com']
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// Budget anti-spam per utente: 12 invii al minuto. Anche le risposte
+// `skipped` consumano una unità, per non usare la function come contatore
+// gratuito senza toccare il database degli articoli.
+const PUSH_RATE_MAX = 12
+const PUSH_RATE_WINDOW_SECONDS = 60
+
 interface ItemRow {
   id: string
   family_id: string
@@ -152,6 +158,25 @@ Deno.serve(async (request) => {
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
+
+  // Rate limit per utente: chi prova un abuso colpisce prima il contatore.
+  // La RPC `consume_rate_limit` è `security definer` e solo `service_role`
+  // può eseguirla (migrazione `push_rate_limit`).
+  const rateKey = `send-push:${user.id}`
+  const { data: consumed, error: rateError } = await admin.rpc('consume_rate_limit', {
+    p_key: rateKey,
+    p_max: PUSH_RATE_MAX,
+    p_window_seconds: PUSH_RATE_WINDOW_SECONDS,
+  })
+
+  if (rateError) {
+    console.error('send-push: contatore rate limit non disponibile')
+    return json({ error: 'internal_error' }, 500)
+  }
+  if (!consumed) {
+    console.error('send-push: invio fuori budget', user.id)
+    return json({ error: 'rate_limited' }, 429)
+  }
 
   const { data: item, error: itemError } = await admin
     .from('items')

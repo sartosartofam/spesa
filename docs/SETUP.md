@@ -185,7 +185,8 @@ Il flusso è questo:
 - dopo un'aggiunta riuscita o il passaggio di `urgent` da `false` a `true`, il client chiama la Edge Function `send-push`;
 - la function verifica il JWT, controlla che l'utente appartenga alla famiglia dell'articolo, esclude l'autore e invia solo alle subscription degli altri membri;
 - la function usa `service_role` solo lato server, applica un'allowlist agli endpoint push noti, valida le chiavi e cancella le subscription che rispondono `404`/`410`;
-- la notifica è best-effort: un errore push non blocca l'azione sulla lista.
+- la notifica è best-effort: un errore push non blocca l'azione sulla lista;
+- l'invio è limitato a 12 richieste al minuto per utente: oltre il budget la function risponde `429 rate_limited` e non invia nulla. Il budget è contato dalla RPC `consume_rate_limit` (`security definer`, eseguibile solo da `service_role`); la tabella dei contatori ha RLS attiva e nessuna policy, quindi è invisibile ai ruoli API.
 
 Il payload contiene solo titolo, testo breve, `itemId` e il percorso `/app`. Non contiene email, note o altri dati sensibili. Il click sulla notifica apre l'app.
 
