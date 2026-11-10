@@ -155,7 +155,7 @@ Il repository viene scelto in `src/lib/data/index.ts`:
 - gli e2e usano sempre `VITE_DATA_MODE=mock` (vedi `playwright.config.ts`) e non chiamano REST;
 - senza variabili la landing parte comunque e la UI usa il mock.
 
-Il client e il repository sono creati in modo lazy: un ambiente non configurato non fa crashare la landing. Il merge dei duplicati è applicato lato client; il vincolo/trigger equivalente lato database resta un follow-up backend.
+Il client e il repository sono creati in modo lazy: un ambiente non configurato non fa crashare la landing. Il merge dei duplicati è applicato lato client e l'indice unico `items_family_identity_key` impedisce duplicati anche in caso di scritture concorrenti; su `23505` il repository riprova il merge una volta. La migrazione che crea l'indice fa un preflight non distruttivo: se esistono già duplicati si ferma con un errore e un suggerimento SQL, senza unire o cancellare righe.
 
 ### PWA e modalità offline
 

@@ -13,6 +13,7 @@ interface FakeApi {
   requests: string[]
   failNext: { code: string; status: number } | null
   rpcError: unknown
+  onWrite: ((method: string) => void) | null
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -49,6 +50,7 @@ function createFakeApi(seed: Row[] = []): {
     requests: [],
     failNext: null,
     rpcError: null,
+    onWrite: null,
   }
 
   const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -114,6 +116,12 @@ function createFakeApi(seed: Row[] = []): {
 
     if (!url.pathname.endsWith('/rest/v1/items')) {
       return jsonResponse({ message: 'not found' }, 404)
+    }
+
+    if (api.onWrite && method !== 'GET') {
+      const callback = api.onWrite
+      api.onWrite = null
+      callback(method)
     }
 
     if (api.failNext) {
@@ -278,6 +286,57 @@ describe('supabase items repository', () => {
     expect(second.id).toBe(first.id)
     expect(api.rows).toHaveLength(1)
     expect(api.rows[0]?.quantity).toBe('5 scatolette')
+  })
+
+  it('assorbe un’aggiunta concorrente quando l’indice unico risponde 23505', async () => {
+    const { api, repository } = createFakeApi()
+    // La scrittura concorrente vince la gara e l'indice unico respinge la
+    // nostra INSERT: `failNext` va armato qui, non prima, altrimenti
+    // colpirebbe la GET di pre-merge.
+    api.onWrite = () => {
+      api.rows.push(
+        makeRow({
+          id: 'race-add',
+          name: 'Fagioli',
+          category: 'Dispensa',
+          quantity: '2 scatolette',
+        }),
+      )
+      api.failNext = { code: '23505', status: 409 }
+    }
+
+    const merged = await repository.add({
+      name: 'fagioli',
+      category: 'Dispensa',
+      quantity: '3 scatolette',
+    })
+
+    expect(merged.id).toBe('race-add')
+    expect(merged.quantity).toBe('5 scatolette')
+    expect(api.rows).toHaveLength(1)
+  })
+
+  it('assorbe una modifica concorrente quando l’indice unico risponde 23505', async () => {
+    const { api, repository } = createFakeApi([
+      makeRow({ id: 'source', name: 'Ceci', category: 'Dispensa', quantity: '1' }),
+    ])
+    api.onWrite = () => {
+      api.rows.push(
+        makeRow({
+          id: 'race-update',
+          name: 'Fagioli',
+          category: 'Dispensa',
+          quantity: '2',
+        }),
+      )
+      api.failNext = { code: '23505', status: 409 }
+    }
+
+    const merged = await repository.update('source', { name: 'Fagioli' })
+
+    expect(merged.id).toBe('race-update')
+    expect(merged.quantity).toBe('3')
+    expect(api.rows).toHaveLength(1)
   })
 
   it('sposta nello storico togliendo l’urgenza', async () => {

@@ -16,8 +16,10 @@ import type { ItemsRepository } from './repository'
  *   `created_by` è valorizzato dal database con `auth.uid()`;
  * - il ripristino per undo/redo passa dall'RPC `restore_item`, perché il
  *   client non ha i grant per reinserire id e timestamp;
- * - il merge dei duplicati resta lato client (vedi `item-merge.ts`), in attesa
- *   di un vincolo/trigger lato database.
+ * - il merge dei duplicati è fatto dal client, mentre l'indice unico
+ *   `items_family_identity_key` impedisce che due scritture concorrenti
+ *   creino righe duplicate. Se il database risponde `23505`, il repository
+ *   riprova il merge una volta.
  */
 
 type ItemRow = Database['public']['Tables']['items']['Row']
@@ -42,6 +44,12 @@ function codeOf(error: unknown): string | null {
   if (typeof error !== 'object' || error === null) return null
   const code = (error as ErrorLike).code
   return typeof code === 'string' && code ? code : null
+}
+
+/** `toDataError` conserva l'errore PostgREST in `cause`: guardiamo entrambi. */
+function isDuplicateError(error: unknown): boolean {
+  if (codeOf(error) === '23505') return true
+  return error instanceof Error && codeOf(error.cause) === '23505'
 }
 
 function isNetworkError(error: unknown): boolean {
@@ -164,6 +172,17 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
     return merged
   }
 
+  /**
+   * Riprova il merge quando l'indice unico ha intercettato una scrittura
+   * concorrente. Se il duplicato non c'è più, rilancia l'errore originale.
+   */
+  async function retryMerge(source: Item, exceptId: string, error: unknown): Promise<Item> {
+    if (!isDuplicateError(error)) throw error
+    const merged = await mergeDuplicate(source, exceptId)
+    if (!merged) throw error
+    return merged
+  }
+
   /** Unisce `source` dentro `target` sul database e restituisce la riga aggiornata. */
   async function mergeInto(target: Item, source: Item): Promise<Item> {
     const merged = mergeItem(target, source)
@@ -216,22 +235,26 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
       if (duplicate) return mergeInto(duplicate, candidate)
 
       const familyId = await currentFamilyId()
-      const row = await unwrap(
-        client
-          .from('items')
-          .insert({
-            family_id: familyId,
-            name: candidate.name,
-            category: candidate.category,
-            status: candidate.status,
-            urgent: candidate.urgent,
-            note: candidate.note,
-            quantity: candidate.quantity,
-          })
-          .select('*')
-          .single(),
-      )
-      return toItem(row)
+      try {
+        const row = await unwrap(
+          client
+            .from('items')
+            .insert({
+              family_id: familyId,
+              name: candidate.name,
+              category: candidate.category,
+              status: candidate.status,
+              urgent: candidate.urgent,
+              note: candidate.note,
+              quantity: candidate.quantity,
+            })
+            .select('*')
+            .single(),
+        )
+        return toItem(row)
+      } catch (error) {
+        return retryMerge(candidate, candidate.id, error)
+      }
     },
 
     async setStatus(id: string, status: ItemStatus) {
@@ -247,15 +270,19 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
       const duplicate = await mergeDuplicate(updated, id)
       if (duplicate) return duplicate
 
-      const row = await unwrap(
-        client
-          .from('items')
-          .update({ status, urgent: updated.urgent })
-          .eq('id', id)
-          .select('*')
-          .single(),
-      )
-      return toItem(row)
+      try {
+        const row = await unwrap(
+          client
+            .from('items')
+            .update({ status, urgent: updated.urgent })
+            .eq('id', id)
+            .select('*')
+            .single(),
+        )
+        return toItem(row)
+      } catch (error) {
+        return retryMerge(updated, id, error)
+      }
     },
 
     async update(id, patch) {
@@ -280,22 +307,26 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
       const duplicate = await mergeDuplicate(updated, id)
       if (duplicate) return duplicate
 
-      const row = await unwrap(
-        client
-          .from('items')
-          .update({
-            name: updated.name,
-            category: updated.category,
-            note: updated.note,
-            quantity: updated.quantity,
-            urgent: updated.urgent,
-            ...(promoting ? { status: 'to_buy' as const } : {}),
-          })
-          .eq('id', id)
-          .select('*')
-          .single(),
-      )
-      return toItem(row)
+      try {
+        const row = await unwrap(
+          client
+            .from('items')
+            .update({
+              name: updated.name,
+              category: updated.category,
+              note: updated.note,
+              quantity: updated.quantity,
+              urgent: updated.urgent,
+              ...(promoting ? { status: 'to_buy' as const } : {}),
+            })
+            .eq('id', id)
+            .select('*')
+            .single(),
+        )
+        return toItem(row)
+      } catch (error) {
+        return retryMerge(updated, id, error)
+      }
     },
 
     async remove(id: string) {
@@ -305,20 +336,24 @@ export function createSupabaseItemsRepository(client: SpesaSupabaseClient): Item
     async restoreItem(item: Item) {
       // Il client non ha più i grant per reinserire id e timestamp: il
       // ripristino passa da una RPC che deriva la famiglia dall'utente.
-      const row = await unwrap(
-        client.rpc('restore_item', {
-          p_id: item.id,
-          p_name: item.name,
-          p_category: item.category,
-          p_status: item.status,
-          p_urgent: item.urgent,
-          p_note: item.note,
-          p_quantity: item.quantity,
-          p_created_at: item.created_at,
-          p_bought_at: item.bought_at,
-        } as unknown as Database['public']['Functions']['restore_item']['Args']),
-      )
-      return toItem(row)
+      try {
+        const row = await unwrap(
+          client.rpc('restore_item', {
+            p_id: item.id,
+            p_name: item.name,
+            p_category: item.category,
+            p_status: item.status,
+            p_urgent: item.urgent,
+            p_note: item.note,
+            p_quantity: item.quantity,
+            p_created_at: item.created_at,
+            p_bought_at: item.bought_at,
+          } as unknown as Database['public']['Functions']['restore_item']['Args']),
+        )
+        return toItem(row)
+      } catch (error) {
+        return retryMerge(item, item.id, error)
+      }
     },
 
     async suggestions() {

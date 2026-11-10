@@ -59,7 +59,7 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 ### 3. Rifiniture e backlog
 
 - [ ] E2e con backend reale (oggi mock): CRUD Supabase, realtime e push in una suite dedicata.
-- [ ] Vincolo/trigger anti-duplicati lato database (il merge duplicati è solo client).
+- [x] Vincolo anti-duplicati lato database: indice unico `items_family_identity_key` su famiglia, stato, nome e categoria normalizzati; il client fa il merge e riprova su `23505`.
 - [ ] SEO/OG/sitemap per la landing.
 - [ ] Aggiornare i documenti storici invecchiati (`docs/studio-di-progetto.md`).
 - [ ] IBAN e intestatario donazioni reali (ora segnaposto).

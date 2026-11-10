@@ -9,9 +9,9 @@ import type { Item, ListView } from '../types'
  * categoria nella stessa vista (attiva o storico). Note e urgenza non creano
  * righe separate: la nota viene conservata e l'urgenza si somma con OR.
  *
- * Nota backend: lo stesso merge andrebbe garantito anche dal database con un
- * unique index su (family_id, status, lower(name), lower(category)) e un
- * trigger di merge. Oggi il repository lo applica lato client.
+ * Il database applica lo stesso invariante con l'indice unico
+ * `items_family_identity_key` (vedi migrazione 20261110090000). Il repository
+ * Supabase riprova questo merge quando una scrittura concorrente lo viola.
  */
 
 export function identityKey(item: Pick<Item, 'status' | 'name' | 'category'>): string {
