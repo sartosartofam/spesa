@@ -96,10 +96,12 @@ keepalive (id, last_ping)
 
 ```bash
 npm ci
-npm run dev
+npm run dev          # Vite + stack Supabase locale (avvio su richiesta)
+npm run dev:web      # solo Vite, senza toccare lo stack
 npm run verify
 npm run test:e2e
-npm run db:start
+npm run db:start     # solo stack Supabase (stesso script di dev)
+npm run db:stop
 npm run db:reset
 npm run env:local
 npm run db:types
@@ -108,6 +110,35 @@ git config core.hooksPath .githooks   # una volta per clone
 ```
 
 `supabase` è una devDependency: usare `npx supabase`, non installazioni globali.
+
+## Ambiente locale e carico della macchina
+
+`npm run dev` avvia anche lo stack Supabase locale, non solo Vite. Lo script
+`scripts/dev.sh`:
+
+1. esegue `supabase start` tramite `scripts/db-start.sh` (idempotente: se lo
+   stack è già attivo risponde in meno di un secondo);
+2. riporta a `no` la restart policy dei container del progetto, così un
+   riavvio del PC non li riaccende da solo;
+3. rigenera `.env.local` solo se manca o se lo stack è appena partito;
+4. lancia Vite passandogli gli argomenti (`npm run dev -- --host`).
+
+Regole per gli agenti:
+
+- Non reintrodurre `restart: unless-stopped` o `restart: always` nei
+  container, e non aggiungere unit systemd, hook o script che avviano
+  Supabase all'accensione: lo stack si avvia solo su richiesta.
+- Se serve solo il database: `npm run db:start` (stesso `db-start.sh`, senza
+  Vite). A fine lavoro: `npm run db:stop`.
+- Per lavorare solo sul frontend: `npm run dev:web`.
+
+Perché: i container Supabase nascono con `restart=unless-stopped`, quindi
+partivano al boot insieme alla sessione grafica. Su un laptop con 8 thread
+gli otto container attivi (Postgres, Auth, REST, Realtime, Studio, Kong,
+Mailpit, pg-meta) saturano CPU e disco proprio nei primi secondi dopo il
+login: qui la shell restava bloccata ~25 s con lo schermo nero. Lo stesso
+vale, in generale, su portatili con poca RAM, macchine condivise e runner
+CI: un servizio pesante va acceso quando serve e spento quando non serve.
 
 ## Divieti
 
