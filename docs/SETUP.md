@@ -285,6 +285,21 @@ In produzione (azione umana):
 
 Mai `service_role` sul Pi: chiama solo la function col token.
 
+### SEO, Open Graph e sitemap
+
+La landing e `/privacy` sono indicizzabili; tutte le altre viste sono `noindex, nofollow` (già da `private-noindex.js` e `useDocumentMeta`). Il dominio di produzione non è ancora stato scelto: quando lo sarà, aggiungere **una sola variabile** `VITE_SITE_URL` (per esempio `https://spesa.esempio.it`) su Vercel e in locale nel `.env.local`. A build il plugin SEO di `vite.config.ts`:
+
+- assolutizza `og:image` e `twitter:image`;
+- inietta `<link rel="canonical">` e `og:url` (radice del sito);
+- genera `dist/sitemap.xml` con le viste indicizzabili (`/` e `/privacy`);
+- genera `dist/robots.txt` con la riga `Sitemap`.
+
+Senza `VITE_SITE_URL` la build resta valida: canonical, og:url e sitemap non vengono generati e `robots.txt` resta permissivo senza riga `Sitemap` (una sitemap con `loc` relativi non sarebbe valida). Un `VITE_SITE_URL` malformato rompe la build con un errore esplicito, per non pubblicare tag rotti. L'SVG sorgente dell'immagine Open Graph è `public/og.svg`; il PNG 1200×630 si rigenera con:
+
+```bash
+rsvg-convert -w 1200 -h 630 public/og.svg > public/og-image.png
+```
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.
