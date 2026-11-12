@@ -5,6 +5,7 @@ node_modules/
 
 # build e output
 dist/
+dist-e2e-backend/
 build/
 .svelte-kit/
 .vercel/
