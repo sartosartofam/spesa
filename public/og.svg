@@ -1,0 +1,50 @@
+<!-- Immagine Open Graph 1200x630 della landing.
+     Rigenerabile con rsvg-convert -w 1200 -h 630 public/og.svg
+     Palette di src/app.css: bg #fbf7e8, brand #8a6500, contrasto #fffdf6.
+     Font: JetBrains Mono, usato anche dall'app. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="og-title">
+  <title id="og-title">Anteprima di Spesa: la lista della spesa condivisa per famiglie</title>
+  <rect width="1200" height="630" fill="#fbf7e8"/>
+  <circle cx="1030" cy="120" r="260" fill="#f2c14e" opacity="0.35"/>
+  <circle cx="150" cy="560" r="220" fill="#f2c14e" opacity="0.25"/>
+
+  <!-- Logo -->
+  <g transform="translate(96 96)">
+    <rect x="0" y="0" width="88" height="88" rx="20" fill="#8a6500"/>
+    <path d="M30 22c-9 0-15 5-15 12 0 14 22 9 22 20 0 4-3 7-8 7-5 0-9-2-12-6l-4 4c4 6 10 9 16 9 10 0 16-6 16-14 0-14-22-8-22-20 0-4 3-6 8-6 4 0 8 2 10 5l4-4c-3-4-9-7-15-7z"
+          fill="#fffdf6"/>
+    <path d="M52 26v44" stroke="#fffdf6" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="212" y="162" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="76" font-weight="700" fill="#221b05">Spesa</text>
+
+  <text x="96" y="268" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="40" font-weight="600" fill="#221b05">La lista della spesa condivisa</text>
+  <text x="96" y="322" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="40" font-weight="600" fill="#221b05">per la tua famiglia</text>
+  <text x="96" y="378" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="26" fill="#6b4f00">Gratuita, senza pubblicità, sempre aggiornata.</text>
+
+  <!-- Mock della lista -->
+  <g transform="translate(96 430)">
+    <rect x="0" y="0" width="600" height="140" rx="20" fill="#fffdf6" stroke="#f2c14e" stroke-width="3"/>
+    <g transform="translate(28 34)">
+      <circle cx="0" cy="0" r="11" fill="#8a6500"/>
+      <path d="M-5 0l4 5 9-10" stroke="#fffdf6" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(28 90)">
+      <circle cx="0" cy="0" r="11" fill="none" stroke="#8a6500" stroke-width="3"/>
+    </g>
+    <text x="60" y="42" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="26" font-weight="600" fill="#221b05" opacity="0.45">Acqua, burro, mortadella</text>
+    <text x="60" y="98" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="26" font-weight="600" fill="#221b05">Cereali per i bimbi</text>
+  </g>
+
+  <!-- Badge urgenza e storico -->
+  <g transform="translate(760 430)">
+    <rect x="0" y="0" width="344" height="140" rx="20" fill="#fff1d6"/>
+    <g transform="translate(28 40)">
+      <circle cx="0" cy="0" r="12" fill="#ffb27a"/>
+      <rect x="52" y="-16" width="150" height="30" rx="8" fill="#fffdf6"/>
+      <circle cx="232" cy="0" r="15" fill="none" stroke="#8a6500" stroke-width="3"/>
+    </g>
+    <text x="28" y="102" font-family="JetBrains Mono NF, JetBrains Mono, monospace" font-size="24" font-weight="600" fill="#6b4f00">Segnala ciò che è finito</text>
+  </g>
+</svg>

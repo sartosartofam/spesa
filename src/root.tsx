@@ -28,6 +28,7 @@ function metaFor(route: AppRoute): DocumentMeta {
       title: 'Spesa — lista della spesa condivisa per famiglie',
       description: LANDING_DESCRIPTION,
       robots: 'index, follow',
+      urlPath: '/',
     }
   }
   if (route === 'login') {
@@ -64,6 +65,7 @@ function metaFor(route: AppRoute): DocumentMeta {
       description:
         'Informativa privacy di Spesa: dati trattati, finalità, conservazione e diritti degli utenti.',
       robots: 'index, follow',
+      urlPath: '/privacy',
     }
   }
   if (route === 'app') {
