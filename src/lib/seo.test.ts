@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import indexHtml from '../../index.html?raw'
 import {
-  INDEXABLE_PATHS,
   absolutePath,
   buildRobotsTxt,
   buildSitemapXml,
+  INDEXABLE_PATHS,
   normalizeSiteUrl,
 } from './seo'
 

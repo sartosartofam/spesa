@@ -1,5 +1,5 @@
 import preact from '@preact/preset-vite'
-import { loadEnv, type Plugin, defineConfig } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { buildRobotsTxt, buildSitemapXml, normalizeSiteUrl } from './src/lib/seo'
 
 export default defineConfig(({ mode }) => {
