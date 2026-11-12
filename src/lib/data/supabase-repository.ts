@@ -16,8 +16,9 @@ import type { ItemsRepository } from './repository'
  *   `created_by` è valorizzato dal database con `auth.uid()`;
  * - il ripristino per undo/redo passa dall'RPC `restore_item`, perché il
  *   client non ha i grant per reinserire id e timestamp;
- * - il merge dei duplicati resta lato client (vedi `item-merge.ts`), in attesa
- *   di un vincolo/trigger lato database.
+ * - il merge dei duplicati resta lato client (vedi `item-merge.ts`): il
+ *   database garantisce l'integrità con l'indice unique
+ *   `items_family_status_identity_key`, che copre le gare tra membri;
  */
 
 type ItemRow = Database['public']['Tables']['items']['Row']
