@@ -300,6 +300,47 @@ Senza `VITE_SITE_URL` la build resta valida: canonical, og:url e sitemap non ven
 rsvg-convert -w 1200 -h 630 public/og.svg > public/og-image.png
 ```
 
+### E2e con backend reale
+
+`npm run test:e2e` copre l'interfaccia con dati mock, senza rete: è la suite
+che gira in CI. La suite con backend reale vive in `e2e-backend/`, parla con lo
+stack Supabase locale e si lancia con:
+
+```bash
+npm run test:e2e:backend
+```
+
+Il comando (`playwright.backend.config.ts` + `scripts/e2e-backend.sh`):
+
+1. avvia lo stack locale se non è attivo (`scripts/db-start.sh`);
+2. verifica che la famiglia demo esista e crea/aggiorna gli utenti Auth con
+   `scripts/seed-auth.mjs`. Se la famiglia manca **non** esegue reset: si ferma
+   e chiede `npm run db:reset`, così nessun dato locale viene cancellato;
+3. rigenera `.env.local` (`npm run env:local`);
+4. compila l'app in modalità Supabase, senza `VITE_DATA_MODE=mock`, in
+   `dist-e2e-backend/` e la serve su `http://127.0.0.1:4174`.
+
+La suite usa l'utente `demo@spesa.test` del seed e verifica il footer senza
+"modalità demo · dati locali", così un build finito per errore in mock fallisce
+subito. Copre login/logout reali, sessione persistente, creazione di un
+articolo con quantità e categoria, persistenza al reload, passaggio allo
+storico, undo, eliminazione, urgenza e aggiornamenti realtime tra due contesti
+browser. I test girano in serie (`workers: 1`) perché la famiglia demo è
+condivisa.
+
+Gli articoli creati dai test hanno il prefisso `E2E-backend`; un teardown
+globale li cancella dal database locale al termine, compresi quelli rimasti da
+una run interrotta. Nessun dato reale e nessuna chiamata al cloud.
+
+La CI esegue solo la suite mock. Un job per quella con backend va aggiunto a
+mano in `.github/workflows/ci.yml` (file riservato all'umano): serve `supabase
+start`, `supabase db reset` per seedare i dati demo, i browser Playwright e
+`npm run test:e2e:backend`; lo stack già attivo non viene riavviato perché
+`scripts/db-start.sh` è idempotente.
+
+A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con
+`npm run db:stop`.
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.
