@@ -465,8 +465,16 @@ describe('supabase items repository', () => {
 
   it('non espone dettagli SQL per errori sconosciuti', () => {
     const error = toDataError({ code: 'XX000', message: 'relation "secret" does not exist' })
-
     expect(error.message).toBe('Non è stato possibile completare l’operazione. Riprova.')
     expect(error.message).not.toContain('secret')
+  })
+
+  it('traduce la violazione del vincolo di identità in messaggio duplicato', () => {
+    const error = toDataError({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "items_family_status_identity_key"',
+    })
+    expect(error.message).toBe('Esiste già un articolo con questi dati.')
+    expect(error.message).not.toContain('items_family_status_identity_key')
   })
 })

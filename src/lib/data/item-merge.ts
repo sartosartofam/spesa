@@ -9,9 +9,10 @@ import type { Item, ListView } from '../types'
  * categoria nella stessa vista (attiva o storico). Note e urgenza non creano
  * righe separate: la nota viene conservata e l'urgenza si somma con OR.
  *
- * Nota backend: lo stesso merge andrebbe garantito anche dal database con un
- * unique index su (family_id, status, lower(name), lower(category)) e un
- * trigger di merge. Oggi il repository lo applica lato client.
+ * Nota backend: l'integrità è garantita anche dal database con l'indice
+ * unique `items_family_status_identity_key` su
+ * (family_id, status, lower(btrim(name)), lower(btrim(category))): il merge
+ * amichevole resta lato client, il vincolo copre le gare tra membri.
  */
 
 export function identityKey(item: Pick<Item, 'status' | 'name' | 'category'>): string {
