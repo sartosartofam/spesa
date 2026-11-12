@@ -58,6 +58,6 @@ export function buildSitemapXml(siteUrl: string, lastmod: string): string {
 /** robots.txt: crawl aperto, sitemap solo con dominio configurato. */
 export function buildRobotsTxt(siteUrl: string): string {
   const lines = ['User-agent: *', 'Allow: /']
-  if (siteUrl) lines.push('Sitemap: ' + absolutePath(siteUrl, '/sitemap.xml'))
-  return lines.join('\n') + '\n'
+  if (siteUrl) lines.push(`Sitemap: ${absolutePath(siteUrl, '/sitemap.xml')}`)
+  return `${lines.join('\n')}\n`
 }

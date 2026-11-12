@@ -2,7 +2,8 @@
      Rigenerabile con rsvg-convert -w 1200 -h 630 public/og.svg
      Palette di src/app.css: bg #fbf7e8, brand #8a6500, contrasto #fffdf6.
      Font: JetBrains Mono, usato anche dall'app. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="og-title">
+  <title id="og-title">Anteprima di Spesa: la lista della spesa condivisa per famiglie</title>
   <rect width="1200" height="630" fill="#fbf7e8"/>
   <circle cx="1030" cy="120" r="260" fill="#f2c14e" opacity="0.35"/>
   <circle cx="150" cy="560" r="220" fill="#f2c14e" opacity="0.25"/>
