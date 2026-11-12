@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import indexHtml from '../../index.html?raw'
 import {
   INDEXABLE_PATHS,
   absolutePath,
@@ -6,6 +7,38 @@ import {
   buildSitemapXml,
   normalizeSiteUrl,
 } from './seo'
+
+describe('tag statici in index.html', () => {
+  it('esponde Open Graph completo', () => {
+    expect(indexHtml).toContain('property="og:title"')
+    expect(indexHtml).toContain('property="og:description"')
+    expect(indexHtml).toContain('property="og:type"')
+    expect(indexHtml).toContain('property="og:site_name"')
+    expect(indexHtml).toContain('property="og:locale"')
+    expect(indexHtml).toContain('content="/og-image.png"')
+    expect(indexHtml).toContain('property="og:image:width" content="1200"')
+    expect(indexHtml).toContain('property="og:image:height" content="630"')
+    expect(indexHtml).toContain('property="og:image:alt"')
+  })
+
+  it('esponde la Twitter Card summary_large_image', () => {
+    expect(indexHtml).toContain('name="twitter:card" content="summary_large_image"')
+    expect(indexHtml).toContain('name="twitter:title"')
+    expect(indexHtml).toContain('name="twitter:description"')
+    expect(indexHtml).toContain('name="twitter:image"')
+  })
+
+  it('esponde JSON-LD WebApplication gratuito', () => {
+    expect(indexHtml).toContain('"@type": "WebApplication"')
+    expect(indexHtml).toContain('"price": "0"')
+    expect(indexHtml).toContain('"inLanguage": "it"')
+  })
+
+  it('non hardcodà domini di produzione: gli assoluti arrivano da VITE_SITE_URL', () => {
+    expect(indexHtml).not.toContain('rel="canonical"')
+    expect(indexHtml).not.toContain('property="og:url"')
+  })
+})
 
 describe('normalizeSiteUrl', () => {
   it('restituisce stringa vuota se la variabile manca o è vuota', () => {
