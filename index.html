@@ -12,6 +12,47 @@
     />
     <meta name="theme-color" content="#8a6500" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <!-- Open Graph: i tag assoluti (canonical, og:url, og:image) sono
+         iniettati da vite.config.ts a build con VITE_SITE_URL; qui restano
+         i valori statici validi anche senza configurazione. -->
+    <meta property="og:title" content="Spesa — lista della spesa condivisa per famiglie" />
+    <meta
+      property="og:description"
+      content="Spesa è la lista della spesa condivisa per famiglie: gratuita, senza pubblicità e sempre aggiornata. Aggiungi articoli, segnala le urgenze e consulta lo storico."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Spesa" />
+    <meta property="og:locale" content="it_IT" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Anteprima di Spesa: la lista della spesa condivisa per famiglie"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Spesa — lista della spesa condivisa per famiglie" />
+    <meta
+      name="twitter:description"
+      content="Spesa è la lista della spesa condivisa per famiglie: gratuita, senza pubblicità e sempre aggiornata."
+    />
+    <meta name="twitter:image" content="/og-image.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Spesa",
+        "description": "Lista della spesa condivisa per famiglie: gratuita, senza pubblicità e sempre aggiornata.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Any",
+        "inLanguage": "it",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        }
+      }
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
