@@ -40,6 +40,7 @@ Ogni voce è stata una issue separata, con branch `feat/backend-*` o `feat/front
 - [x] SEO/Open Graph/sitemap, attivabili con `VITE_SITE_URL` quando ci sarà il dominio.
 - [x] Accessibilità: suite axe (WCAG 2.1 A/AA) e test tastiera/focus su dialog e tab della lista.
 - [x] Stati di errore: le azioni restituiscono un esito, i dialog restano aperti con il testo conservato, avviso con **Riprova** sul caricamento fallito.
+- [x] Dipendenze: `npm audit` pulito e patch/minor aggiornate (Biome, Playwright, supabase-js, CLI, Vite); le major restano fuori con motivazione in `docs/SETUP.md`.
 - [ ] Badge in-app per notifiche perse (iOS); utile solo se un giorno si attiva il Web Push.
 - [ ] Sentry free tier (opzionale; richiede DSN come secret).
 - [ ] Valutare un rate limit anti-abuso sulle aggiunte (oggi Auth + RLS; il push è già limitato).
