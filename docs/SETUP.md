@@ -300,6 +300,34 @@ Senza `VITE_SITE_URL` la build resta valida: canonical, og:url e sitemap non ven
 rsvg-convert -w 1200 -h 630 public/og.svg > public/og-image.png
 ```
 
+### Test unitari e copertura
+
+La suite unit gira con Vitest e jsdom:
+
+```bash
+npm run test
+```
+
+Copre la logica dei `src/lib/*` (auth, impostazioni, categorie, quantità,
+ordinamento, cache, push, realtime, route, SEO, tema, account) e gli hook con
+stato proprio (`useShoppingList`, `useDocumentMeta`, `useOnlineStatus`). I
+componenti e i flussi completi sono coperti dagli e2e.
+
+Regole quando si aggiunge codice:
+
+- la logica pura va in `src/lib/*` e ha un test accanto (`*.test.ts`);
+- per le regole condivise tra mock e Supabase il test è obbligatorio: è il caso
+  di `src/lib/data/item-merge.test.ts`, che verifica identità degli articoli
+  (spazi, maiuscole, categorie normalizzate, lista vs storico), merge di
+  quantità/note/urgenza e ordinamento delle due viste;
+- per le funzioni che leggono variabili d'ambiente a livello di modulo
+  (`src/lib/supabase.ts`, `src/lib/pwa.ts`) il test ricarica il modulo con
+  `vi.resetModules()` e `vi.stubEnv()`, così il caso "non configurato" non
+  dipende da `.env.local` della macchina;
+- i test degli hook si scrivono con `render()` di Preact e `data-testid`, come
+  in `src/hooks/useOnlineStatus.test.tsx`; gli effetti partono dopo il paint,
+  quindi conviene attendere un frame prima di simulare eventi.
+
 ### E2e con backend reale
 
 `npm run test:e2e` copre l'interfaccia con dati mock, senza rete: è la suite
