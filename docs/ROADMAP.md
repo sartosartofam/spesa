@@ -42,6 +42,7 @@ Ogni voce è stata una issue separata, con branch `feat/backend-*` o `feat/front
 - [x] Stati di errore: le azioni restituiscono un esito, i dialog restano aperti con il testo conservato, avviso con **Riprova** sul caricamento fallito.
 - [x] Dipendenze: `npm audit` pulito e patch/minor aggiornate (Biome, Playwright, supabase-js, CLI, Vite); le major restano fuori con motivazione in `docs/SETUP.md`.
 - [x] Copertura test: colmati i buchi su `item-merge` (identità, merge, ordinamento), `supabase.ts` (configurazione e rifiuto delle chiavi segrete), `pwa.ts` (registrazione del service worker) e `useOnlineStatus`; regole e convenzioni in `docs/SETUP.md` → "Test unitari e copertura".
+- [x] Performance: chunk separato per `@supabase/supabase-js` (cache stabile tra i deploy), `private-noindex.js` in `defer`, budget gzip di JS e CSS che fa fallire la build se il bundle cresce. Numeri e scelte scartate in `docs/SETUP.md` → "Performance e budget del bundle".
 - [ ] Badge in-app per notifiche perse (iOS); utile solo se un giorno si attiva il Web Push.
 - [ ] Sentry free tier (opzionale; richiede DSN come secret).
 - [ ] Valutare un rate limit anti-abuso sulle aggiunte (oggi Auth + RLS; il push è già limitato).

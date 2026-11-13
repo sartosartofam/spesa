@@ -62,7 +62,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Spesa" />
     <title>Spesa — lista della spesa condivisa per famiglie</title>
-    <script src="/private-noindex.js"></script>
+    <!-- `defer`: il noindex serve prima che i crawler leggano la pagina, ma non
+         deve fermare il parser. Uno script classico sincrono qui bloccherebbe
+         la scoperta di `/src/main.tsx` (un round trip in più prima che il
+         bundle parta). Gli script differiti girano comunque prima del bundle,
+         perché i moduli sono differiti a loro volta. -->
+    <script defer src="/private-noindex.js"></script>
   </head>
   <body>
     <div id="app"></div>
