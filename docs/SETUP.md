@@ -455,6 +455,36 @@ npm run db:types     # rigenera i tipi TypeScript da Supabase locale
 npx supabase test db # test pgTAP / RLS
 ```
 
+### Dipendenze e aggiornamenti
+
+`npm audit` è pulito (0 vulnerabilità). Per vedere cosa è indietro:
+
+```bash
+npm audit
+npm outdated
+```
+
+Regola: **patch e minor dentro la major corrente** si aggiornano in una PR
+dedicata `chore/deps-*`, con `npm run verify`, `npm run test:e2e` e, se toccano
+Playwright, `npx playwright install chromium`. **Le major restano fuori** da
+questi aggiornamenti: richiedono una decisione a sé, una PR separata e una
+verifica manuale dell'app.
+
+Stato al 13 novembre 2026 (aggiornati: Biome 2.6.7, Playwright 1.65,
+`@supabase/supabase-js` 2.119, CLI Supabase 2.122, Vite 7.3.8). Major ancora
+indietro, con il motivo per cui non sono state forzate:
+
+| Pacchetto | Attuale | Latest | Perché si aspetta |
+| --- | --- | --- | --- |
+| `preact` | 10.x | 11.x | tocca tutta la UI e `@preact/preset-vite`; va provato a mano |
+| `vite` | 7.x | 8.x | configurazione, plugin SEO/PWA e build da riverificare |
+| `vitest` | 4.x | 5.x | ambiente di test, ma va allineato a Vite |
+| `typescript` | 5.9 | 7.x | cambio di compilatore: da valutare con calma |
+| `supabase` (CLI) | 2.x | 3.x | gli script usano i comandi della 2.x |
+| `jsdom` | 29.x | 31.x | solo ambiente unit, aggiornabile in un task a parte |
+
+Le major si affrontano una alla volta, mai insieme a un task funzionale.
+
 ## GitHub (una volta, dopo `gh auth login`)
 
 ```bash
