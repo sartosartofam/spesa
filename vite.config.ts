@@ -1,5 +1,6 @@
 import preact from '@preact/preset-vite'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { measureBundle } from './src/lib/bundle-budget'
 import { buildRobotsTxt, buildSitemapXml, normalizeSiteUrl } from './src/lib/seo'
 
 export default defineConfig(({ mode }) => {
@@ -40,8 +41,30 @@ export default defineConfig(({ mode }) => {
     },
   })
 
+  // Il budget vive in `src/lib/bundle-budget.ts` (con i suoi test): qui
+  // passiamo solo il bundle reale. Così una regressione di peso rompe
+  // `npm run build` in locale e in CI invece di passare inosservata.
+  const bundleBudget = (): Plugin => ({
+    name: 'bundle-budget',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      const report = measureBundle(
+        Object.entries(bundle).map(([fileName, output]) => ({
+          fileName,
+          bytes: output.type === 'chunk' ? output.code : output.source,
+        })),
+      )
+      if (report.violations.length === 0) return
+      this.error(
+        `Budget del bundle superato (JS ${report.jsGzipKb} kB gzip, CSS ${report.cssGzipKb} kB gzip): ` +
+          `${report.violations.join('; ')}. Se la crescita è voluta, alza i limiti in ` +
+          'src/lib/bundle-budget.ts spiegandone il motivo nella PR.',
+      )
+    },
+  })
+
   return {
-    plugins: [preact(), seoSiteUrls()],
+    plugins: [preact(), seoSiteUrls(), bundleBudget()],
     server: {
       port: 5173,
     },
@@ -50,6 +73,16 @@ export default defineConfig(({ mode }) => {
       // Non inlineare i font come data URI: la CSP usa `font-src 'self'` e
       // vuole che i font arrivino solo dall'origine dell'app.
       assetsInlineLimit: 0,
+      rollupOptions: {
+        output: {
+          // Supabase-js è ~2/3 del bundle e cambia solo quando aggiorniamo la
+          // dipendenza: in un chunk separato resta in cache del browser (hash
+          // immutabile) mentre il codice dell'app cambia a ogni deploy.
+          manualChunks: {
+            supabase: ['@supabase/supabase-js'],
+          },
+        },
+      },
     },
   }
 })
