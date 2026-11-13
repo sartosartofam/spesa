@@ -39,7 +39,7 @@ import {
   writeSettings,
 } from './lib/settings'
 import { applyTheme, writeTheme } from './lib/theme'
-import type { Item, ListView } from './lib/types'
+import type { ActionResult, Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
 
@@ -223,15 +223,16 @@ export function App({
     setUrgentOnly(false)
   }
 
-  async function handleQuickAdd(name: string) {
+  async function handleQuickAdd(name: string): Promise<boolean> {
     if (settings.quickAdd) {
-      await list.add({ name, category: settings.defaultCategory })
-      return
+      const result = await list.add({ name, category: settings.defaultCategory })
+      return result.ok
     }
     setDialog({
       mode: 'add',
       draft: { name, category: settings.defaultCategory },
     })
+    return true
   }
 
   function handleQuickAddDetails(name: string) {
@@ -241,7 +242,7 @@ export function App({
     })
   }
 
-  async function handleSave(draft: ItemDraft) {
+  async function handleSave(draft: ItemDraft): Promise<ActionResult> {
     const payload = {
       name: draft.name.trim(),
       category: draft.category,
@@ -250,15 +251,14 @@ export function App({
       urgent: draft.urgent,
     }
     if (dialog?.mode === 'edit') {
-      await list.update(dialog.item.id, payload)
-    } else {
-      await list.add(payload)
+      return list.update(dialog.item.id, payload)
     }
+    return list.add(payload)
   }
 
-  async function handleDelete() {
-    if (dialog?.mode !== 'edit') return
-    await list.remove(dialog.item.id)
+  async function handleDelete(): Promise<ActionResult> {
+    if (dialog?.mode !== 'edit') return { ok: true }
+    return list.remove(dialog.item.id)
   }
 
   async function handleUndo() {
@@ -424,13 +424,22 @@ export function App({
             </div>
           )}
 
-          <div class="app__feedback" role="status" aria-live="polite">
+          <div class="app__feedback">
             {authError && (
               <p class="alert" role="alert">
                 {authError}
               </p>
             )}
-            {list.error && <p class="alert">{list.error}</p>}
+            {list.error && !dialog && !settingsOpen && (
+              <p class="alert" role="alert">
+                {list.error}
+                {isLiveData && (
+                  <button class="alert__action" type="button" onClick={() => void list.refresh()}>
+                    Riprova
+                  </button>
+                )}
+              </p>
+            )}
             {settingsSyncError && (
               <p class="alert" role="status">
                 {settingsSyncError}

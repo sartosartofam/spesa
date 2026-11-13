@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks'
 import { useModalDialog } from '../hooks/useModalDialog'
 import { normalizeCategory } from '../lib/categories'
+import type { ActionResult } from '../lib/types'
 import { CloseIcon } from './Icons'
 
 export interface ItemDraft {
@@ -19,8 +20,8 @@ interface ItemDialogProps {
   /** Crea una categoria personalizzata e restituisce il nome canonico. */
   onAddCategory: (name: string) => string | null
   onClose: () => void
-  onSave: (draft: ItemDraft) => void | Promise<void>
-  onDelete?: (() => void | Promise<void>) | undefined
+  onSave: (draft: ItemDraft) => Promise<ActionResult>
+  onDelete?: (() => Promise<ActionResult>) | undefined
 }
 
 const QUANTITY_HINTS = ['pz', 'pacchi', 'kg', 'g', 'l', 'bottiglie', 'confezioni', 'scatolette']
@@ -50,6 +51,8 @@ export function ItemDialog({
   const [categories, setCategories] = useState<string[]>(() => [...categoryOptions])
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setCategories([...categoryOptions])
@@ -59,19 +62,42 @@ export function ItemDialog({
     setDraft((current) => ({ ...current, [key]: value }))
   }
 
+  /**
+   * Esegue l'azione mostrando lo stato di attesa e l'eventuale errore.
+   * Restituisce `true` solo se l'azione è andata a buon fine.
+   */
+  async function runAction(action: () => Promise<ActionResult>): Promise<boolean> {
+    setPending(true)
+    setError(null)
+    let result: ActionResult
+    try {
+      result = await action()
+    } catch (actionError) {
+      result = {
+        ok: false,
+        message: actionError instanceof Error ? actionError.message : 'Errore imprevisto.',
+      }
+    }
+    setPending(false)
+    if (!result.ok) {
+      setError(result.message)
+      return false
+    }
+    return true
+  }
+
   async function submit(event: Event) {
     event.preventDefault()
     const name = draft.name.trim()
-    if (!name) return
-    await onSave({ ...draft, name })
-    onClose()
+    if (!name || pending) return
+    // L'errore non chiude il dialog: il testo inserito resta a disposizione.
+    if (await runAction(() => onSave({ ...draft, name }))) onClose()
   }
 
   async function handleDelete() {
-    if (!onDelete) return
+    if (!onDelete || pending) return
     if (!confirm(`Rimuovere "${draft.name}"?`)) return
-    await onDelete()
-    onClose()
+    if (await runAction(onDelete)) onClose()
   }
 
   function createCategory() {
@@ -245,16 +271,31 @@ export function ItemDialog({
         </div>
 
         {mode === 'edit' && onDelete && (
-          <button class="button button--danger-ghost" type="button" onClick={handleDelete}>
+          <button
+            class="button button--danger-ghost"
+            type="button"
+            disabled={pending}
+            onClick={handleDelete}
+          >
             Rimuovi articolo
           </button>
+        )}
+
+        {error && (
+          <p class="alert" role="alert">
+            {error}
+          </p>
         )}
 
         <div class="dialog-actions">
           <button class="button button--ghost" type="button" onClick={onClose}>
             Annulla
           </button>
-          <button class="button button--primary" type="submit" disabled={!draft.name.trim()}>
+          <button
+            class="button button--primary"
+            type="submit"
+            disabled={!draft.name.trim() || pending}
+          >
             Salva
           </button>
         </div>

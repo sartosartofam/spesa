@@ -34,3 +34,10 @@ export interface NewItem {
 
 /** Vista della UI: lista attiva oppure storico. */
 export type ListView = 'active' | 'history'
+
+/**
+ * Esito di un'azione sulla lista. L'errore viaggia col risultato invece di
+ * essere solo uno stato globale: così chi ha aperto un dialog può restare
+ * aperto, mostrare il messaggio e lasciare all'utente il testo inserito.
+ */
+export type ActionResult = { ok: true } | { ok: false; message: string }

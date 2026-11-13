@@ -5,8 +5,8 @@ interface ItemRowProps {
   item: Item
   variant: ListView
   showCategory?: boolean
-  onMarkBought: (item: Item) => void | Promise<void>
-  onRestore: (item: Item) => void | Promise<void>
+  onMarkBought: (item: Item) => Promise<unknown>
+  onRestore: (item: Item) => Promise<unknown>
   onEdit: (item: Item) => void
 }
 

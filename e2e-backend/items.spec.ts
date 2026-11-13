@@ -71,3 +71,21 @@ test('aggiunge un articolo urgente e lo segnala in lista', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
   await expect(row()).toHaveClass(/item--urgent/)
 })
+
+test('errore di rete al caricamento: avviso con Riprova e recupero', async ({ page }) => {
+  const itemsRoute = '**/rest/v1/items*'
+  await page.route(itemsRoute, (route) => route.abort())
+
+  // Al reload il client non raggiunge il database: messaggio leggibile e
+  // azione di recupero, senza dettagli tecnici.
+  await page.reload()
+  const alert = page.getByRole('alert').filter({ hasText: 'Connessione assente' })
+  await expect(alert).toBeVisible()
+  await expect(alert.getByRole('button', { name: 'Riprova' })).toBeVisible()
+
+  await page.unroute(itemsRoute)
+  await alert.getByRole('button', { name: 'Riprova' }).click()
+
+  await expect(page.getByRole('alert').filter({ hasText: 'Connessione assente' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
+})
