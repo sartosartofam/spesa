@@ -1,6 +1,6 @@
 # TODO — ripresa lavori
 
-Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md`.
+Stato al 13 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md`.
 
 ## Fatto e mergiato su `dev`
 
@@ -61,7 +61,7 @@ Stato al 3 novembre 2026. Riferimenti: `AGENTS.md`, `docs/DECISIONS.md`, `docs/R
 - [x] SEO/OG/sitemap per la landing: immagine OG 1200×630 con palette dell'app, tag statici Open Graph/Twitter Card + JSON-LD in `index.html`, plugin Vite con `VITE_SITE_URL` per canonical/og:url assoluti e generazione `sitemap.xml`/`robots.txt` a build, `useDocumentMeta` aggiornato con `urlPath` per le viste indicizzabili. **Resta umano**: scegliere il dominio e impostare `VITE_SITE_URL` su Vercel (vedi `docs/SETUP.md` → "SEO, Open Graph e sitemap").
 - [x] E2e con backend reale (suite dedicata contro Supabase locale, senza mock): login reale e utenti del seed, CRUD con persistenza al reload, storico e undo, urgenza, realtime tra due contesti browser. Comando `npm run test:e2e:backend`. Nel corso del lavoro è emerso un bug realtime reale: i DELETE filtrabili richiedono `alter table public.items replica identity full` (migrazione `20261112091000_items_replica_identity.sql` + asserzione pgTAP). **Resta umano**: aggiungere il job CI per questa suite in `.github/workflows/ci.yml` (vedi `docs/SETUP.md` → "E2e con backend reale").
 - [x] Vincolo anti-duplicati lato database: indice unique `items_family_status_identity_key` su (family_id, status, lower(btrim(name)), lower(btrim(category))) con test pgTAP (identità, maiuscole/spazi, storico separato, famiglie e categorie distinte, update che collidono). Il merge amichevole resta lato client; in gara tra membri il secondo riceve `23505`, già tradotto in "Esiste già un articolo con questi dati.".
-- [ ] Aggiornare i documenti storici invecchiati (`docs/studio-di-progetto.md`).
+- [x] Aggiornare i documenti storici invecchiati: `docs/studio-di-progetto.md` ha un nuovo addendum **A8** con lo stato reale (stati `to_buy|bought + urgent`, auth/inviti, realtime con `replica identity full`, push gated e rate limit, PWA, export, SEO, suite di test) e richiami alle sezioni superate; `docs/ROADMAP.md` è allineata (Fase 1 completata, resta la Fase 3 umana).
 - [ ] IBAN e intestatario donazioni reali (ora segnaposto).
 - [ ] Badge in-app per notifiche perse (iOS) e Sentry free tier (opzionali; il badge iOS vale solo se un giorno si attiva il Web Push).
 

@@ -1,6 +1,9 @@
 # Roadmap
 
-Stato: **Fase 0 — repository pronto per gli agenti**. Il codice applicativo esiste come scaffold Preact + Vite con dati mock; il backend non è ancora implementato.
+Stato al 13 novembre 2026: **Fase 1 implementata su `dev` e verificata in locale**.
+Restano le azioni umane della Fase 3 (Supabase cloud, Vercel, RLS review,
+backup/keepalive effettivi, promozione su `main`). Dettaglio dello stato reale
+in `docs/TODO.md` e nell'addendum A8 di `docs/studio-di-progetto.md`.
 
 ## Fase 0 — Agent-ready
 
@@ -11,48 +14,42 @@ Stato: **Fase 0 — repository pronto per gli agenti**. Il codice applicativo es
 - [x] CI: qualità, database, e2e
 - [x] Script `dev-env`, `doctor`, `bootstrap`
 - [x] ADR e regole agenti aggiornate
-- [ ] GitHub: default branch `dev`, protezione `main`/`dev`, auto-merge, secrets keepalive
+- [x] GitHub: default branch `dev`, auto-merge e secrets keepalive
+- [ ] GitHub: branch protection su `main`/`dev` con CI obbligatoria (umano)
 - [ ] Primo progetto Supabase cloud + Vercel (umano)
 
 ## Fase 1 — Backend MVP
 
-Ogni voce è una issue separata, con branch `feat/backend-*` o `feat/frontend-*`.
+Ogni voce è stata una issue separata, con branch `feat/backend-*` o `feat/frontend-*`.
 
-1. **`feat/db-schema`** — enum `item_status`, tabelle `families`, `members`, `items`, `push_subscriptions`; chiavi, indici, trigger `updated_at`/`bought_at`.
-   - Done: `npm run db:reset` pulito; tipi generati; test pgTAP di struttura.
-2. **`feat/db-rls`** — RLS su tutte le tabelle; policy per famiglia; push solo del membro.
-   - Done: test pgTAP che verificano isolamento tra due famiglie.
-3. **`feat/db-seed-types`** — famiglia fittizia, utenti test, articoli; script tipi.
-   - Done: login locale con utente test; `npm run db:types` aggiornato.
-4. **`feat/auth`** — login/logout, sessione, route protette, gestione errori.
-   - Done: e2e login → lista; logout; sessione persistente.
-5. **`feat/data-supabase`** — implementazione `ItemsRepository` con Supabase; switch in `src/lib/data/index.ts`.
-   - Done: CRUD reale; mock resta per test/demo.
-6. **`feat/realtime`** — subscription Postgres changes + optimistic update.
-   - Done: due browser vedono l'aggiunta entro 1 s.
-7. **`feat/finished-push`** — flag `urgent`, Edge Function, Web Push, UI subscribe.
-   - Done: notifica su aggiunta/urgenza; revoca subscription.
-8. **`feat/pwa-offline`** — service worker, icone 192/512, app shell offline, banner offline.
-   - Done: app installabile; shell disponibile senza rete; nessuna scrittura in coda.
-9. **`test/e2e`** — flussi completi: aggiunta, spunta, storico, "è finito", login.
-   - Done: suite stabile in CI.
-10. **`chore/backup`** — Edge Function export con token dedicato; doc di restore.
-    - Done: export eseguito almeno una volta; restore di prova riuscito.
+1. [x] **`feat/db-schema`** — enum `item_status`, tabelle `families`, `members`, `items`, `push_subscriptions`; chiavi, indici, trigger `updated_at`/`bought_at`.
+2. [x] **`feat/db-rls`** — RLS su tutte le tabelle; policy per famiglia; push solo del membro, con test pgTAP di isolamento.
+3. [x] **`feat/db-seed-types`** — famiglia fittizia, utenti test, articoli; script tipi.
+4. [x] **`feat/auth`** — login/logout, sessione, route protette, gestione errori; recupero password e registrazione pubblica.
+5. [x] **`feat/data-supabase`** — implementazione `ItemsRepository` con Supabase; switch in `src/lib/data/index.ts`.
+6. [x] **`feat/realtime`** — subscription Postgres changes, refresh con debounce, fallback focus/visibility e `replica identity full` per i DELETE.
+7. [x] **`feat/finished-push`** — flag `urgent`, Edge Function `send-push`, UI subscribe/revoca e rate limit. **Consegna reale spenta** finché non si configurano le chiavi VAPID (decisione 3 novembre 2026).
+8. [x] **`feat/pwa-offline`** — service worker, icone 192/512, app shell offline, banner offline, ultima lista in lettura.
+9. [x] **`test/e2e`** — suite mock stabile in CI; aggiunta una suite contro Supabase locale (`npm run test:e2e:backend`), non ancora in CI.
+10. [x] **`chore/backup`** — Edge Function `export` con token dedicato, script di restore locale e restore di prova riuscito. Restano umani deploy, secret, cron e upload.
 
 ## Fase 2 — Rifiniture
 
-- Categorie condivise in `src/lib/categories.ts` (togliere l'import da `mock-repository`).
-- Badge in-app per notifiche perse (iOS).
-- Sentry free tier (opzionale).
-- Rate limiting lato Edge Function per le aggiunte.
+- [x] Categorie condivise in `src/lib/categories.ts` (usate da UI e repository).
+- [x] Anti-duplicati anche lato database (indice unique per famiglia/stato/nome/categoria).
+- [x] SEO/Open Graph/sitemap, attivabili con `VITE_SITE_URL` quando ci sarà il dominio.
+- [ ] Badge in-app per notifiche perse (iOS); utile solo se un giorno si attiva il Web Push.
+- [ ] Sentry free tier (opzionale; richiede DSN come secret).
+- [ ] Valutare un rate limit anti-abuso sulle aggiunte (oggi Auth + RLS; il push è già limitato).
 
 ## Fase 3 — Produzione
 
-- Supabase cloud + Vercel; RLS review umana.
-- Eseguire il checklist [docs/SECURITY.md](SECURITY.md) prima del go-live.
-- Keepalive: secrets GitHub Actions + cron Raspberry Pi.
-- Backup settimanale effettivo e test di ripristino.
-- Promozione `dev` → `main` solo umana.
+- [ ] Supabase cloud + Vercel; RLS review umana.
+- [ ] Eseguire il checklist [docs/SECURITY.md](SECURITY.md) prima del go-live.
+- [ ] Keepalive: cron sul Raspberry Pi e verifica periodica dei ping (i secret GitHub Actions sono già presenti).
+- [ ] Backup settimanale effettivo e test di ripristino.
+- [ ] Job CI per la suite e2e con backend reale in `.github/workflows/ci.yml`.
+- [ ] Promozione `dev` → `main` solo umana.
 
 ## Backlog operativo
 

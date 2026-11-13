@@ -4,6 +4,12 @@ subtitle: "Fase 1 — solo spesa"
 lang: it-IT
 ---
 
+<!--
+  Documento storico: descrive lo studio iniziale e le decisioni di allora.
+  L'implementazione reale è riassunta nell'addendum A8 (13 novembre 2026) e
+  nelle ADR di docs/DECISIONS.md, che prevalgono sul corpo del documento.
+-->
+
 ## 1. Obiettivo e vincoli
 
 **Obiettivo:** una webapp leggera che permetta ai membri di una famiglia di aggiungere e spuntare articoli della spesa in tempo reale, con notifica immediata quando qualcuno segnala che qualcosa è finito.
@@ -193,6 +199,8 @@ Ping dal Raspberry Pi (cron giornaliero):
 
 **Stato attuale:** l'export settimanale è automatico ed eseguito dal Raspberry Pi. Il Pi scarica i dati da Supabase e li carica su Cloudflare R2 / Backblaze B2 in pipe, senza scrittura locale sulla SD.
 
+> **Aggiornamento (A8).** L'implementazione ha scelto una Edge Function `export` con token dedicato `EXPORT_TOKEN`; il cron e l'upload sono ancora da attivare in produzione (azione umana).
+
 - **Autenticazione dell'export:** da definire in fase di implementazione (Edge Function con token dedicato, oppure `pg_dump`). La `anon key` da sola non basta se la RLS limita la lettura ai membri autenticati.
 - **`service_role`:** resta solo lato server, mai sul Raspberry Pi, mai nel frontend, mai in Git.
 - **Storage:** Cloudflare R2 o Backblaze B2, 10 GB gratuiti, compatibili S3.
@@ -220,7 +228,7 @@ La `ANON_KEY` (o `PUBLISHABLE_KEY`) è l'unica chiave che può stare nel fronten
 
 ## 6. Modello dati (bozza)
 
-**Bozza di lavoro, da raffinare in fase di testing.** Le scelte su stati, flag `urgent`, quantità e categorie sono rimandate al testing dell'MVP.
+**Bozza di lavoro, da raffinare in fase di testing.** Le scelte su stati, flag `urgent`, quantità e categorie sono rimandate al testing dell'MVP. Lo schema effettivamente implementato è descritto in **A8** e in ADR-0001: non esiste lo stato `finished`.
 
 ```
 families (id, name, created_at)
@@ -251,6 +259,8 @@ keepalive (id, last_ping)
 - La tabella `keepalive` espone solo un timestamp, nessun dato della lista.
 
 ## 8. Stack applicativo (concreto)
+
+> **Aggiornamento (A8).** La scelta effettiva è **Preact + Vite** (ADR-0005); la tabella sotto resta lo studio iniziale.
 
 | Componente | Scelta | Motivo |
 |:-------------------|:------------------------------------------|:--------------------------------------------|
@@ -382,3 +392,79 @@ L'MVP è "pronto" quando:
 
 - Quantità strutturate, più liste, offline completo, faccende, widget, integrazione supermercati, multi-famiglia.
 - Magic link, fallback notifiche, normalizzazione categorie: post-MVP.
+
+### A8. Stato di implementazione al 13 novembre 2026
+
+Questa sezione allinea il documento storico al codice e alle ADR. In caso di
+conflitto prevalgono `docs/DECISIONS.md` e questo addendum.
+
+**Stack reale.** Frontend Preact + Vite, PWA mobile-first (ADR-0005), non
+SvelteKit. Backend Supabase: Postgres, Auth, REST, Realtime, RLS. Hosting
+Vercel con preview per le PR e deploy di produzione solo da `main`.
+
+**Modello dati effettivo.** Oltre alle tabelle dello studio esistono
+`user_settings` (impostazioni per account, RLS self-only), `family_invites`
+(inviti monouso, non leggibili dal client) e `rate_limits` (contatori interni,
+invisibili ai ruoli API). RLS è attiva su ogni tabella.
+
+- `items.status` è l'enum `to_buy | bought`; **non esiste `finished`**
+  (ADR-0001). "È finito" è un evento: imposta `urgent = true` e genera
+  notifica; a fine acquisto `bought_at = now()` e `urgent = false`.
+- Un indice unique impedisce duplicati per famiglia, stato, nome e categoria
+  (confronto insensibile a maiuscole e spazi); in caso di gara tra membri il
+  secondo riceve `23505`, tradotto in un messaggio leggibile.
+- `items` usa `replica identity full` così i `DELETE` realtime arrivano anche
+  ai client sottoscritti con filtro `family_id`.
+
+**Autenticazione e famiglie (ADR-0002).** Email + password con registrazione
+pubblica e conferma email obbligatoria; recupero password via link. Al primo
+accesso la RPC `security definer` `ensure_current_family()` crea la famiglia
+personale in modo idempotente. Gli inviti monouso scadono dopo 7 giorni e si
+riscattano solo via RPC; un `owner` può promuovere un altro `owner`. Uscita
+dalla famiglia con successione automatica dell'owner; cancellazione account
+disponibile. Al momento vale una famiglia per utente, come previsto.
+
+**Realtime.** Subscription Postgres changes con filtro `family_id`, refresh
+silenzioso con debounce, fallback su focus/visibility e riconnessione.
+
+**Web Push.** Implementato ma **spento** finché non vengono configurate le
+chiavi VAPID (decisione del 3 novembre 2026): senza
+`VITE_VAPID_PUBLIC_KEY` la sezione Notifiche è nascosta e la function non
+viene chiamata. La Edge Function `send-push` verifica JWT e appartenenza alla
+famiglia, usa `service_role` solo lato server, applica un'allowlist agli
+endpoint e un budget di 12 invii/60 s per utente. La consegna reale resta
+un'azione umana post-deploy.
+
+**PWA e offline.** Manifest e icone 192/512/maskable/apple-touch, service
+worker registrato solo nella build di produzione, app shell in cache,
+network-first per le navigazioni, cache-first per gli asset. L'ultima lista
+letta è salvata per famiglia e mostrata con avviso offline; non c'è coda di
+scrittura, come previsto per l'MVP.
+
+**Backup (ADR-0003).** Edge Function `export` con token dedicato
+`EXPORT_TOKEN`, snapshot JSON delle tabelle applicative; script
+`scripts/backup/restore-local.mjs` per il restore di prova, solo su Supabase
+locale. Restano umani il deploy della function, il secret, il cron sul
+Raspberry Pi e l'upload su R2/B2.
+
+**SEO.** Landing e `/privacy` indicizzabili; Open Graph, Twitter Card e
+JSON-LD statici, canonical/og:url assoluti e `sitemap.xml`/`robots.txt`
+generati a build **solo** quando è impostata `VITE_SITE_URL`. La scelta del
+dominio e la variabile su Vercel restano umane.
+
+**Qualità e test.** Unit con Vitest, pgTAP su schema/RLS/RPC, e2e Playwright
+con dati mock in CI e una suite separata contro Supabase locale
+(`npm run test:e2e:backend`) che copre login reale, CRUD, storico/undo,
+urgenza e realtime tra due browser. Quest'ultima **non è ancora in CI**:
+richiede un job in `.github/workflows/ci.yml`, file riservato all'umano.
+
+**Keepalive.** Tabella `keepalive` in sola lettura per `anon` e due ping
+giornalieri indipendenti (Raspberry Pi e GitHub Actions). Il workflow GitHub e
+i relativi secret esistono; il cron del Raspberry Pi e la verifica periodica
+dei ping restano umani.
+
+**Cosa resta umano prima della produzione.** Creare il progetto Supabase
+cloud e collegare Vercel, rivedere le RLS con dati reali/fittizi, impostare
+dominio e `VITE_SITE_URL`, attivare backup e keepalive effettivi, aggiungere
+il job CI della suite backend e promuovere `dev` → `main`.
+
