@@ -6,7 +6,7 @@ import { readCachedList, writeCachedList } from '../lib/list-cache'
 import { sendPushNotification } from '../lib/push'
 import { subscribeToItems } from '../lib/realtime'
 import { getSupabase } from '../lib/supabase'
-import type { Item, ItemStatus, NewItem } from '../lib/types'
+import type { ActionResult, Item, ItemStatus, NewItem } from '../lib/types'
 
 interface RefreshOptions {
   /** Un aggiornamento in background non deve mostrare lo stato di caricamento. */
@@ -161,7 +161,10 @@ export function useShoppingList(familyId: string | null = null) {
   }, [familyId, refresh])
 
   const run = useCallback(
-    async <T>(action: () => Promise<T>, label: string): Promise<T | null> => {
+    async <T>(
+      action: () => Promise<T>,
+      label: string,
+    ): Promise<{ ok: true; value: T } | { ok: false; message: string }> => {
       const before = snapshotOf(stateRef.current)
       try {
         const result = await action()
@@ -169,24 +172,25 @@ export function useShoppingList(familyId: string | null = null) {
         const entry: ListHistoryEntry = { label, before, after: snapshotOf(next) }
         setUndoStack((current) => [...current, entry].slice(-MAX_HISTORY))
         setRedoStack([])
-        return result
+        return { ok: true, value: result }
       } catch (error) {
-        commit((current) => ({ ...current, error: messageOf(error) }))
-        return null
+        const message = messageOf(error)
+        commit((current) => ({ ...current, error: message }))
+        return { ok: false, message }
       }
     },
     [commit, refresh],
   )
 
   const add = useCallback(
-    async (input: NewItem) => {
+    async (input: NewItem): Promise<ActionResult> => {
       const name = input.name.trim() || 'articolo'
-      const item = await run(() => itemsRepository.add(input), `aggiunta di “${name}”`)
-      if (item) {
-        void sendPushNotification(item.id, 'created').catch(() => {
-          // Una notifica persa non deve far fallire l'aggiunta.
-        })
-      }
+      const result = await run(() => itemsRepository.add(input), `aggiunta di “${name}”`)
+      if (!result.ok) return result
+      void sendPushNotification(result.value.id, 'created').catch(() => {
+        // Una notifica persa non deve far fallire l'aggiunta.
+      })
+      return { ok: true }
     },
     [run],
   )
@@ -195,48 +199,52 @@ export function useShoppingList(familyId: string | null = null) {
     async (
       id: string,
       patch: Partial<Pick<Item, 'name' | 'category' | 'note' | 'quantity' | 'urgent'>>,
-    ) => {
+    ): Promise<ActionResult> => {
       const name = patch.name?.trim() || itemName(stateRef.current, id)
       const wasUrgent = stateRef.current.active.find((item) => item.id === id)?.urgent ?? false
-      const updated = await run(() => itemsRepository.update(id, patch), `modifica di “${name}”`)
-      if (updated && patch.urgent === true && !wasUrgent) {
-        void sendPushNotification(updated.id, 'urgent').catch(() => {
+      const result = await run(() => itemsRepository.update(id, patch), `modifica di “${name}”`)
+      if (!result.ok) return result
+      if (patch.urgent === true && !wasUrgent) {
+        void sendPushNotification(result.value.id, 'urgent').catch(() => {
           // Una notifica persa non deve far fallire la modifica.
         })
       }
+      return { ok: true }
     },
     [run],
   )
 
   const changeStatus = useCallback(
-    async (id: string, status: ItemStatus, label: string) => {
-      await run(() => itemsRepository.setStatus(id, status), label)
+    async (id: string, status: ItemStatus, label: string): Promise<ActionResult> => {
+      const result = await run(() => itemsRepository.setStatus(id, status), label)
+      return result.ok ? { ok: true } : result
     },
     [run],
   )
 
   const setStatus = useCallback(
-    async (id: string, status: ItemStatus) => {
+    async (id: string, status: ItemStatus): Promise<ActionResult> => {
       const name = itemName(stateRef.current, id)
       const label =
         status === 'bought' ? `“${name}” segnato come preso` : `“${name}” rimesso in lista`
-      await changeStatus(id, status, label)
+      return changeStatus(id, status, label)
     },
     [changeStatus],
   )
 
   const remove = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<ActionResult> => {
       const name = itemName(stateRef.current, id)
-      await run(() => itemsRepository.remove(id), `eliminazione di “${name}”`)
+      const result = await run(() => itemsRepository.remove(id), `eliminazione di “${name}”`)
+      return result.ok ? { ok: true } : result
     },
     [run],
   )
 
   const restore = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<ActionResult> => {
       const name = itemName(stateRef.current, id)
-      await changeStatus(id, 'to_buy', `“${name}” rimesso in lista`)
+      return changeStatus(id, 'to_buy', `“${name}” rimesso in lista`)
     },
     [changeStatus],
   )

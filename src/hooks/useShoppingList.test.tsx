@@ -1,4 +1,5 @@
 import { render } from 'preact'
+import { useState } from 'preact/hooks'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { writeCachedList } from '../lib/list-cache'
 import type { Item } from '../lib/types'
@@ -9,6 +10,7 @@ const repository = vi.hoisted(() => ({
   add: vi.fn(),
   update: vi.fn(),
   suggestions: vi.fn(),
+  remove: vi.fn(),
 }))
 
 const push = vi.hoisted(() => ({
@@ -22,6 +24,7 @@ vi.mock('../lib/data', () => ({
     add: repository.add,
     update: repository.update,
     suggestions: repository.suggestions,
+    remove: repository.remove,
   },
 }))
 
@@ -70,12 +73,49 @@ function Probe() {
   )
 }
 
+/** Mostra l'esito dell'ultima azione: serve a testare i risultati, non solo lo stato. */
+function ResultProbe() {
+  const list = useShoppingList('famiglia-a')
+  const [result, setResult] = useState('')
+  const [removed, setRemoved] = useState('')
+
+  return (
+    <div>
+      <span data-testid="ready">{list.loading ? '' : 'pronto'}</span>
+      <span data-testid="result">{result}</span>
+      <span data-testid="removed">{removed}</span>
+      <button
+        type="button"
+        data-testid="add"
+        onClick={() => {
+          void list.add({ name: 'Latte' }).then((value) => {
+            setResult(value.ok ? 'ok' : `errore: ${value.message}`)
+          })
+        }}
+      >
+        Aggiungi
+      </button>
+      <button
+        type="button"
+        data-testid="remove"
+        onClick={() => {
+          void list.remove('1').then((value) => {
+            setRemoved(value.ok ? 'ok' : `errore: ${value.message}`)
+          })
+        }}
+      >
+        Rimuovi
+      </button>
+    </div>
+  )
+}
+
 let container: HTMLDivElement | null = null
 
-function mount() {
+function mount(component = <Probe />) {
   container = document.createElement('div')
   document.body.append(container)
-  render(<Probe />, container)
+  render(component, container)
 }
 
 describe('useShoppingList offline', () => {
@@ -157,5 +197,76 @@ describe('useShoppingList offline', () => {
 
     await expect.poll(() => push.sendPushNotification.mock.calls.length).toBe(1)
     expect(push.sendPushNotification).toHaveBeenCalledWith('1', 'urgent')
+  })
+})
+
+describe('useShoppingList: esiti delle azioni', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    repository.list.mockReset()
+    repository.add.mockReset()
+    repository.update.mockReset()
+    repository.suggestions.mockReset()
+    repository.remove.mockReset()
+    push.sendPushNotification.mockClear()
+    repository.list.mockImplementation(async (view: 'active' | 'history') =>
+      view === 'active' ? [item('1', 'Pane')] : [],
+    )
+    repository.suggestions.mockResolvedValue(['Pane'])
+  })
+
+  afterEach(() => {
+    if (container) render(null, container)
+    container = null
+    document.body.innerHTML = ''
+  })
+
+  it('restituisce un errore leggibile se l’aggiunta fallisce e non notifica', async () => {
+    repository.add.mockRejectedValue(new Error('Connessione assente: controlla la rete e riprova.'))
+
+    mount(<ResultProbe />)
+    await expect
+      .poll(() => document.querySelector('[data-testid="ready"]')?.textContent)
+      .toBe('pronto')
+
+    ;(document.querySelector('[data-testid="add"]') as HTMLButtonElement).click()
+
+    await expect
+      .poll(() => document.querySelector('[data-testid="result"]')?.textContent)
+      .toBe('errore: Connessione assente: controlla la rete e riprova.')
+    expect(push.sendPushNotification).not.toHaveBeenCalled()
+  })
+
+  it('restituisce ok quando l’aggiunta riesce', async () => {
+    repository.add.mockResolvedValue(item('2', 'Latte'))
+
+    mount(<ResultProbe />)
+    await expect
+      .poll(() => document.querySelector('[data-testid="ready"]')?.textContent)
+      .toBe('pronto')
+
+    ;(document.querySelector('[data-testid="add"]') as HTMLButtonElement).click()
+
+    await expect
+      .poll(() => document.querySelector('[data-testid="result"]')?.textContent)
+      .toBe('ok')
+    expect(push.sendPushNotification).toHaveBeenCalledWith('2', 'created')
+  })
+
+  it('propaga il messaggio quando l’eliminazione fallisce', async () => {
+    repository.remove.mockRejectedValue(
+      new Error('Articolo non trovato: potrebbe essere stato eliminato da un altro membro.'),
+    )
+
+    mount(<ResultProbe />)
+    await expect
+      .poll(() => document.querySelector('[data-testid="ready"]')?.textContent)
+      .toBe('pronto')
+
+    ;(document.querySelector('[data-testid="remove"]') as HTMLButtonElement).click()
+
+    await expect
+      .poll(() => document.querySelector('[data-testid="removed"]')?.textContent)
+      .toBe('errore: Articolo non trovato: potrebbe essere stato eliminato da un altro membro.')
   })
 })

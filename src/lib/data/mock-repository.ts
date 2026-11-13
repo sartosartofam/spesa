@@ -101,8 +101,13 @@ function read(): Item[] {
 function write(items: Item[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-  } catch {
-    // Storage pieno o disabilitato: lo scaffold resta usabile in memoria.
+  } catch (error) {
+    // Storage pieno o disabilitato: la modifica resta in memoria, ma l'utente
+    // deve sapere che non è stata salvata sul dispositivo.
+    throw new Error(
+      'Impossibile salvare i dati sul dispositivo: spazio esaurito o archiviazione bloccata dal browser.',
+      { cause: error },
+    )
   }
 }
 

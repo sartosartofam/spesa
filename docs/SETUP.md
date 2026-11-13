@@ -396,6 +396,46 @@ dentro l'elemento, non un `aria-label` che sostituisce l'etichetta visibile. I
 contenitori con testo `sr-only` figlio vanno posizionati (`position: relative`)
 per non allargare la pagina su mobile.
 
+### Stati di errore
+
+Le azioni sulla lista (`add`, `update`, `setStatus`, `remove`, `restore`) non
+lanciano eccezioni verso i componenti: restituiscono
+`ActionResult = { ok: true } | { ok: false, message }` (`src/lib/types.ts`).
+Il messaggio è già tradotto da `toDataError()` in `supabase-repository.ts`
+(niente codici SQL o dettagli tecnici in UI) e viene anche salvato in
+`list.error` per la zona di feedback globale.
+
+Comportamento atteso, coperto dai test:
+
+- **Dialog articolo**: se il salvataggio o l'eliminazione falliscono, il dialog
+  resta aperto, mostra l'errore al suo interno (`role="alert"`) e conserva
+  quanto digitato; i pulsanti sono disabilitati durante l'operazione, così un
+  doppio clic non crea due articoli. Basta riprovare.
+- **Aggiunta rapida**: se l'aggiunta fallisce il nome resta nel campo, pronto
+  per un nuovo invio.
+- **Caricamento**: l'errore compare in una zona `role="alert"` con il pulsante
+  **Riprova** (solo con dati reali); con la cache disponibile si mostra l'ultima
+  lista letta con l'avviso offline.
+- La zona di errore globale è nascosta mentre un dialog è aperto, per non
+  duplicare l'annuncio del medesimo errore.
+
+Test:
+
+- `e2e/error-states.spec.ts` (mock): rompe le scritture del repository mock
+  sostituendo `Storage.prototype.setItem` per la chiave `spesa.mock.items.v2`
+  con un flag su `window`, e verifica dialog aperto, testo conservato e retry
+  riuscito. Serve, oltre al caso reale, perché la modalità mock è quella che
+  gira in CI.
+- `e2e-backend/items.spec.ts`: con `page.route` che aborta le richieste REST,
+  verifica il messaggio "Connessione assente: controlla la rete e riprova.",
+  il pulsante **Riprova** e il recupero quando la rete torna.
+- `src/hooks/useShoppingList.test.tsx`: esiti `ok`/`errore` delle azioni, con e
+  senza notifica push.
+
+Il repository mock ora propaga l'errore di `localStorage.setItem` (storage
+pieno o bloccato) invece di ignorarlo: in modalità demo una modifica non
+salvata sul dispositivo viene segnalata, non simulata come riuscita.
+
 A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con
 `npm run db:stop`.
 

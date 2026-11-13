@@ -4,7 +4,8 @@ interface QuickAddProps {
   suggestions: string[]
   quickMode: boolean
   defaultCategory: string
-  onSubmit: (name: string) => void | Promise<void>
+  /** Restituisce `false` se l'aggiunta è fallita: il testo resta nel campo. */
+  onSubmit: (name: string) => Promise<boolean>
   onDetails: (name: string) => void
 }
 
@@ -22,8 +23,9 @@ export function QuickAdd({
   async function submit(event: Event) {
     event.preventDefault()
     if (!canSubmit) return
-    await onSubmit(trimmed)
-    setName('')
+    const succeeded = await onSubmit(trimmed)
+    // In caso di errore il nome resta nel campo, così si può riprovare subito.
+    if (succeeded !== false) setName('')
   }
 
   return (
