@@ -377,7 +377,6 @@ export function App({
                       }`}
                       type="button"
                       key={category}
-                      aria-label={`${category}, ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
                       aria-pressed={
                         selectedCategories.length === 1 && selectedCategories[0] === category
                       }
@@ -386,6 +385,9 @@ export function App({
                       {category}
                       <span class="category-chip__count" aria-hidden="true">
                         {count}
+                      </span>
+                      <span class="sr-only">
+                        {` ${count} ${count === 1 ? 'articolo' : 'articoli'}`}
                       </span>
                     </button>
                   ))}
@@ -469,68 +471,75 @@ export function App({
             </div>
           )}
 
-          {!list.loading &&
-            (view === 'active' ? (
-              list.counts.active === 0 ? (
+          <div
+            id="list-tabpanel"
+            class="list-view"
+            role="tabpanel"
+            aria-labelledby={view === 'active' ? 'tab-active' : 'tab-history'}
+          >
+            {!list.loading &&
+              (view === 'active' ? (
+                list.counts.active === 0 ? (
+                  <EmptyState
+                    title="Lista vuota"
+                    hint="Aggiungi il primo articolo: ti chiediamo categoria, quantità e se è urgente."
+                  />
+                ) : activeItems.length === 0 ? (
+                  <EmptyState
+                    title="Nessun risultato"
+                    hint={
+                      hasFilters
+                        ? 'Prova a togliere i filtri o a cambiare la ricerca.'
+                        : 'Non ci sono articoli da prendere.'
+                    }
+                  />
+                ) : urgentOnly ? (
+                  urgentGroups.map(([category, items]) => (
+                    <CategorySection
+                      key={category}
+                      title={category}
+                      items={items}
+                      variant="active"
+                      onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                      onRestore={(item) => list.restore(item.id)}
+                      onEdit={(item) => setDialog({ mode: 'edit', item })}
+                    />
+                  ))
+                ) : (
+                  activeGroups.map(([category, items]) => (
+                    <CategorySection
+                      key={category}
+                      title={category}
+                      items={items}
+                      variant="active"
+                      onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                      onRestore={(item) => list.restore(item.id)}
+                      onEdit={(item) => setDialog({ mode: 'edit', item })}
+                    />
+                  ))
+                )
+              ) : list.counts.history === 0 ? (
                 <EmptyState
-                  title="Lista vuota"
-                  hint="Aggiungi il primo articolo: ti chiediamo categoria, quantità e se è urgente."
+                  title="Storico vuoto"
+                  hint="Gli articoli presi finiscono qui: puoi rimetterli in lista quando serve."
                 />
-              ) : activeItems.length === 0 ? (
+              ) : historyItems.length === 0 ? (
                 <EmptyState
                   title="Nessun risultato"
-                  hint={
-                    hasFilters
-                      ? 'Prova a togliere i filtri o a cambiare la ricerca.'
-                      : 'Non ci sono articoli da prendere.'
-                  }
+                  hint="Prova a togliere i filtri o a cambiare la ricerca."
                 />
-              ) : urgentOnly ? (
-                urgentGroups.map(([category, items]) => (
-                  <CategorySection
-                    key={category}
-                    title={category}
-                    items={items}
-                    variant="active"
-                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                    onRestore={(item) => list.restore(item.id)}
-                    onEdit={(item) => setDialog({ mode: 'edit', item })}
-                  />
-                ))
               ) : (
-                activeGroups.map(([category, items]) => (
-                  <CategorySection
-                    key={category}
-                    title={category}
-                    items={items}
-                    variant="active"
-                    onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                    onRestore={(item) => list.restore(item.id)}
-                    onEdit={(item) => setDialog({ mode: 'edit', item })}
-                  />
-                ))
-              )
-            ) : list.counts.history === 0 ? (
-              <EmptyState
-                title="Storico vuoto"
-                hint="Gli articoli presi finiscono qui: puoi rimetterli in lista quando serve."
-              />
-            ) : historyItems.length === 0 ? (
-              <EmptyState
-                title="Nessun risultato"
-                hint="Prova a togliere i filtri o a cambiare la ricerca."
-              />
-            ) : (
-              <CategorySection
-                title="Presi di recente"
-                items={historyItems}
-                variant="history"
-                showCategory
-                onMarkBought={(item) => list.setStatus(item.id, 'bought')}
-                onRestore={(item) => list.restore(item.id)}
-                onEdit={(item) => setDialog({ mode: 'edit', item })}
-              />
-            ))}
+                <CategorySection
+                  title="Presi di recente"
+                  items={historyItems}
+                  variant="history"
+                  showCategory
+                  onMarkBought={(item) => list.setStatus(item.id, 'bought')}
+                  onRestore={(item) => list.restore(item.id)}
+                  onEdit={(item) => setDialog({ mode: 'edit', item })}
+                />
+              ))}
+          </div>
         </main>
 
         <aside class="sidebar" aria-label="Riepilogo e controlli">

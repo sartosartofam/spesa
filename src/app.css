@@ -181,6 +181,15 @@ select {
   min-width: 0;
 }
 
+/* Pannello della lista collegato ai tab (`aria-controls`): mantiene lo stesso
+   ritmo verticale che prima era dato dal `<main>` come figli diretti. */
+.list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
 .mobile-controls {
   display: flex;
   flex-direction: column;
@@ -593,6 +602,7 @@ select {
 
 .category-chip {
   display: inline-flex;
+  position: relative;
   flex: none;
   align-items: center;
   gap: 0.3rem;
@@ -915,6 +925,7 @@ select {
 
 .item__open {
   display: flex;
+  position: relative;
   flex-direction: column;
   gap: 0.12rem;
   min-width: 0;

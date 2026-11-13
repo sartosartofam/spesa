@@ -37,12 +37,8 @@ export function ItemRow({
         </span>
       </button>
 
-      <button
-        class="item__open"
-        type="button"
-        aria-label={`Modifica ${item.name}`}
-        onClick={() => onEdit(item)}
-      >
+      <button class="item__open" type="button" onClick={() => onEdit(item)}>
+        <span class="sr-only">Modifica </span>
         <span class="item__title">
           <span class="item__name">{item.name}</span>
           {item.urgent && <span class="chip chip--urgent item__tag">Urgente</span>}

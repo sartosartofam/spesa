@@ -332,11 +332,69 @@ Gli articoli creati dai test hanno il prefisso `E2E-backend`; un teardown
 globale li cancella dal database locale al termine, compresi quelli rimasti da
 una run interrotta. Nessun dato reale e nessuna chiamata al cloud.
 
-La CI esegue solo la suite mock. Un job per quella con backend va aggiunto a
-mano in `.github/workflows/ci.yml` (file riservato all'umano): serve `supabase
-start`, `supabase db reset` per seedare i dati demo, i browser Playwright e
-`npm run test:e2e:backend`; lo stack già attivo non viene riavviato perché
-`scripts/db-start.sh` è idempotente.
+La CI esegue solo la suite mock (job `e2e`). Il job per quella con backend va
+aggiunto a mano in `.github/workflows/ci.yml` (file riservato all'umano):
+`supabase start` e `supabase db reset` preparano stack e dati demo, poi
+`npm run test:e2e:backend` avvia da sé build e preview. Lo stack già attivo non
+viene riavviato perché `scripts/db-start.sh` è idempotente.
+
+Blocco pronto da incollare sotto `jobs:` nello stesso file:
+
+```yaml
+  e2e-backend:
+    name: Playwright (backend locale)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: supabase start
+      - run: supabase db reset
+      - run: npm run test:e2e:backend
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-backend-traces
+          path: test-results/
+          retention-days: 7
+      - if: always()
+        run: supabase stop --no-backup
+```
+
+In CI il reporter è `github`, quindi non viene generato `playwright-report/`:
+l'artefatto utile è `test-results/` (tracce dei retry).
+
+### Accessibilità e tastiera
+
+`e2e/a11y.spec.ts` esegue axe (`@axe-core/playwright`, tag WCAG 2.1 A/AA) sulle
+pagine pubbliche, sulla landing in tema scuro e a 360 px, e sull'app (lista,
+storico, dialog impostazioni, dialog articolo, tema scuro e mobile). Una
+violazione fa fallire il test e stampa nodi e riepilogo.
+
+`e2e/keyboard.spec.ts` copre il comportamento non verificabile da axe:
+
+- tab della lista con pattern ARIA completo: roving `tabindex`, frecce
+  sinistra/destra, `Home`/`End`, `aria-controls` verso `#list-tabpanel` e
+  `role="tabpanel"` con `aria-labelledby` aggiornato;
+- alla chiusura dei dialog (Escape o sfondo) il focus torna al trigger; se il
+  trigger non è più utilizzabile (pulsante "Aggiungi" disabilitato dopo l'invio)
+  torna al campo rapido, pronto per il prossimo articolo.
+
+Entrambe girano con `npm run test:e2e`, quindi sono in CI senza job aggiuntivi.
+
+Quando si aggiunge un controllo nuovo, ricordare che il nome accessibile deve
+contenere il testo visibile: per aggiungere contesto usare testo `sr-only`
+dentro l'elemento, non un `aria-label` che sostituisce l'etichetta visibile. I
+contenitori con testo `sr-only` figlio vanno posizionati (`position: relative`)
+per non allargare la pagina su mobile.
 
 A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con
 `npm run db:stop`.

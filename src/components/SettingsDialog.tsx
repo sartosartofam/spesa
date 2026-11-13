@@ -904,6 +904,8 @@ export function SettingsDialog({
               class="sr-only"
               type="file"
               accept=".json,.csv,application/json,text/csv"
+              aria-label="Importa preset da file JSON o CSV"
+              tabIndex={-1}
               onChange={importFile}
             />
           </div>
