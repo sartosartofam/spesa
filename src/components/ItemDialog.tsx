@@ -35,7 +35,11 @@ export function ItemDialog({
   onSave,
   onDelete,
 }: ItemDialogProps) {
-  const dialogRef = useModalDialog(onClose)
+  const dialogRef = useModalDialog(onClose, {
+    // Dopo il salvataggio il campo rapido è vuoto e "Aggiungi" è disabilitato:
+    // il focus torna sull'input, pronto per il prossimo articolo.
+    fallbackFocus: () => document.getElementById('quick-add-name'),
+  })
   const [draft, setDraft] = useState<ItemDraft>({
     name: initial.name ?? '',
     quantity: initial.quantity ?? '',
