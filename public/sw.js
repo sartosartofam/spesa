@@ -9,9 +9,12 @@
  * Le API Supabase non passano dal service worker: la cache contiene solo
  * l'interfaccia, mai risposte REST o dati di altre famiglie.
  */
-const VERSION = 'spesa-v1'
+// Cambiare VERSION è parte del deploy: la activate cancella le cache vecchie,
+// quindi la nuova shell (e il manifest di precache) viene riscaricata.
+const VERSION = 'spesa-v2'
 const SHELL_CACHE = `${VERSION}-shell`
 const RUNTIME_CACHE = `${VERSION}-runtime`
+const PRECACHE_MANIFEST = '/precache.json'
 
 const SHELL = [
   '/',
@@ -26,19 +29,53 @@ const SHELL = [
 
 const API_PREFIXES = ['/auth/', '/rest/', '/realtime/', '/functions/', '/storage/']
 
+/** Asset da index.html: usato solo se il manifest di precache non c'è. */
+async function assetsFromIndex(cache) {
+  const index = await cache.match('/index.html')
+  if (!index) return []
+
+  const html = await index.text()
+  return [...new Set([...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]))]
+}
+
+/**
+ * Legge l'elenco degli asset emesso a build (`precache.json`).
+ *
+ * Serve perché l'app è un chunk caricato su richiesta: non compare in
+ * `index.html`, quindi senza questo elenco resterebbe fuori dalla cache e chi
+ * apre `/app` offline dopo un deploy nuovo vedrebbe solo il caricamento.
+ */
+async function assetsFromManifest() {
+  try {
+    const response = await fetch(PRECACHE_MANIFEST, { cache: 'no-store' })
+    if (!response.ok) return []
+    const data = await response.json()
+    const assets = Array.isArray(data?.assets) ? data.assets : []
+    return assets.filter((url) => typeof url === 'string' && url.startsWith('/assets/'))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Precacha shell e bundle. Un asset mancante non deve far fallire
+ * l'installazione: meglio un service worker aggiornato con una cache parziale
+ * (la strategia cache-first recupera alla prima richiesta) che uno vecchio
+ * bloccato per sempre.
+ */
 async function cacheAppShell() {
   const cache = await caches.open(SHELL_CACHE)
   await cache.addAll(SHELL)
 
-  // Gli asset hanno nomi hash generati da Vite: li leggiamo dall'index già in
-  // cache così la shell è completa anche al primo avvio offline.
-  const index = await cache.match('/index.html')
-  if (!index) return
+  const assets = await assetsFromManifest()
+  const list = assets.length > 0 ? assets : await assetsFromIndex(cache)
+  if (list.length === 0) return
 
-  const html = await index.text()
-  const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((match) => match[1])
-  if (assets.length > 0) {
-    await cache.addAll([...new Set(assets)])
+  try {
+    await cache.addAll(list)
+  } catch {
+    // Ripiego: aggiungiamo i file uno alla volta, ignorando i singoli errori.
+    await Promise.all(list.map((url) => cache.add(url).catch(() => undefined)))
   }
 }
 

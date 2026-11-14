@@ -1,6 +1,7 @@
 import preact from '@preact/preset-vite'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { measureBundle } from './src/lib/bundle-budget'
+import { collectPrecacheAssets, PRECACHE_MANIFEST_FILE } from './src/lib/precache'
 import { buildRobotsTxt, buildSitemapXml, normalizeSiteUrl } from './src/lib/seo'
 
 export default defineConfig(({ mode }) => {
@@ -63,8 +64,23 @@ export default defineConfig(({ mode }) => {
     },
   })
 
+  // Il manifest di precache deve contenere anche i chunk dinamici (l'app),
+  // che non sono referenziati in `index.html`: il service worker lo legge
+  // all'installazione invece di indovinare gli asset dall'HTML.
+  const precacheManifest = (): Plugin => ({
+    name: 'precache-manifest',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      this.emitFile({
+        type: 'asset',
+        fileName: PRECACHE_MANIFEST_FILE,
+        source: `${JSON.stringify({ assets: collectPrecacheAssets(Object.keys(bundle)) }, null, 2)}\n`,
+      })
+    },
+  })
+
   return {
-    plugins: [preact(), seoSiteUrls(), bundleBudget()],
+    plugins: [preact(), seoSiteUrls(), bundleBudget(), precacheManifest()],
     server: {
       port: 5173,
     },

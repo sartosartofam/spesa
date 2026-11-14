@@ -43,7 +43,7 @@ import type { ActionResult, Item, ListView } from './lib/types'
 
 type DialogState = { mode: 'add'; draft: Partial<ItemDraft> } | { mode: 'edit'; item: Item } | null
 
-interface AppProps {
+export interface AppProps {
   userName: string
   userId: string
   familyId: string | null
