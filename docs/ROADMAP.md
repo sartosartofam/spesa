@@ -63,7 +63,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 
 ## Backlog (idee, non impegni)
 
-- **Pannello di controllo admin** (idea in lavorazione, bozza in issue #109): monitoraggio essenziale (keepalive, conteggi aggregati, errori delle Edge Function) e feature flag per spegnere temporaneamente una feature durante i test. Serve prima una nozione di admin che oggi non esiste — `members.role` è per famiglia — quindi le decisioni di scope e sicurezza sono elencate nella issue: chi vuole lavorarci parte da lì.
+- **Pannello di controllo admin** (idea in lavorazione, bozza in issue #109): prima fetta di sola lettura su keepalive, conteggi aggregati e ultima migrazione, con una tabella `admins` popolata a mano dall'umano; i feature flag per spegnere una feature durante i test restano da decidere. Tutto "vanilla": Postgres, RPC `security definer` e UI Preact esistenti, nessun servizio esterno. La issue raccoglie vincoli di sicurezza e domande ancora aperte: chi vuole lavorarci parte da lì.
 - Fase 2 del prodotto: faccende domestiche.
 - Magic link al posto (o in aggiunta) di email + password (ADR-0002).
 - Multi-famiglia per utente (oggi un utente = una famiglia, con cambio via invito).
