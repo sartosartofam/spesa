@@ -1,5 +1,6 @@
+import type { ComponentType } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { App } from './app'
+import type { AppProps } from './app'
 import { useAuth } from './hooks/useAuth'
 import { type DocumentMeta, useDocumentMeta } from './hooks/useDocumentMeta'
 import { useRoute } from './hooks/useRoute'
@@ -82,14 +83,70 @@ function metaFor(route: AppRoute): DocumentMeta {
   }
 }
 
-function LoadingPage() {
+function LoadingPage({ label = 'Carico la sessione…' }: { label?: string }) {
   return (
     <main class="loading-page">
       <p class="hint" role="status">
-        Carico la sessione…
+        {label}
       </p>
     </main>
   )
+}
+
+type AppComponent = ComponentType<AppProps>
+
+/**
+ * `App` (lista, dialog, impostazioni) è la parte pesante del bundle: la
+ * carichiamo solo per chi entra davvero nell'area riservata, così la landing
+ * pubblica non la scarica. Il chunk dinamico è elencato in `precache.json`,
+ * che il service worker legge all'installazione: senza quel manifest, chi apre
+ * l'app offline dopo un deploy nuovo resterebbe sulla schermata di caricamento.
+ */
+let appImport: Promise<AppComponent> | null = null
+
+function loadApp(): Promise<AppComponent> {
+  appImport ??= import('./app')
+    .then((module) => module.App)
+    .catch((error: unknown) => {
+      // Un errore di rete non deve restare in cache per sempre: azzeriamo la
+      // promessa, così "Riprova" prova davvero a riscaricare il chunk.
+      appImport = null
+      throw error
+    })
+  return appImport
+}
+
+interface LazyApp {
+  App: AppComponent | null
+  error: string | null
+  retry: () => void
+}
+
+function useLazyApp(enabled: boolean): LazyApp {
+  const [App, setApp] = useState<AppComponent | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    if (!enabled || App) return
+    let cancelled = false
+    setError(null)
+
+    void loadApp()
+      .then((loaded) => {
+        if (!cancelled) setApp(() => loaded)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setError('Non riesco a scaricare la lista. Controlla la connessione e riprova.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, App, attempt])
+
+  return { App, error, retry: () => setAttempt((value) => value + 1) }
 }
 
 interface FamilyErrorPageProps {
@@ -118,6 +175,39 @@ function FamilyErrorPage({ message, onRetry, onLogout }: FamilyErrorPageProps) {
   )
 }
 
+/**
+ * L'app è un chunk separato: se il download non riesce (prima visita offline,
+ * rete che cade) mostriamo un errore con un pulsante per riprovare, invece di
+ * una schermata di caricamento infinita.
+ */
+function AppLoadErrorPage({
+  message,
+  onRetry,
+  onLogout,
+}: {
+  message: string
+  onRetry: () => void
+  onLogout: () => void
+}) {
+  return (
+    <div class="auth-page">
+      <main class="auth-card" aria-labelledby="app-load-error-title">
+        <p class="landing__eyebrow">Caricamento della lista</p>
+        <h1 id="app-load-error-title">Non riesco ad aprire la lista</h1>
+        <p class="alert" role="alert">
+          {message}
+        </p>
+        <button class="button button--primary" type="button" onClick={onRetry}>
+          Riprova
+        </button>
+        <button class="button button--ghost" type="button" onClick={onLogout}>
+          Esci
+        </button>
+      </main>
+    </div>
+  )
+}
+
 export function Root() {
   const { route } = useRoute()
   const auth = useAuth()
@@ -128,6 +218,7 @@ export function Root() {
   const [familyError, setFamilyError] = useState<string | null>(null)
   const [familyAttempt, setFamilyAttempt] = useState(0)
   const loggingOut = useRef(false)
+  const lazyApp = useLazyApp(auth.status === 'authenticated')
 
   useDocumentMeta(metaFor(route))
 
@@ -267,7 +358,19 @@ export function Root() {
         />
       )
     }
-    if (familyReadyFor !== auth.user?.id) return <LoadingPage />
+    if (lazyApp.error) {
+      return (
+        <AppLoadErrorPage
+          message={lazyApp.error}
+          onRetry={lazyApp.retry}
+          onLogout={() => {
+            void handleLogout()
+          }}
+        />
+      )
+    }
+    const App = lazyApp.App
+    if (!App || familyReadyFor !== auth.user?.id) return <LoadingPage label="Carico la lista…" />
     return (
       <App
         key={auth.user?.id}

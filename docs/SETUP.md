@@ -439,18 +439,29 @@ Le major si affrontano una alla volta, mai insieme a un task funzionale.
 
 La build viene misurata, non solo stampata: un plugin in `vite.config.ts` (`bundle-budget`) somma il peso gzip dei file JS e CSS e **fa fallire `npm run build`** se supera i limiti di `src/lib/bundle-budget.ts`. Poiché `npm run verify` finisce con la build, la regressione rompe la CI.
 
-Stato al 13 novembre 2026 (`npm run build`):
+Stato al 15 novembre 2026 (`npm run build`):
 
-| Voce                       | Prima                     | Dopo                      |
-| -------------------------- | ------------------------- | ------------------------- |
-| JS dell'app (`index-*.js`) | 359.06 kB · 98.63 kB gzip | 133.42 kB · 39.30 kB gzip |
-| JS di Supabase (`supabase-*.js`) | — (dentro l'app)    | 225.35 kB · 59.15 kB gzip |
-| Totale JS da scaricare     | 359.06 kB · 98.63 kB gzip | 358.77 kB · **96.1 kB gzip** |
-| CSS                        | 46.95 kB · 9.19 kB gzip   | invariato                 |
+| Voce | Prima del lazy-load | Con lazy-load |
+| --- | --- | --- |
+| JS iniziale dalla landing | 358.77 kB · 96.1 kB gzip | 318.00 kB · **87.03 kB gzip** |
+| Chunk app caricato entrando nell'area riservata | incluso nel JS iniziale | 44.24 kB · 13.93 kB gzip |
+| Totale JS dopo aver aperto l'app | 358.77 kB · 96.1 kB gzip | 362.24 kB · 100.96 kB gzip |
+| CSS | 46.95 kB · 9.19 kB gzip | invariato |
 
-Il totale cambia poco: il guadagno vero è nella **cache**. Il chunk Supabase ha un hash che dipende solo dalla dipendenza, quindi tra due deploy che non la toccano il browser riscarica solo `index-*.js` (~39 kB gzip) invece di tutto. Il chunk resta referenziato da `index.html` con `<link rel="modulepreload">`, quindi il service worker lo precaca insieme al resto (legge gli `/assets/` dall'HTML) e l'avvio offline funziona come prima.
+Il guadagno sulla landing è di circa **9 kB gzip**; il chunk dell'app viene
+scaricato solo entrando nell'area riservata. Il totale dopo aver aperto l'app
+cresce di circa 4.9 kB gzip perché i chunk separati hanno un piccolo overhead
+di compressione. Il chunk Supabase resta separato e invariato (225.35 kB ·
+59.15 kB gzip), quindi il browser può riutilizzarlo tra deploy. `precache.json`
+include anche i chunk dinamici: il service worker li salva all'installazione,
+così l'app resta apribile offline anche dopo un deploy.
 
-Limiti attuali: **JS 115 kB gzip**, **CSS 12 kB gzip**. Se una PR supera il budget, la build spiega di quanto: se la crescita è voluta, alza il numero in `src/lib/bundle-budget.ts` e scrivi il motivo nella PR. Non entrano nel budget i font (`.woff2` con `unicode-range`: il browser scarica solo i sottoinsiemi che servono, in pratica il latino) e le icone.
+Limiti attuali: **JS 115 kB gzip** (sommando tutti i chunk, inclusi quelli
+lazy), **CSS 12 kB gzip**. Il bundle misurato usa circa l'88% del budget JS.
+Se una PR supera il limite, la build spiega di quanto: se la crescita è voluta,
+alza il numero in `src/lib/bundle-budget.ts` e scrivi il motivo nella PR. Non
+entrano nel budget i font (`.woff2` con `unicode-range`: il browser scarica
+solo i sottoinsiemi che servono, in pratica il latino) e le icone.
 
 Altri due interventi:
 
@@ -459,7 +470,6 @@ Altri due interventi:
 
 Valutati e **scartati** per ora, con il motivo, per non riproporli:
 
-- **Lazy-load di `App` e `SettingsDialog`**: il service worker precaca gli asset elencati in `index.html`; senza un manifest di precache emesso a build, il chunk dinamico non sarebbe in cache e chi apre l'app offline dopo un deploy nuovo rischierebbe una schermata bianca. Il lavoro è **incompleto** sul branch `chore/lazy-app-wip`: manca il test e2e che dimostri il valore del manifest (installare la PWA dalla landing, andare offline, aprire `/app`), i numeri aggiornati e il nuovo limite del budget.
 - **Sottoinsiemi di font più stretti** (solo latino): i nomi degli articoli possono contenere cirillico o greco, e il carattere `mono` è usato proprio lì. Si perderebbe il rendering corretto per pochi kB risparmiati.
 - **`preconnect` verso Supabase in `index.html`**: aprirebbe una connessione verso il backend per ogni visitatore della landing, anche a chi non accede. Non vale il guadagno sui tempi di login.
 

@@ -60,3 +60,58 @@ test('la shell e la lista restano consultabili offline', async ({ page, context 
 
   await context.setOffline(false)
 })
+
+test('il precache dalla landing permette di aprire la lista offline', async ({ page, context }) => {
+  await mockAuth(page)
+  await page.goto('/')
+
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    .toBe(true)
+
+  const precache = await page.evaluate(async () => {
+    const response = await fetch('/precache.json')
+    if (!response.ok) throw new Error('Manifest di precache non disponibile.')
+
+    const manifest = (await response.json()) as { assets?: unknown }
+    const assets = Array.isArray(manifest.assets)
+      ? manifest.assets.filter((asset): asset is string => typeof asset === 'string')
+      : []
+    const shellName = (await caches.keys()).find((name) => name.endsWith('-shell'))
+    if (!shellName) throw new Error('Cache shell del service worker non disponibile.')
+
+    const shell = await caches.open(shellName)
+    const index = await shell.match('/index.html')
+    const indexHtml = index ? await index.text() : ''
+    const dynamicScripts = assets.filter(
+      (asset) => asset.endsWith('.js') && !indexHtml.includes(asset),
+    )
+    const cachedScripts = await Promise.all(
+      dynamicScripts.map(async (asset) =>
+        Boolean(await shell.match(new URL(asset, location.origin).href)),
+      ),
+    )
+
+    return { dynamicScripts, cachedScripts }
+  })
+
+  expect(precache.dynamicScripts.length).toBeGreaterThan(0)
+  expect(precache.cachedScripts).toEqual(precache.dynamicScripts.map(() => true))
+
+  await signInAsDemo(page)
+
+  // Rimuovi la cache runtime: offline l'app deve arrivare dalla cache shell,
+  // popolata dal manifest anche per i chunk assenti dall'HTML della landing.
+  await page.evaluate(async () => {
+    const runtimeCaches = (await caches.keys()).filter((name) => name.endsWith('-runtime'))
+    await Promise.all(runtimeCaches.map((name) => caches.delete(name)))
+  })
+  await context.setOffline(true)
+  await page.goto('/app')
+
+  await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
+  await expect(page.getByText('Latte')).toBeVisible()
+
+  await context.setOffline(false)
+})
