@@ -1,67 +1,66 @@
 # Roadmap
 
-Stato al 13 novembre 2026: **Fase 1 implementata su `dev` e verificata in locale**.
-Restano le azioni umane della Fase 3 (Supabase cloud, Vercel, RLS review,
-backup/keepalive effettivi, promozione su `main`). Dettaglio dello stato reale
-in `docs/TODO.md` e nell'addendum A8 di `docs/studio-di-progetto.md`.
+**Unica fonte di stato del progetto.** Se un altro documento dice qualcosa di diverso sullo stato, vale questo. Storico delle modifiche: commit e PR su GitHub, non un changelog a parte.
 
-## Fase 0 — Agent-ready
+Se sei l'umano e vuoi sapere cosa devi fare, la risposta è **Fase 3**, nell'ordine dato. Se sei un agente e l'umano te lo chiede, leggi la Fase 3 (e `docs/SECURITY.md` per il dettaglio) e rispondi con il primo punto non spuntato.
 
-- [x] Scaffold Preact + Vite mergiato su `dev`
-- [x] Node 24 LTS pinnato in `.mise.toml`
-- [x] Lint/format con Biome, unit test con Vitest, e2e con Playwright
-- [x] `supabase/config.toml`, seed, test pgTAP di base
-- [x] CI: qualità, database, e2e
-- [x] Script `dev-env`, `doctor`, `bootstrap`
-- [x] ADR e regole agenti aggiornate
-- [x] GitHub: default branch `dev`, auto-merge e secrets keepalive
-- [ ] GitHub: branch protection su `main`/`dev` con CI obbligatoria (umano)
-- [ ] Primo progetto Supabase cloud + Vercel (umano)
+Stato al 14 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; restano le azioni umane della fase 3 e la prima promozione su `main`.
 
-## Fase 1 — Backend MVP
+## Fase 1 — MVP lista della spesa (completata)
 
-Ogni voce è stata una issue separata, con branch `feat/backend-*` o `feat/frontend-*`.
+| Area | Cosa c'è |
+| --- | --- |
+| Database | enum `item_status` (`to_buy`/`bought`), tabelle `families`, `members`, `items`, `push_subscriptions`, `family_invites`, `user_settings`, `rate_limits`, `keepalive`; indici, trigger `updated_at`/`bought_at`, `replica identity full` su `items` per i DELETE realtime |
+| RLS | RLS su tutte le tabelle, policy per famiglia, push e impostazioni self-only; inviti accessibili solo via RPC; `rate_limits` invisibile ai ruoli API. 287 asserzioni pgTAP |
+| Auth | email + password, registrazione pubblica con conferma, recupero password, famiglia personale al primo accesso (`ensure_current_family`), inviti monouso con codice hashato, uscita e cambio famiglia con successione dell'owner |
+| Dati | repository mock e Supabase dietro la stessa interfaccia, realtime su `items`, merge amichevole dei duplicati lato client + vincolo unique lato database |
+| Urgenza e push | flag `urgent` con priorità in lista; Edge Function `send-push` completa ma **spenta** (manca `VITE_VAPID_PUBLIC_KEY`), con rate limit 12 richieste/minuto per utente |
+| PWA | manifest, icone, service worker (network-first sulle navigazioni, cache-first sugli asset), ultima lista in lettura offline, banner offline, nessuna coda di scrittura |
+| Backup | Edge Function `export` con token dedicato e script di restore locale; restore di prova riuscito su tutte le tabelle esportate |
+| Test | 231 unit, 53 e2e mock (in CI), 6 e2e backend contro Supabase locale, 287 asserzioni pgTAP |
 
-1. [x] **`feat/db-schema`** — enum `item_status`, tabelle `families`, `members`, `items`, `push_subscriptions`; chiavi, indici, trigger `updated_at`/`bought_at`.
-2. [x] **`feat/db-rls`** — RLS su tutte le tabelle; policy per famiglia; push solo del membro, con test pgTAP di isolamento.
-3. [x] **`feat/db-seed-types`** — famiglia fittizia, utenti test, articoli; script tipi.
-4. [x] **`feat/auth`** — login/logout, sessione, route protette, gestione errori; recupero password e registrazione pubblica.
-5. [x] **`feat/data-supabase`** — implementazione `ItemsRepository` con Supabase; switch in `src/lib/data/index.ts`.
-6. [x] **`feat/realtime`** — subscription Postgres changes, refresh con debounce, fallback focus/visibility e `replica identity full` per i DELETE.
-7. [x] **`feat/finished-push`** — flag `urgent`, Edge Function `send-push`, UI subscribe/revoca e rate limit. **Consegna reale spenta** finché non si configurano le chiavi VAPID (decisione 3 novembre 2026).
-8. [x] **`feat/pwa-offline`** — service worker, icone 192/512, app shell offline, banner offline, ultima lista in lettura.
-9. [x] **`test/e2e`** — suite mock stabile in CI; aggiunta una suite contro Supabase locale (`npm run test:e2e:backend`), non ancora in CI.
-10. [x] **`chore/backup`** — Edge Function `export` con token dedicato, script di restore locale e restore di prova riuscito. Restano umani deploy, secret, cron e upload.
+## Fase 2 — Rifiniture (completata, salvo backlog)
 
-## Fase 2 — Rifiniture
-
-- [x] Categorie condivise in `src/lib/categories.ts` (usate da UI e repository).
+- [x] Categorie condivise tra UI e repository (`src/lib/categories.ts`).
 - [x] Anti-duplicati anche lato database (indice unique per famiglia/stato/nome/categoria).
-- [x] SEO/Open Graph/sitemap, attivabili con `VITE_SITE_URL` quando ci sarà il dominio.
-- [x] Accessibilità: suite axe (WCAG 2.1 A/AA) e test tastiera/focus su dialog e tab della lista.
+- [x] SEO: Open Graph, JSON-LD, `sitemap.xml`/`robots.txt` generati a build, attivabili con `VITE_SITE_URL`.
+- [x] Accessibilità: axe (WCAG 2.1 A/AA) su pagine pubbliche e app, test tastiera e focus dei dialog.
 - [x] Stati di errore: le azioni restituiscono un esito, i dialog restano aperti con il testo conservato, avviso con **Riprova** sul caricamento fallito.
-- [x] Dipendenze: `npm audit` pulito e patch/minor aggiornate (Biome, Playwright, supabase-js, CLI, Vite); le major restano fuori con motivazione in `docs/SETUP.md`.
-- [x] Copertura test: colmati i buchi su `item-merge` (identità, merge, ordinamento), `supabase.ts` (configurazione e rifiuto delle chiavi segrete), `pwa.ts` (registrazione del service worker) e `useOnlineStatus`; regole e convenzioni in `docs/SETUP.md` → "Test unitari e copertura".
-- [x] Performance: chunk separato per `@supabase/supabase-js` (cache stabile tra i deploy), `private-noindex.js` in `defer`, budget gzip di JS e CSS che fa fallire la build se il bundle cresce. Numeri e scelte scartate in `docs/SETUP.md` → "Performance e budget del bundle".
-- [ ] Badge in-app per notifiche perse (iOS); utile solo se un giorno si attiva il Web Push.
-- [ ] Sentry free tier (opzionale; richiede DSN come secret).
-- [ ] Valutare un rate limit anti-abuso sulle aggiunte (oggi Auth + RLS; il push è già limitato).
+- [x] Dipendenze: `npm audit` a 0, patch/minor aggiornate; le major restano fuori con motivazione in `docs/SETUP.md`.
+- [x] Copertura test: `item-merge`, client Supabase, registrazione del service worker, stato rete.
+- [x] Performance: chunk Supabase separato e budget gzip di JS/CSS che fa fallire la build se il bundle cresce.
 
-## Fase 3 — Produzione
+Aperto in fase 2:
 
-- [ ] Supabase cloud + Vercel; RLS review umana.
-- [ ] Eseguire il checklist [docs/SECURITY.md](SECURITY.md) prima del go-live.
-- [ ] Keepalive: cron sul Raspberry Pi e verifica periodica dei ping (i secret GitHub Actions sono già presenti).
-- [ ] Backup settimanale effettivo e test di ripristino.
-- [ ] Job CI per la suite e2e con backend reale in `.github/workflows/ci.yml`.
-- [ ] Promozione `dev` → `main` solo umana.
+- [ ] Badge in-app per notifiche perse (iOS): utile solo se il Web Push verrà attivato.
+- [ ] Sentry free tier (opzionale, richiede un DSN come secret).
+- [ ] Rate limit anti-abuso sulle aggiunte (oggi il limite è su Auth e sul push).
+- [ ] Lazy-load dell'app per alleggerire la landing: lavoro **incompleto** su `chore/lazy-app-wip` (manca il test che dimostra il valore del manifest di precache, più numeri e docs).
 
-## Backlog operativo
+## Fase 3 — Go-live (azioni umane, in questo ordine)
 
-Le issue su GitHub usano le label:
-- `agent:backend`, `agent:frontend`, `agent:qa`
-- `agent:ready` — prendibile da un agente
-- `blocked:human` — serve un'azione umana
-- `security` — richiede review umana prima di `main`
+Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la sequenza.
 
-Un agente prende solo issue `agent:ready`, un task alla volta.
+1. [ ] **Riattivare il progetto Supabase.** È in pausa: il piano free sospende dopo ~7 giorni di inattività e un progetto in pausa non risolve più il DNS. Si riattiva dal dashboard.
+2. [ ] **Aggiornare i secret del keepalive** con il ref attuale del progetto: i secret `SUPABASE_URL`/`SUPABASE_ANON_KEY` puntano a un progetto che non risolve più.
+3. [ ] **Attivare il keepalive**: cron sul Raspberry Pi (`scripts/keepalive/ping.sh`) e workflow GitHub Actions. Due ping indipendenti, così il progetto non si risospende.
+4. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti.
+5. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
+6. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
+7. [ ] **Vercel**: variabili pubbliche reali, Node 24, dominio definitivo e `VITE_SITE_URL`, conferma email e SMTP provati con un indirizzo vero, preview verificato.
+8. [ ] **Job CI per gli e2e backend** (blocco pronto in `docs/SETUP.md` → "E2e con backend reale").
+9. [ ] **Promozione `dev` → `main`**: sarà il primo deploy in assoluto, `main` è ancora fermo all'initial commit. Solo dopo i punti precedenti.
+
+## Debito noto e scelte rinviate
+
+- **Web Push spento per scelta** (decisione 3 novembre 2026): il codice resta feature-gated e silenzioso; le chiavi VAPID non vengono generate finché non serve.
+- **`main` mai deployato**: la prima promozione va trattata come un rilascio, non come un merge di routine.
+- **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.
+- **`npm run test:e2e:backend` non gira in CI**: va lanciato a mano quando cambia il livello dati.
+- **Keepalive rosso ogni notte** finché il progetto è in pausa e i ping non sono attivi: sintomo atteso, non un incidente.
+
+## Backlog (idee, non impegni)
+
+- Fase 2 del prodotto: faccende domestiche.
+- Magic link al posto (o in aggiunta) di email + password (ADR-0002).
+- Multi-famiglia per utente (oggi un utente = una famiglia, con cambio via invito).
