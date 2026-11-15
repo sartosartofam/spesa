@@ -64,3 +64,4 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 - Fase 2 del prodotto: faccende domestiche.
 - Magic link al posto (o in aggiunta) di email + password (ADR-0002).
 - Multi-famiglia per utente (oggi un utente = una famiglia, con cambio via invito).
+- Codice invito durante la registrazione: campo opzionale per collegare il nuovo account direttamente alla famiglia esistente come `member`, dopo la conferma email, senza creare prima una famiglia personale. Definire anche il comportamento per codici non validi o scaduti.
