@@ -69,6 +69,7 @@ export function SettingsDialog({
   const [quickAdd, setQuickAdd] = useState(settings.quickAdd)
   const [defaultCategory, setDefaultCategory] = useState(settings.defaultCategory)
   const [landingGlow, setLandingGlow] = useState(settings.landingGlow)
+  const [skipLanding, setSkipLanding] = useState(settings.skipLanding)
   const [theme, setTheme] = useState(settings.theme)
   const categories = categoryOptions
   const [presets, setPresets] = useState<OrderPreset[]>(() =>
@@ -147,6 +148,7 @@ export function SettingsDialog({
         activePresetId,
         presets,
         landingGlow,
+        skipLanding,
         theme,
       },
       categories,
@@ -266,6 +268,7 @@ export function SettingsDialog({
     setQuickAdd(defaults.quickAdd)
     setDefaultCategory(defaults.defaultCategory)
     setLandingGlow(defaults.landingGlow)
+    setSkipLanding(defaults.skipLanding)
     setTheme(defaults.theme)
     setPresets(defaults.presets.map((preset) => ({ ...preset, order: [...preset.order] })))
     setActivePresetId(defaults.activePresetId)
@@ -479,6 +482,25 @@ export function SettingsDialog({
             </select>
             <p class="hint">Usata dall'aggiunta rapida e come proposta nel dialog.</p>
           </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="settings-section__title">Avvio</h3>
+
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              checked={skipLanding}
+              onChange={(event) => setSkipLanding(event.currentTarget.checked)}
+            />
+            <span>
+              <strong>Apri la lista se sei già connesso</strong>
+              <span class="checkbox__hint">
+                Andando sulla pagina iniziale vieni portato subito alla lista. Disattivalo per
+                restare sulla landing: il pulsante «Apri la lista» è sempre nell’intestazione.
+              </span>
+            </span>
+          </label>
         </section>
 
         <section class="settings-section">

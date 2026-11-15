@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   type AccountSettings,
+  autoOpenAppEnabled,
   loadAccountSettings,
   localAccountSettings,
   mapAccountSettingsError,
@@ -22,6 +23,7 @@ const SETTINGS = {
   activePresetId: 'p1',
   presets: [{ id: 'p1', name: 'Esselunga', order: ['Panetteria', 'Casa'] }],
   landingGlow: false,
+  skipLanding: false,
   theme: 'green' as const,
 }
 
@@ -88,6 +90,7 @@ describe('payload impostazioni account', () => {
     expect(payload.version).toBe(1)
     expect(payload.quickAdd).toBe(true)
     expect(payload.landingGlow).toBe(false)
+    expect(payload.skipLanding).toBe(false)
     expect(payload.theme).toBe('green')
     expect(payload.defaultCategory).toBe('Panetteria')
     expect(payload.customCategories).toEqual(['Panetteria'])
@@ -158,6 +161,7 @@ describe('payload impostazioni account', () => {
     expect(parsed.customCategories).toEqual(['Panetteria'])
     expect(parsed.settings.quickAdd).toBe(true)
     expect(parsed.settings.landingGlow).toBe(false)
+    expect(parsed.settings.skipLanding).toBe(false)
     expect(parsed.settings.theme).toBe('green')
     expect(parsed.settings.defaultCategory).toBe('Panetteria')
   })
@@ -191,11 +195,23 @@ describe('merge e cache locale', () => {
       activePresetId: 'default',
       presets: [{ id: 'default', name: 'Il mio negozio', order: ['Casa'] }],
       landingGlow: true,
+      skipLanding: false,
       theme: 'green',
     })
 
     expect(localAccountSettings('utente-nuovo').settings.quickAdd).toBe(true)
     expect(localAccountSettings('utente-nuovo').settings.defaultCategory).toBe('Casa')
+    expect(autoOpenAppEnabled('utente-nuovo')).toBe(false)
+  })
+
+  it('apre la lista dalla landing quando la preferenza non è nota', () => {
+    expect(autoOpenAppEnabled(null)).toBe(true)
+    expect(autoOpenAppEnabled('utente-senza-cache')).toBe(true)
+
+    writeCachedAccountSettings('utente-con-cache', account())
+
+    expect(autoOpenAppEnabled('utente-con-cache')).toBe(false)
+    expect(autoOpenAppEnabled('utente-senza-cache')).toBe(true)
   })
 
   it('ignora una cache corrotta', () => {

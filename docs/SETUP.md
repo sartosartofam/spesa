@@ -123,6 +123,8 @@ Con `npm run dev`:
 
 Per provare il login usa uno degli utenti demo qui sopra, oppure registra un nuovo account.
 
+Con una sessione attiva, aprire `/` porta subito su `/app`; `/login` e `/register` fanno lo stesso. Il redirect dalla landing si disattiva da **Impostazioni → Avvio** («Apri la lista se sei già connesso»): la preferenza è per account, quindi segue l'utente sui suoi dispositivi, e da connesso la landing mostra **Apri la lista** nell'intestazione. Utile per rivedere la pagina pubblica o per i test. La scelta viene letta all'avvio dalla cache locale delle impostazioni dell'account (`src/lib/account-settings.ts` → `autoOpenAppEnabled`): al primo accesso su un dispositivo nuovo vale il default finché l'app non ha sincronizzato le impostazioni.
+
 ### Inviti e cambio famiglia
 
 Da **Impostazioni → Famiglia** un membro autenticato può generare un codice invito monouso. Il codice scade dopo 7 giorni e va condiviso manualmente con la persona da invitare.

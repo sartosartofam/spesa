@@ -20,7 +20,12 @@ function goToRegister(event: MouseEvent) {
   navigate('/register')
 }
 
-export function LandingPage() {
+function goToApp(event: MouseEvent) {
+  event.preventDefault()
+  navigate('/app')
+}
+
+export function LandingPage({ authenticated = false }: { authenticated?: boolean }) {
   const heroRef = useRef<HTMLElement>(null)
   const [glowEnabled, setGlowEnabled] = useState(() => readLandingGlow())
   const [theme, setTheme] = useState<ThemeId>(() => readTheme())
@@ -44,7 +49,7 @@ export function LandingPage() {
 
   return (
     <div class="public-shell landing-shell">
-      <PublicHeader overlay />
+      <PublicHeader overlay authenticated={authenticated} />
 
       <main class="landing">
         <section
@@ -65,12 +70,20 @@ export function LandingPage() {
               Aggiungi ciò che manca, segna le urgenze e ritrova lo storico in un unico posto.
             </p>
             <div class="landing__actions">
-              <a class="button button--primary" href="/register" onClick={goToRegister}>
-                Crea la tua famiglia
-              </a>
-              <a class="button button--ghost" href="/login" onClick={goToLogin}>
-                Accedi
-              </a>
+              {authenticated ? (
+                <a class="button button--primary" href="/app" onClick={goToApp}>
+                  Apri la lista
+                </a>
+              ) : (
+                <>
+                  <a class="button button--primary" href="/register" onClick={goToRegister}>
+                    Crea la tua famiglia
+                  </a>
+                  <a class="button button--ghost" href="/login" onClick={goToLogin}>
+                    Accedi
+                  </a>
+                </>
+              )}
             </div>
 
             <div class="landing-hero__meta">

@@ -5,6 +5,7 @@ import { useAuth } from './hooks/useAuth'
 import { type DocumentMeta, useDocumentMeta } from './hooks/useDocumentMeta'
 import { useRoute } from './hooks/useRoute'
 import { deleteCurrentAccount } from './lib/account-deletion'
+import { autoOpenAppEnabled } from './lib/account-settings'
 import { mapAuthError, userDisplayName } from './lib/auth'
 import { isLiveData } from './lib/data'
 import { ensureCurrentFamily, getCurrentFamily, mapFamilyError } from './lib/family'
@@ -227,7 +228,13 @@ export function Root() {
   useEffect(() => {
     if (auth.status === 'authenticated') {
       loggingOut.current = false
-      if (route === 'landing' || route === 'login' || route === 'register') {
+      if (route === 'login' || route === 'register') {
+        navigate('/app', { replace: true })
+        return
+      }
+      // La landing resta visitabile per chi ha disattivato il redirect dalle
+      // impostazioni: la scelta è per account, letta dalla cache locale.
+      if (route === 'landing' && autoOpenAppEnabled(auth.user?.id ?? null)) {
         navigate('/app', { replace: true })
       }
       return
@@ -237,7 +244,7 @@ export function Root() {
       return
     }
     if (route !== 'app') loggingOut.current = false
-  }, [auth.status, route])
+  }, [auth.status, route, auth.user?.id])
 
   useEffect(() => {
     if (auth.status !== 'authenticated' || !auth.user) {
@@ -314,8 +321,11 @@ export function Root() {
   if (auth.status === 'loading') return <LoadingPage />
 
   if (route === 'landing') {
-    if (auth.status === 'authenticated') return <LoadingPage />
-    return <LandingPage />
+    const authenticated = auth.status === 'authenticated'
+    // Con il redirect attivo la landing non viene mostrata a chi ha già una
+    // sessione: evitiamo un lampo di pagina pubblica prima della navigazione.
+    if (authenticated && autoOpenAppEnabled(auth.user?.id ?? null)) return <LoadingPage />
+    return <LandingPage authenticated={authenticated} />
   }
 
   if (route === 'login') {

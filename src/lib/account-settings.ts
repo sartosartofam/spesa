@@ -24,6 +24,7 @@ interface AccountSettingsPayload {
   presets: OrderPreset[]
   customCategories: string[]
   landingGlow: boolean
+  skipLanding: boolean
   theme: ThemeId
 }
 
@@ -77,6 +78,7 @@ export function toAccountSettingsPayload(
     presets: normalized.presets,
     customCategories: custom,
     landingGlow: normalized.landingGlow,
+    skipLanding: normalized.skipLanding,
     theme: normalized.theme,
   }
 }
@@ -114,6 +116,18 @@ export function writeCachedAccountSettings(userId: string, account: AccountSetti
  */
 export function localAccountSettings(userId: string): AccountSettings {
   return readCachedAccountSettings(userId) ?? readLocalAccountSettings()
+}
+
+/**
+ * Preferenza "apri la lista invece della landing" per un utente connesso.
+ *
+ * Il redirect avviene prima che la sync remota risponda, quindi qui si legge in
+ * modo sincrono la cache per account che `App` aggiorna a ogni salvataggio.
+ * Senza cache o senza utente vale il default: redirect attivo.
+ */
+export function autoOpenAppEnabled(userId: string | null): boolean {
+  if (!userId) return true
+  return localAccountSettings(userId).settings.skipLanding
 }
 
 /**

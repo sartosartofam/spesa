@@ -316,6 +316,36 @@ test('login, sessione persistente al reload e logout', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Accedi' })).toBeVisible()
 })
 
+test('la landing resta visitabile se disattivi il redirect dall’app', async ({ page }) => {
+  await mockAuth(page)
+  await signInAsDemo(page)
+
+  // Default: con una sessione attiva la landing rimanda alla lista.
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/app$/)
+
+  await page.getByRole('button', { name: 'Impostazioni' }).click()
+  const settings = page.getByRole('dialog')
+  const skipLanding = settings.getByLabel('Apri la lista se sei già connesso')
+  await expect(skipLanding).toBeChecked()
+  await skipLanding.uncheck()
+  await settings.getByRole('button', { name: 'Chiudi' }).click()
+
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/$/)
+  await expect(
+    page.getByRole('heading', { level: 1, name: /lista della spesa di tutta la famiglia/i }),
+  ).toBeVisible()
+
+  const header = page.getByRole('banner')
+  await expect(header.getByRole('link', { name: 'Apri la lista' })).toBeVisible()
+  await expect(header.getByRole('link', { name: 'Accedi' })).toHaveCount(0)
+
+  await header.getByRole('link', { name: 'Apri la lista' }).click()
+  await expect(page).toHaveURL(/\/app$/)
+  await expect(page.getByRole('heading', { name: 'Spesa' })).toBeVisible()
+})
+
 test('il logout chiede conferma e Annulla mantiene la sessione', async ({ page }) => {
   await mockAuth(page)
   await signInAsDemo(page)
