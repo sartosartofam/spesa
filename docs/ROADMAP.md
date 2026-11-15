@@ -49,10 +49,12 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 6. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
 7. [ ] **Vercel**: variabili pubbliche reali, Node 24, dominio definitivo e `VITE_SITE_URL`, conferma email e SMTP provati con un indirizzo vero, preview verificato.
 8. [ ] **Job CI per gli e2e backend** (blocco pronto in `docs/SETUP.md` → "E2e con backend reale").
-9. [ ] **Promozione `dev` → `main`**: sarà il primo deploy in assoluto, `main` è ancora fermo all'initial commit. Solo dopo i punti precedenti.
+9. [ ] **Politica password a 8 caratteri con composizione**: oggi il locale richiede 12 caratteri senza requisiti. Prima del go-live si passa a `minimum_password_length = 8` e `password_requirements = lower_upper_letters_digits_symbols`, allineando `supabase/config.toml`, i messaggi in `src/lib/auth.ts` e nelle pagine di registrazione/reset, le password demo di seed ed e2e e i test. Dettaglio in `docs/SECURITY.md` → "Supabase Cloud".
+10. [ ] **Promozione `dev` → `main`**: sarà il primo deploy in assoluto, `main` è ancora fermo all'initial commit. Solo dopo i punti precedenti.
 
 ## Debito noto e scelte rinviate
 
+- **Politica password rinviata alla Fase 3**: nel locale restano 12 caratteri senza composizione per non rompere seed, utenti demo e test; prima del go-live si scende a 8 con requisiti di composizione (punto 9 della Fase 3).
 - **Web Push spento per scelta** (decisione 3 novembre 2026): il codice resta feature-gated e silenzioso; le chiavi VAPID non vengono generate finché non serve.
 - **`main` mai deployato**: la prima promozione va trattata come un rilascio, non come un merge di routine.
 - **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.

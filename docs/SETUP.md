@@ -97,7 +97,7 @@ Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: ap
 
 Al primo accesso autenticato il frontend chiama la RPC `ensure_current_family()`: se l'utente non ha ancora una membership, crea una famiglia personale e lo inserisce come `owner`. La funzione è idempotente, quindi ricaricare o riaprire l'app non duplica la famiglia. Le email vengono normalizzate (trim + lowercase) nel client e dal trigger sul database.
 
-In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana: la checklist è in [SECURITY.md](SECURITY.md). **La conferma email va testata con un indirizzo reale prima della promozione su `main`**; fino ad allora i test si fanno in locale con Mailpit.
+In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana: la checklist è in [SECURITY.md](SECURITY.md). **La conferma email va testata con un indirizzo reale prima della promozione su `main`**; fino ad allora i test si fanno in locale con Mailpit. Il minimo locale resta 12 caratteri senza requisiti di composizione, per non complicare seed e test; in produzione scende a 8 caratteri **con** requisiti di composizione, vedi [SECURITY.md](SECURITY.md) → "Supabase Cloud".
 
 ### Recupero password
 
