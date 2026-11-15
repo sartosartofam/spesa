@@ -23,6 +23,7 @@ describe('settings', () => {
         { id: 'conad', name: 'Conad', order: ['Dispensa', 'Casa'] },
       ],
       landingGlow: false,
+      skipLanding: false,
       theme: 'green',
     })
 
@@ -30,6 +31,7 @@ describe('settings', () => {
 
     expect(settings.quickAdd).toBe(true)
     expect(settings.landingGlow).toBe(false)
+    expect(settings.skipLanding).toBe(false)
     expect(settings.theme).toBe('green')
     expect(settings.defaultCategory).toBe('Casa')
     expect(settings.activePresetId).toBe('conad')
@@ -44,6 +46,7 @@ describe('settings', () => {
     expect(settings.quickAdd).toBe(false)
     expect(settings.defaultCategory).toBe('Dispensa')
     expect(settings.landingGlow).toBe(true)
+    expect(settings.skipLanding).toBe(true)
     expect(settings.theme).toBe('yellow')
     expect(settings.presets).toHaveLength(1)
     expect(settings.activePresetId).toBe(settings.presets[0]?.id)
@@ -90,6 +93,12 @@ describe('settings', () => {
     expect(parseSettings({}, categoriesFromCustom([])).landingGlow).toBe(true)
     expect(parseSettings({ landingGlow: 'no' }, categoriesFromCustom([])).landingGlow).toBe(true)
     expect(parseSettings({ landingGlow: false }, categoriesFromCustom([])).landingGlow).toBe(false)
+  })
+
+  it('apre la lista dalla landing salvo un false esplicito', () => {
+    expect(parseSettings({}, categoriesFromCustom([])).skipLanding).toBe(true)
+    expect(parseSettings({ skipLanding: 'no' }, categoriesFromCustom([])).skipLanding).toBe(true)
+    expect(parseSettings({ skipLanding: false }, categoriesFromCustom([])).skipLanding).toBe(false)
   })
 
   it('usa il giallo come default e migra i vecchi temi', () => {

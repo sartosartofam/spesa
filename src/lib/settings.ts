@@ -48,6 +48,8 @@ export interface Settings {
   presets: OrderPreset[]
   /** Effetto luminoso che segue il cursore sulla landing. */
   landingGlow: boolean
+  /** Con una sessione attiva, la landing rimanda subito alla lista. */
+  skipLanding: boolean
   /** Palette della UI; chiaro/scuro segue sempre il tema di sistema. */
   theme: ThemeId
 }
@@ -64,6 +66,7 @@ const DEFAULT_SETTINGS: Settings = {
   activePresetId: DEFAULT_PRESET.id,
   presets: [DEFAULT_PRESET],
   landingGlow: true,
+  skipLanding: true,
   theme: 'yellow',
 }
 
@@ -150,6 +153,8 @@ export function parseSettings(
       presets,
       // Il default è attivo; solo un `false` esplicito lo disattiva.
       landingGlow: parsed.landingGlow !== false,
+      // Anche il redirect dalla landing è attivo salvo scelta esplicita.
+      skipLanding: parsed.skipLanding !== false,
       theme: normalizeTheme(parsed.theme),
     },
     categories,
