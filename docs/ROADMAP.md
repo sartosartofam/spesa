@@ -4,7 +4,7 @@
 
 Se sei l'umano e vuoi sapere cosa devi fare, la risposta è **Fase 3**, nell'ordine dato. Se sei un agente e l'umano te lo chiede, leggi la Fase 3 (e `docs/SECURITY.md` per il dettaglio) e rispondi con il primo punto non spuntato.
 
-Stato al 14 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; restano le azioni umane della fase 3 e la prima promozione su `main`.
+Stato al 15 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; restano le azioni umane della fase 3 e la prima promozione su `main`.
 
 ## Fase 1 — MVP lista della spesa (completata)
 
@@ -17,7 +17,7 @@ Stato al 14 novembre 2026: fase 1 implementata e verificata in locale su `dev`; 
 | Urgenza e push | flag `urgent` con priorità in lista; Edge Function `send-push` completa ma **spenta** (manca `VITE_VAPID_PUBLIC_KEY`), con rate limit 12 richieste/minuto per utente |
 | PWA | manifest, icone, service worker (network-first sulle navigazioni, cache-first sugli asset), ultima lista in lettura offline, banner offline, nessuna coda di scrittura |
 | Backup | Edge Function `export` con token dedicato e script di restore locale; restore di prova riuscito su tutte le tabelle esportate |
-| Test | 231 unit, 53 e2e mock (in CI), 6 e2e backend contro Supabase locale, 287 asserzioni pgTAP |
+| Test | 231 unit, 54 e2e mock (in CI), 6 e2e backend contro Supabase locale, 287 asserzioni pgTAP |
 
 ## Fase 2 — Rifiniture (completata, salvo backlog)
 
@@ -29,13 +29,13 @@ Stato al 14 novembre 2026: fase 1 implementata e verificata in locale su `dev`; 
 - [x] Dipendenze: `npm audit` a 0, patch/minor aggiornate; le major restano fuori con motivazione in `docs/SETUP.md`.
 - [x] Copertura test: `item-merge`, client Supabase, registrazione del service worker, stato rete.
 - [x] Performance: chunk Supabase separato e budget gzip di JS/CSS che fa fallire la build se il bundle cresce.
+- [x] Lazy-load dell'app per alleggerire la landing; manifest di precache per aprire l'app offline, con test e2e.
 
 Aperto in fase 2:
 
 - [ ] Badge in-app per notifiche perse (iOS): utile solo se il Web Push verrà attivato.
 - [ ] Sentry free tier (opzionale, richiede un DSN come secret).
 - [ ] Rate limit anti-abuso sulle aggiunte (oggi il limite è su Auth e sul push).
-- [ ] Lazy-load dell'app per alleggerire la landing: lavoro **incompleto** su `chore/lazy-app-wip` (manca il test che dimostra il valore del manifest di precache, più numeri e docs).
 
 ## Fase 3 — Go-live (azioni umane, in questo ordine)
 

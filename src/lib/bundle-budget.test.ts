@@ -83,7 +83,7 @@ describe('measureBundle', () => {
   it('il budget di default lascia margine sul bundle attuale', () => {
     // Se qualcuno abbassa i limiti sotto i valori misurati, questo test cade
     // prima della build: i numeri veri sono in `docs/SETUP.md`.
-    expect(BUNDLE_BUDGET.jsGzipKb).toBeGreaterThan(98)
+    expect(BUNDLE_BUDGET.jsGzipKb).toBeGreaterThan(101)
     expect(BUNDLE_BUDGET.cssGzipKb).toBeGreaterThan(9)
   })
 })
