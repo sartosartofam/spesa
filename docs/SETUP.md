@@ -1,6 +1,6 @@
 # Setup di sviluppo
 
-Guida per preparare una macchina Omarchy/Arch al lavoro su `spesa`. Vale sia per il PC principale sia per il secondo PC.
+Guida per preparare una macchina Omarchy/Arch al lavoro su `spesa`. Vale sia per il PC principale sia per il secondo PC. Riguarda **solo lo sviluppo locale**: deploy, secret cloud, branch protection e go-live stanno in [SECURITY.md](SECURITY.md) e [ROADMAP.md](ROADMAP.md).
 
 ## Prerequisiti
 
@@ -54,7 +54,7 @@ Se mise non è attivo nella shell, aggiungi l'attivazione al profilo secondo la 
 ## Supabase locale
 
 ```bash
-npm run db:start     # avvia Postgres, Auth, REST, Studio
+npm run db:start     # avvia Postgres, Auth, REST, Studio (idempotente)
 npm run env:local    # scrive .env.local con URL e anon key locali
 npm run db:reset     # applica migrazioni + seed
 ```
@@ -64,6 +64,8 @@ npm run db:reset     # applica migrazioni + seed
 - Mail locale (conferma email e magic link): <http://127.0.0.1:54324>
 
 Le chiavi locali sono pubbliche e rigenerabili: non sono secret di produzione. `npm run env:local` evita di copiarle a mano.
+
+Lo stack **non parte al boot**: `npm run db:start` e `npm run dev` lo avviano su richiesta e riportano a `no` la restart policy dei container. Se `db:start` è già attivo risponde in meno di un secondo. A fine lavoro: `npm run db:stop`.
 
 ### Seed e utenti di test
 
@@ -95,7 +97,7 @@ Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: ap
 
 Al primo accesso autenticato il frontend chiama la RPC `ensure_current_family()`: se l'utente non ha ancora una membership, crea una famiglia personale e lo inserisce come `owner`. La funzione è idempotente, quindi ricaricare o riaprire l'app non duplica la famiglia. Le email vengono normalizzate (trim + lowercase) nel client e dal trigger sul database.
 
-In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana. **La conferma email va testata con un indirizzo reale prima del push in produzione**; fino ad allora i test si fanno in locale con Mailpit.
+In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana: la checklist è in [SECURITY.md](SECURITY.md). **La conferma email va testata con un indirizzo reale prima della promozione su `main`**; fino ad allora i test si fanno in locale con Mailpit.
 
 ### Recupero password
 
@@ -108,7 +110,7 @@ La configurazione locale include già gli URL di redirect:
 - `http://localhost:5173/reset-password`
 - `http://127.0.0.1:5173/reset-password`
 
-In produzione vanno aggiunti come redirect URL esatti nel progetto Supabase cloud, insieme al Site URL. Vedi [SECURITY.md](SECURITY.md).
+In produzione vanno aggiunti come redirect URL esatti nel progetto Supabase cloud, insieme al Site URL.
 
 Con `npm run dev`:
 
@@ -117,7 +119,7 @@ Con `npm run dev`:
 - `/register` è la pagina di registrazione;
 - `/forgot-password` richiede il link di recupero;
 - `/reset-password` imposta la nuova password dal link ricevuto;
-- `/app` è l’area riservata e richiede una sessione attiva.
+- `/app` è l'area riservata e richiede una sessione attiva.
 
 Per provare il login usa uno degli utenti demo qui sopra, oppure registra un nuovo account.
 
@@ -144,7 +146,7 @@ Dopo una modifica a schema, policy o funzioni SQL:
 npm run db:types
 ```
 
-`npm run db:types` legge dallo stack locale, sovrascrive `src/lib/database.types.ts` e lo formatta con Biome. La generazione è riproducibile.
+`npm run db:types` legge dallo stack locale, sovrascrive `src/lib/database.types.ts` e lo formatta con Biome. La generazione è riproducibile: il file è generato, non si modifica a mano.
 
 ### Modalità dati (mock / Supabase)
 
@@ -155,7 +157,7 @@ Il repository viene scelto in `src/lib/data/index.ts`:
 - gli e2e usano sempre `VITE_DATA_MODE=mock` (vedi `playwright.config.ts`) e non chiamano REST;
 - senza variabili la landing parte comunque e la UI usa il mock.
 
-Il client e il repository sono creati in modo lazy: un ambiente non configurato non fa crashare la landing. Il merge dei duplicati è applicato lato client; il vincolo/trigger equivalente lato database resta un follow-up backend.
+Il client e il repository sono creati in modo lazy: un ambiente non configurato non fa crashare la landing. L'anti-duplicati vive in due punti coerenti: merge lato client e indice unique lato database per famiglia/stato/nome/categoria.
 
 ### PWA e modalità offline
 
@@ -177,7 +179,7 @@ Apri <http://127.0.0.1:4173>, installa l'app dal browser e prova a ricaricare co
 
 ### Web Push
 
-Le notifiche push sono implementate ma **spente finché non vengono configurate le chiavi VAPID**. Senza `VITE_VAPID_PUBLIC_KEY` la sezione **Impostazioni → Notifiche** resta nascosta e l'app non chiama la Edge Function.
+Le notifiche push sono implementate ma **spente per scelta** (decisione 3 novembre 2026) finché non vengono configurate le chiavi VAPID. Senza `VITE_VAPID_PUBLIC_KEY` la sezione **Impostazioni → Notifiche** resta nascosta e l'app non chiama la Edge Function.
 
 Il flusso è questo:
 
@@ -237,15 +239,7 @@ Note:
 - logout e cancellazione account disiscrivono il dispositivo e rimuovono la riga server;
 - gli e2e verificano solo il feature gate, perché non hanno chiavi VAPID e non possono ricevere push reali.
 
-#### Produzione (azione umana)
-
-1. Genera le chiavi VAPID definitive e conserva la privata solo nei secret Supabase.
-2. Su Vercel aggiungi la sola variabile pubblica `VITE_VAPID_PUBLIC_KEY`.
-3. Su Supabase imposta i secret `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` per la Edge Function.
-4. Fai il deploy della function `send-push` con il flusso di release scelto.
-5. Prova l'opt-in da un dispositivo reale e verifica la notifica su aggiunta e su urgenza.
-
-**Mai** mettere `VAPID_PRIVATE_KEY` nel frontend, in Vercel o in Git. La chiave pubblica è pubblica per definizione; la privata resta solo nella Edge Function.
+Cosa serve per attivarlo in produzione (chiavi VAPID definitive, secret Supabase, variabile Vercel, deploy della function, prova su dispositivi reali) sta in [SECURITY.md](SECURITY.md) → "Web Push". **Mai** mettere `VAPID_PRIVATE_KEY` nel frontend, in Vercel o in Git: la chiave pubblica è pubblica per definizione, la privata resta solo nella Edge Function.
 
 ### Backup e restore (ADR-0003)
 
@@ -270,24 +264,17 @@ npm run db:reset
 node scripts/backup/restore-local.mjs export.json
 ```
 
-Lo script fa upsert in ordine di dipendenza e stampa i conteggi per tabella. Limiti dichiarati del restore:
+Lo script fa upsert in ordine di dipendenza e stampa i conteggi per tabella. Il restore di prova è già stato eseguito con successo. Limiti dichiarati:
 
 - **`auth.users` non è nell'export**: lo schema `auth` non è percorribile via REST, nemmeno con `service_role`. Dopo un restore reale vanno ricreati gli account Auth con gli stessi id (admin API) e fatta ripartire la password con l'email di reset.
 - `rate_limits` non è nell'export: è contatore runtime, non dato.
 - Le email dei membri ci sono (per il restore), ma nel normale uso l'app non mostra mai email altrimenti.
 
-In produzione (azione umana):
-
-1. Imposta il secret `EXPORT_TOKEN` (almeno 32 byte casuali) nei secret Supabase della function.
-2. Fai il deploy della function `export`.
-3. Programma il cron del Pi: `POST` con `Authorization: Bearer <EXPORT_TOKEN>`, salvataggio del JSON e upload su bucket R2/B2 cifrato (per esempio con `rclone`).
-4. Monitora i `4xx`/`5xx` del cron; ruota il token se esposto.
-
-Mai `service_role` sul Pi: chiama solo la function col token.
+Il cron di produzione (deploy della function, secret, upload settimanale, monitoraggio) è un'azione umana descritta in [SECURITY.md](SECURITY.md) → "Backup ed export" e in [ROADMAP.md](ROADMAP.md) → Fase 3. Mai `service_role` sul Pi: chiama solo la function col token.
 
 ### SEO, Open Graph e sitemap
 
-La landing e `/privacy` sono indicizzabili; tutte le altre viste sono `noindex, nofollow` (già da `private-noindex.js` e `useDocumentMeta`). Il dominio di produzione non è ancora stato scelto: quando lo sarà, aggiungere **una sola variabile** `VITE_SITE_URL` (per esempio `https://spesa.esempio.it`) su Vercel e in locale nel `.env.local`. A build il plugin SEO di `vite.config.ts`:
+La landing e `/privacy` sono indicizzabili; tutte le altre viste sono `noindex, nofollow` (già da `private-noindex.js` e `useDocumentMeta`). Quando il dominio di produzione sarà attivo, aggiungere **una sola variabile** `VITE_SITE_URL` (per esempio `https://spesa.esempio.it`) su Vercel e, se serve, in locale nel `.env.local`. A build il plugin SEO di `vite.config.ts`:
 
 - assolutizza `og:image` e `twitter:image`;
 - inietta `<link rel="canonical">` e `og:url` (radice del sito);
@@ -308,31 +295,18 @@ La suite unit gira con Vitest e jsdom:
 npm run test
 ```
 
-Copre la logica dei `src/lib/*` (auth, impostazioni, categorie, quantità,
-ordinamento, cache, push, realtime, route, SEO, tema, account) e gli hook con
-stato proprio (`useShoppingList`, `useDocumentMeta`, `useOnlineStatus`). I
-componenti e i flussi completi sono coperti dagli e2e.
+Copre la logica dei `src/lib/*` (auth, impostazioni, categorie, quantità, ordinamento, cache, push, realtime, route, SEO, tema, account) e gli hook con stato proprio (`useShoppingList`, `useDocumentMeta`, `useOnlineStatus`). I componenti e i flussi completi sono coperti dagli e2e.
 
 Regole quando si aggiunge codice:
 
 - la logica pura va in `src/lib/*` e ha un test accanto (`*.test.ts`);
-- per le regole condivise tra mock e Supabase il test è obbligatorio: è il caso
-  di `src/lib/data/item-merge.test.ts`, che verifica identità degli articoli
-  (spazi, maiuscole, categorie normalizzate, lista vs storico), merge di
-  quantità/note/urgenza e ordinamento delle due viste;
-- per le funzioni che leggono variabili d'ambiente a livello di modulo
-  (`src/lib/supabase.ts`, `src/lib/pwa.ts`) il test ricarica il modulo con
-  `vi.resetModules()` e `vi.stubEnv()`, così il caso "non configurato" non
-  dipende da `.env.local` della macchina;
-- i test degli hook si scrivono con `render()` di Preact e `data-testid`, come
-  in `src/hooks/useOnlineStatus.test.tsx`; gli effetti partono dopo il paint,
-  quindi conviene attendere un frame prima di simulare eventi.
+- per le regole condivise tra mock e Supabase il test è obbligatorio: è il caso di `src/lib/data/item-merge.test.ts`, che verifica identità degli articoli (spazi, maiuscole, categorie normalizzate, lista vs storico), merge di quantità/note/urgenza e ordinamento delle due viste;
+- per le funzioni che leggono variabili d'ambiente a livello di modulo (`src/lib/supabase.ts`, `src/lib/pwa.ts`) il test ricarica il modulo con `vi.resetModules()` e `vi.stubEnv()`, così il caso "non configurato" non dipende da `.env.local` della macchina;
+- i test degli hook si scrivono con `render()` di Preact e `data-testid`, come in `src/hooks/useOnlineStatus.test.tsx`; gli effetti partono dopo il paint, quindi conviene attendere un frame prima di simulare eventi.
 
 ### E2e con backend reale
 
-`npm run test:e2e` copre l'interfaccia con dati mock, senza rete: è la suite
-che gira in CI. La suite con backend reale vive in `e2e-backend/`, parla con lo
-stack Supabase locale e si lancia con:
+`npm run test:e2e` copre l'interfaccia con dati mock, senza rete: è la suite che gira in CI. La suite con backend reale vive in `e2e-backend/`, parla con lo stack Supabase locale e si lancia con:
 
 ```bash
 npm run test:e2e:backend
@@ -341,30 +315,15 @@ npm run test:e2e:backend
 Il comando (`playwright.backend.config.ts` + `scripts/e2e-backend.sh`):
 
 1. avvia lo stack locale se non è attivo (`scripts/db-start.sh`);
-2. verifica che la famiglia demo esista e crea/aggiorna gli utenti Auth con
-   `scripts/seed-auth.mjs`. Se la famiglia manca **non** esegue reset: si ferma
-   e chiede `npm run db:reset`, così nessun dato locale viene cancellato;
+2. verifica che la famiglia demo esista e crea/aggiorna gli utenti Auth con `scripts/seed-auth.mjs`. Se la famiglia manca **non** esegue reset: si ferma e chiede `npm run db:reset`, così nessun dato locale viene cancellato;
 3. rigenera `.env.local` (`npm run env:local`);
-4. compila l'app in modalità Supabase, senza `VITE_DATA_MODE=mock`, in
-   `dist-e2e-backend/` e la serve su `http://127.0.0.1:4174`.
+4. compila l'app in modalità Supabase, senza `VITE_DATA_MODE=mock`, in `dist-e2e-backend/` e la serve su `http://127.0.0.1:4174`.
 
-La suite usa l'utente `demo@spesa.test` del seed e verifica il footer senza
-"modalità demo · dati locali", così un build finito per errore in mock fallisce
-subito. Copre login/logout reali, sessione persistente, creazione di un
-articolo con quantità e categoria, persistenza al reload, passaggio allo
-storico, undo, eliminazione, urgenza e aggiornamenti realtime tra due contesti
-browser. I test girano in serie (`workers: 1`) perché la famiglia demo è
-condivisa.
+La suite usa l'utente `demo@spesa.test` del seed e verifica il footer senza "modalità demo · dati locali", così un build finito per errore in mock fallisce subito. Copre login/logout reali, sessione persistente, creazione di un articolo con quantità e categoria, persistenza al reload, passaggio allo storico, undo, eliminazione, urgenza e aggiornamenti realtime tra due contesti browser. I test girano in serie (`workers: 1`) perché la famiglia demo è condivisa.
 
-Gli articoli creati dai test hanno il prefisso `E2E-backend`; un teardown
-globale li cancella dal database locale al termine, compresi quelli rimasti da
-una run interrotta. Nessun dato reale e nessuna chiamata al cloud.
+Gli articoli creati dai test hanno il prefisso `E2E-backend`; un teardown globale li cancella dal database locale al termine, compresi quelli rimasti da una run interrotta. Nessun dato reale e nessuna chiamata al cloud.
 
-La CI esegue solo la suite mock (job `e2e`). Il job per quella con backend va
-aggiunto a mano in `.github/workflows/ci.yml` (file riservato all'umano):
-`supabase start` e `supabase db reset` preparano stack e dati demo, poi
-`npm run test:e2e:backend` avvia da sé build e preview. Lo stack già attivo non
-viene riavviato perché `scripts/db-start.sh` è idempotente.
+La CI esegue solo la suite mock (job `e2e`). Il job per quella con backend va aggiunto a mano in `.github/workflows/ci.yml` (file riservato all'umano) ed è tra i punti aperti della Fase 3: `supabase start` e `supabase db reset` preparano stack e dati demo, poi `npm run test:e2e:backend` avvia da sé build e preview. Lo stack già attivo non viene riavviato perché `scripts/db-start.sh` è idempotente.
 
 Blocco pronto da incollare sotto `jobs:` nello stesso file:
 
@@ -397,75 +356,41 @@ Blocco pronto da incollare sotto `jobs:` nello stesso file:
         run: supabase stop --no-backup
 ```
 
-In CI il reporter è `github`, quindi non viene generato `playwright-report/`:
-l'artefatto utile è `test-results/` (tracce dei retry).
+In CI il reporter è `github`, quindi non viene generato `playwright-report/`: l'artefatto utile è `test-results/` (tracce dei retry).
 
 ### Accessibilità e tastiera
 
-`e2e/a11y.spec.ts` esegue axe (`@axe-core/playwright`, tag WCAG 2.1 A/AA) sulle
-pagine pubbliche, sulla landing in tema scuro e a 360 px, e sull'app (lista,
-storico, dialog impostazioni, dialog articolo, tema scuro e mobile). Una
-violazione fa fallire il test e stampa nodi e riepilogo.
+`e2e/a11y.spec.ts` esegue axe (`@axe-core/playwright`, tag WCAG 2.1 A/AA) sulle pagine pubbliche, sulla landing in tema scuro e a 360 px, e sull'app (lista, storico, dialog impostazioni, dialog articolo, tema scuro e mobile). Una violazione fa fallire il test e stampa nodi e riepilogo.
 
 `e2e/keyboard.spec.ts` copre il comportamento non verificabile da axe:
 
-- tab della lista con pattern ARIA completo: roving `tabindex`, frecce
-  sinistra/destra, `Home`/`End`, `aria-controls` verso `#list-tabpanel` e
-  `role="tabpanel"` con `aria-labelledby` aggiornato;
-- alla chiusura dei dialog (Escape o sfondo) il focus torna al trigger; se il
-  trigger non è più utilizzabile (pulsante "Aggiungi" disabilitato dopo l'invio)
-  torna al campo rapido, pronto per il prossimo articolo.
+- tab della lista con pattern ARIA completo: roving `tabindex`, frecce sinistra/destra, `Home`/`End`, `aria-controls` verso `#list-tabpanel` e `role="tabpanel"` con `aria-labelledby` aggiornato;
+- alla chiusura dei dialog (Escape o sfondo) il focus torna al trigger; se il trigger non è più utilizzabile (pulsante "Aggiungi" disabilitato dopo l'invio) torna al campo rapido, pronto per il prossimo articolo.
 
 Entrambe girano con `npm run test:e2e`, quindi sono in CI senza job aggiuntivi.
 
-Quando si aggiunge un controllo nuovo, ricordare che il nome accessibile deve
-contenere il testo visibile: per aggiungere contesto usare testo `sr-only`
-dentro l'elemento, non un `aria-label` che sostituisce l'etichetta visibile. I
-contenitori con testo `sr-only` figlio vanno posizionati (`position: relative`)
-per non allargare la pagina su mobile.
+Quando si aggiunge un controllo nuovo, ricordare che il nome accessibile deve contenere il testo visibile: per aggiungere contesto usare testo `sr-only` dentro l'elemento, non un `aria-label` che sostituisce l'etichetta visibile. I contenitori con testo `sr-only` figlio vanno posizionati (`position: relative`) per non allargare la pagina su mobile.
 
 ### Stati di errore
 
-Le azioni sulla lista (`add`, `update`, `setStatus`, `remove`, `restore`) non
-lanciano eccezioni verso i componenti: restituiscono
-`ActionResult = { ok: true } | { ok: false, message }` (`src/lib/types.ts`).
-Il messaggio è già tradotto da `toDataError()` in `supabase-repository.ts`
-(niente codici SQL o dettagli tecnici in UI) e viene anche salvato in
-`list.error` per la zona di feedback globale.
+Le azioni sulla lista (`add`, `update`, `setStatus`, `remove`, `restore`) non lanciano eccezioni verso i componenti: restituiscono `ActionResult = { ok: true } | { ok: false, message }` (`src/lib/types.ts`). Il messaggio è già tradotto da `toDataError()` in `supabase-repository.ts` (niente codici SQL o dettagli tecnici in UI) e viene anche salvato in `list.error` per la zona di feedback globale.
 
 Comportamento atteso, coperto dai test:
 
-- **Dialog articolo**: se il salvataggio o l'eliminazione falliscono, il dialog
-  resta aperto, mostra l'errore al suo interno (`role="alert"`) e conserva
-  quanto digitato; i pulsanti sono disabilitati durante l'operazione, così un
-  doppio clic non crea due articoli. Basta riprovare.
-- **Aggiunta rapida**: se l'aggiunta fallisce il nome resta nel campo, pronto
-  per un nuovo invio.
-- **Caricamento**: l'errore compare in una zona `role="alert"` con il pulsante
-  **Riprova** (solo con dati reali); con la cache disponibile si mostra l'ultima
-  lista letta con l'avviso offline.
-- La zona di errore globale è nascosta mentre un dialog è aperto, per non
-  duplicare l'annuncio del medesimo errore.
+- **Dialog articolo**: se il salvataggio o l'eliminazione falliscono, il dialog resta aperto, mostra l'errore al suo interno (`role="alert"`) e conserva quanto digitato; i pulsanti sono disabilitati durante l'operazione, così un doppio clic non crea due articoli. Basta riprovare.
+- **Aggiunta rapida**: se l'aggiunta fallisce il nome resta nel campo, pronto per un nuovo invio.
+- **Caricamento**: l'errore compare in una zona `role="alert"` con il pulsante **Riprova** (solo con dati reali); con la cache disponibile si mostra l'ultima lista letta con l'avviso offline.
+- La zona di errore globale è nascosta mentre un dialog è aperto, per non duplicare l'annuncio del medesimo errore.
 
 Test:
 
-- `e2e/error-states.spec.ts` (mock): rompe le scritture del repository mock
-  sostituendo `Storage.prototype.setItem` per la chiave `spesa.mock.items.v2`
-  con un flag su `window`, e verifica dialog aperto, testo conservato e retry
-  riuscito. Serve, oltre al caso reale, perché la modalità mock è quella che
-  gira in CI.
-- `e2e-backend/items.spec.ts`: con `page.route` che aborta le richieste REST,
-  verifica il messaggio "Connessione assente: controlla la rete e riprova.",
-  il pulsante **Riprova** e il recupero quando la rete torna.
-- `src/hooks/useShoppingList.test.tsx`: esiti `ok`/`errore` delle azioni, con e
-  senza notifica push.
+- `e2e/error-states.spec.ts` (mock): rompe le scritture del repository mock sostituendo `Storage.prototype.setItem` per la chiave `spesa.mock.items.v2` con un flag su `window`, e verifica dialog aperto, testo conservato e retry riuscito. Serve, oltre al caso reale, perché la modalità mock è quella che gira in CI.
+- `e2e-backend/items.spec.ts`: con `page.route` che aborta le richieste REST, verifica il messaggio "Connessione assente: controlla la rete e riprova.", il pulsante **Riprova** e il recupero quando la rete torna.
+- `src/hooks/useShoppingList.test.tsx`: esiti `ok`/`errore` delle azioni, con e senza notifica push.
 
-Il repository mock ora propaga l'errore di `localStorage.setItem` (storage
-pieno o bloccato) invece di ignorarlo: in modalità demo una modifica non
-salvata sul dispositivo viene segnalata, non simulata come riuscita.
+Il repository mock propaga l'errore di `localStorage.setItem` (storage pieno o bloccato) invece di ignorarlo: in modalità demo una modifica non salvata sul dispositivo viene segnalata, non simulata come riuscita.
 
-A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con
-`npm run db:stop`.
+A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con `npm run db:stop`.
 
 ### Worktree paralleli
 
@@ -476,11 +401,14 @@ Per il parallelismo serve una config locale diversa per worktree (cambia `projec
 ## Comandi quotidiani
 
 ```bash
-npm run dev          # Vite su http://localhost:5173
-npm run verify       # lint + typecheck + unit + build
-npm run test:e2e     # Playwright (prima: npx playwright install chromium)
-npm run db:types     # rigenera i tipi TypeScript da Supabase locale
-npx supabase test db # test pgTAP / RLS
+npm run dev              # Supabase locale (se serve) + Vite su http://localhost:5173
+npm run dev:web          # solo Vite
+npm run verify           # lint + typecheck + unit + build
+npm run test             # unit (Vitest)
+npm run test:e2e         # Playwright mock (prima: npx playwright install chromium)
+npm run test:e2e:backend # Playwright contro lo stack locale
+npm run db:types         # rigenera i tipi TypeScript da Supabase locale
+npx supabase test db     # test pgTAP / RLS
 ```
 
 ### Dipendenze e aggiornamenti
@@ -492,93 +420,48 @@ npm audit
 npm outdated
 ```
 
-Regola: **patch e minor dentro la major corrente** si aggiornano in una PR
-dedicata `chore/deps-*`, con `npm run verify`, `npm run test:e2e` e, se toccano
-Playwright, `npx playwright install chromium`. **Le major restano fuori** da
-questi aggiornamenti: richiedono una decisione a sé, una PR separata e una
-verifica manuale dell'app.
+Regola: **patch e minor dentro la major corrente** si aggiornano in una PR dedicata `chore/deps-*`, con `npm run verify`, `npm run test:e2e` e, se toccano Playwright, `npx playwright install chromium`. **Le major restano fuori** da questi aggiornamenti: richiedono una decisione a sé, una PR separata e una verifica manuale dell'app.
 
-Stato al 13 novembre 2026 (aggiornati: Biome 2.6.7, Playwright 1.65,
-`@supabase/supabase-js` 2.119, CLI Supabase 2.122, Vite 7.3.8). Major ancora
-indietro, con il motivo per cui non sono state forzate:
+Stato al 13 novembre 2026 (aggiornati: Biome 2.6.7, Playwright 1.65, `@supabase/supabase-js` 2.119, CLI Supabase 2.122, Vite 7.3.8). Major ancora indietro, con il motivo per cui non sono state forzate:
 
-| Pacchetto | Attuale | Latest | Perché si aspetta |
-| --- | --- | --- | --- |
-| `preact` | 10.x | 11.x | tocca tutta la UI e `@preact/preset-vite`; va provato a mano |
-| `vite` | 7.x | 8.x | configurazione, plugin SEO/PWA e build da riverificare |
-| `vitest` | 4.x | 5.x | ambiente di test, ma va allineato a Vite |
-| `typescript` | 5.9 | 7.x | cambio di compilatore: da valutare con calma |
-| `supabase` (CLI) | 2.x | 3.x | gli script usano i comandi della 2.x |
-| `jsdom` | 29.x | 31.x | solo ambiente unit, aggiornabile in un task a parte |
+| Pacchetto          | Attuale | Latest | Perché si aspetta                                                  |
+| ------------------ | ------- | ------ | ------------------------------------------------------------------ |
+| `preact`           | 10.x    | 11.x   | tocca tutta la UI e `@preact/preset-vite`; va provato a mano        |
+| `vite`             | 7.x     | 8.x    | configurazione, plugin SEO/PWA e build da riverificare              |
+| `vitest`           | 4.x     | 5.x    | ambiente di test, ma va allineato a Vite                            |
+| `typescript`       | 5.9     | 7.x    | cambio di compilatore: da valutare con calma                        |
+| `supabase` (CLI)   | 2.x     | 3.x    | gli script usano i comandi della 2.x                                |
+| `jsdom`            | 29.x    | 31.x   | solo ambiente unit, aggiornabile in un task a parte                 |
 
 Le major si affrontano una alla volta, mai insieme a un task funzionale.
 
 ### Performance e budget del bundle
 
-La build viene misurata, non solo stampata: un plugin in `vite.config.ts`
-(`bundle-budget`) somma il peso gzip dei file JS e CSS e **fa fallire
-`npm run build`** se supera i limiti di `src/lib/bundle-budget.ts`. Poiché
-`npm run verify` finisce con la build, la regressione rompe la CI.
+La build viene misurata, non solo stampata: un plugin in `vite.config.ts` (`bundle-budget`) somma il peso gzip dei file JS e CSS e **fa fallire `npm run build`** se supera i limiti di `src/lib/bundle-budget.ts`. Poiché `npm run verify` finisce con la build, la regressione rompe la CI.
 
 Stato al 13 novembre 2026 (`npm run build`):
 
-| Voce | Prima | Dopo |
-| --- | --- | --- |
+| Voce                       | Prima                     | Dopo                      |
+| -------------------------- | ------------------------- | ------------------------- |
 | JS dell'app (`index-*.js`) | 359.06 kB · 98.63 kB gzip | 133.42 kB · 39.30 kB gzip |
-| JS di Supabase (`supabase-*.js`) | — (dentro l'app) | 225.35 kB · 59.15 kB gzip |
-| Totale JS da scaricare | 359.06 kB · 98.63 kB gzip | 358.77 kB · **96.1 kB gzip** |
-| CSS | 46.95 kB · 9.19 kB gzip | invariato |
+| JS di Supabase (`supabase-*.js`) | — (dentro l'app)    | 225.35 kB · 59.15 kB gzip |
+| Totale JS da scaricare     | 359.06 kB · 98.63 kB gzip | 358.77 kB · **96.1 kB gzip** |
+| CSS                        | 46.95 kB · 9.19 kB gzip   | invariato                 |
 
-Il totale cambia poco: il guadagno vero è nella **cache**. Il chunk Supabase
-ha un hash che dipende solo dalla dipendenza, quindi tra due deploy che non la
-toccano il browser riscarica solo `index-*.js` (~39 kB gzip) invece di tutto.
-Il chunk resta referenziato da `index.html` con `<link rel="modulepreload">`,
-quindi il service worker lo precaca insieme al resto (legge gli `/assets/`
-dall'HTML) e l'avvio offline funziona come prima.
+Il totale cambia poco: il guadagno vero è nella **cache**. Il chunk Supabase ha un hash che dipende solo dalla dipendenza, quindi tra due deploy che non la toccano il browser riscarica solo `index-*.js` (~39 kB gzip) invece di tutto. Il chunk resta referenziato da `index.html` con `<link rel="modulepreload">`, quindi il service worker lo precaca insieme al resto (legge gli `/assets/` dall'HTML) e l'avvio offline funziona come prima.
 
-Limiti attuali: **JS 115 kB gzip**, **CSS 12 kB gzip**. Se una PR supera il
-budget, la build spiega di quanto: se la crescita è voluta, alza il numero in
-`src/lib/bundle-budget.ts` e scrivi il motivo nella PR. Non entrano nel budget
-i font (`.woff2` con `unicode-range`: il browser scarica solo i sottoinsiemi
-che servono, in pratica il latino) e le icone.
+Limiti attuali: **JS 115 kB gzip**, **CSS 12 kB gzip**. Se una PR supera il budget, la build spiega di quanto: se la crescita è voluta, alza il numero in `src/lib/bundle-budget.ts` e scrivi il motivo nella PR. Non entrano nel budget i font (`.woff2` con `unicode-range`: il browser scarica solo i sottoinsiemi che servono, in pratica il latino) e le icone.
 
 Altri due interventi:
 
-- `private-noindex.js` nello `<head>` è `defer`: uno script classico sincrono
-  lì teneva fermo il parser, ritardando la scoperta del bundle dell'app di un
-  round trip. I differiti girano comunque prima dei moduli, quindi il `noindex`
-  c'è prima che un crawler legga la pagina.
-- `assetsInlineLimit: 0` era già così: i font non diventano data URI, che la
-  CSP (`font-src 'self'`) bloccherebbe.
+- `private-noindex.js` nello `<head>` è `defer`: uno script classico sincrono lì teneva fermo il parser, ritardando la scoperta del bundle dell'app di un round trip. I differiti girano comunque prima dei moduli, quindi il `noindex` c'è prima che un crawler legga la pagina.
+- `assetsInlineLimit: 0` era già così: i font non diventano data URI, che la CSP (`font-src 'self'`) bloccherebbe.
 
-Valutati e **scartati**, con il motivo, per non riproporli:
+Valutati e **scartati** per ora, con il motivo, per non riproporli:
 
-- **Lazy-load di `App` e `SettingsDialog`**: il service worker precaca gli
-  asset elencati in `index.html`; un chunk dinamico non ci sarebbe, e chi apre
-  l'app offline dopo un deploy nuovo rischierebbe una schermata bianca. Da
-  riprendere solo insieme a un manifest di precache emesso a build
-  (`build.manifest`) e a un bump di `VERSION` in `public/sw.js`.
-- **Sottoinsiemi di font più stretti** (solo latino): i nomi degli articoli
-  possono contenere cirillico o greco, e il carattere `mono` è usato proprio
-  lì. Si perderebbe il rendering corretto per pochi kB risparmiati.
-- **`preconnect` verso Supabase in `index.html`**: aprirebbe una connessione
-  verso il backend per ogni visitatore della landing, anche a chi non accede.
-  Non vale il guadagno sui tempi di login.
-
-## GitHub (una volta, dopo `gh auth login`)
-
-```bash
-bash scripts/setup-github.sh
-```
-
-Lo script crea label e issue di partenza. Poi imposta a mano, come stampato dallo script:
-
-- default branch `dev`;
-- auto-merge abilitato;
-- branch protection su `main` e `dev` con CI obbligatoria;
-- secrets `SUPABASE_URL` e `SUPABASE_ANON_KEY` per il keepalive.
-
-Non abilitare "Require review from Code Owners" su `dev`: bloccherebbe l'auto-merge degli agenti.
+- **Lazy-load di `App` e `SettingsDialog`**: il service worker precaca gli asset elencati in `index.html`; senza un manifest di precache emesso a build, il chunk dinamico non sarebbe in cache e chi apre l'app offline dopo un deploy nuovo rischierebbe una schermata bianca. Il lavoro è **incompleto** sul branch `chore/lazy-app-wip`: manca il test e2e che dimostri il valore del manifest (installare la PWA dalla landing, andare offline, aprire `/app`), i numeri aggiornati e il nuovo limite del budget.
+- **Sottoinsiemi di font più stretti** (solo latino): i nomi degli articoli possono contenere cirillico o greco, e il carattere `mono` è usato proprio lì. Si perderebbe il rendering corretto per pochi kB risparmiati.
+- **`preconnect` verso Supabase in `index.html`**: aprirebbe una connessione verso il backend per ogni visitatore della landing, anche a chi non accede. Non vale il guadagno sui tempi di login.
 
 ## Hook git
 
@@ -588,15 +471,11 @@ Una volta per clone:
 git config core.hooksPath .githooks
 ```
 
-Il hook blocca i push diretti su `main`. È una rete di sicurezza locale, non sostituisce la branch protection di GitHub.
+Il hook blocca i push diretti su `main`. È una rete di sicurezza locale: non sostituisce la branch protection di GitHub, che oggi non è ancora attiva (vedi [SECURITY.md](SECURITY.md) → GitHub).
 
 ## Flusso Git
 
-- `main` = produzione. Solo promozione umana.
-- `dev` = integrazione. Le PR degli agenti arrivano qui.
-- `feat/*`, `test/*`, `chore/*` = lavoro, creati da `dev`.
-- Se la CI è verde, l'agente può abilitare l'auto-merge della PR su `dev`.
-- `main` si aggiorna solo dopo review umana.
+`main` = produzione (solo promozione umana), `dev` = integrazione, `feat/*`, `test/*`, `chore/*` = lavoro creato da `dev`. Regole complete: [AGENTS.md](../AGENTS.md). Autonomia degli agenti: ADR-0004 in [DECISIONS.md](DECISIONS.md).
 
 ## Secret
 
@@ -605,7 +484,7 @@ Non ci sono secret condivisi tra le macchine.
 - Chiavi locali Supabase: generate da `npm run env:local`, sono usa-e-getta.
 - Chiavi cloud Supabase e Vercel: restano nelle dashboard dei provider e nelle variabili d'ambiente di Vercel/CI.
 - `service_role` cloud: mai su una macchina di sviluppo, mai nel frontend, mai in Git.
-- GitHub Actions: `SUPABASE_URL` e `SUPABASE_ANON_KEY` come repository secrets, solo per il keepalive.
+- GitHub Actions: `SUPABASE_URL` e `SUPABASE_ANON_KEY` come repository secrets, solo per il keepalive. Oggi puntano a un progetto in pausa: vanno aggiornati al go-live.
 
 `.env.local` è ignorato da Git. Non committare mai `.env`, `.env.local` o file con token.
 

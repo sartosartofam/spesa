@@ -4,11 +4,12 @@ subtitle: "Fase 1 — solo spesa"
 lang: it-IT
 ---
 
-<!--
-  Documento storico: descrive lo studio iniziale e le decisioni di allora.
-  L'implementazione reale è riassunta nell'addendum A8 (13 novembre 2026) e
-  nelle ADR di docs/DECISIONS.md, che prevalgono sul corpo del documento.
--->
+> **Documento storico, non aggiornato.** Descrive lo studio iniziale e le
+> decisioni di allora. Lo stato reale del progetto sta in
+> [ROADMAP.md](ROADMAP.md), le decisioni vincolanti in
+> [DECISIONS.md](DECISIONS.md): in caso di conflitto prevalgono quei due.
+> L'implementazione vera è riassunta nell'addendum A8; la vecchia versione
+> `.docx` è stata eliminata, esiste solo questo file.
 
 ## 1. Obiettivo e vincoli
 
