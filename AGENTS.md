@@ -89,7 +89,7 @@ Una PR è pronta solo se:
 
 Se serve modificare un file non proprio, fermarsi e chiedere.
 
-## Schema dati (fase 1)
+## Schema dati
 
 ```
 families (id, name, created_at)
@@ -103,6 +103,7 @@ family_invites (id, family_id, code_hash, created_by, created_at, expires_at, us
 user_settings (user_id, settings, updated_at)
 rate_limits (key, count, window_start)
 keepalive (id, last_ping)
+admins (user_id, created_at)
 ```
 
 - `status`: `to_buy` | `bought` (ADR-0001).
@@ -112,6 +113,7 @@ keepalive (id, last_ping)
 - `user_settings` è self-only (una riga per utente autenticato).
 - `rate_limits` ha RLS attiva e nessuna policy: la usa solo il `service_role` tramite `consume_rate_limit`.
 - `keepalive` è pubblica in sola lettura (`select` ad `anon`), niente altro.
+- `admins` non è un ruolo di famiglia (`members.role` resta `owner`/`member`): RLS attiva, nessuna policy e nessun grant ad `anon` e `authenticated`. La riga la inserisce solo l'umano con SQL/CLI, anche in produzione; il client la legge solo tramite le RPC `is_admin()` e `admin_overview()` in sola lettura. Non è nell'export: dopo un restore va reinserita a mano.
 
 ## Comandi utili
 
