@@ -277,18 +277,28 @@ Il cron di produzione (deploy della function, secret, upload settimanale, monito
 
 ### Pannello admin (fetta 1, sola lettura)
 
-Il pannello è "vanilla": una tabella `admins`, due RPC `security definer` e nessun servizio esterno. La fetta 1 espone solo aggregati a chi è admin; la rotta `/admin` arriva con il task frontend separato.
+Il pannello è "vanilla": una tabella `admins`, due RPC `security definer`, una pagina Preact in un chunk lazy e nessun servizio esterno. La fetta 1 espone solo aggregati a chi è admin.
 
 - `admins (user_id, created_at)`: RLS attiva, nessuna policy, `revoke all` ad `anon` e `authenticated`. Le righe le inserisce solo chi ha accesso al database, quindi con SQL editor o CLI, anche in produzione. Un admin non può nominare altri admin dall'app.
 - `is_admin()`: `security definer`, `stable`, `search_path = ''`, eseguibile dai soli `authenticated`. Risponde solo sul chiamante, mai l'elenco.
 - `admin_overview()`: `security definer`, restituisce un `jsonb` con timestamp di generazione, ultima migrazione applicata, ultimo ping `keepalive` e conteggi aggregati (famiglie, membri, articoli in lista e nello storico, subscription push, inviti attivi/usati/scaduti, righe `rate_limits`). Nessun nome, nota o email. Chi non è admin riceve `42501` e nessun dato.
 
-Per assegnare l'admin in locale, dopo `npm run db:reset`:
+La pagina `/admin` è il client di quelle due RPC (`src/lib/admin.ts` + `src/pages/AdminPage.tsx`):
+
+- mostra keepalive con l'età del dato, ultima migrazione applicata e i conteggi, più l'orario di generazione;
+- si aggiorna solo con il pulsante **Aggiorna**: nessun realtime, nessun polling;
+- vive in un chunk separato e non è linkata da landing, login, `/app` o impostazioni;
+- chi non è admin (o non ha una sessione) vede la 404: la rotta è `noindex` e la RPC nega comunque i dati;
+- in modalità mock/demo la pagina spiega che il pannello ha senso solo con i dati Supabase e rimanda a `/app`.
+
+Per aprirla in locale serve uno stack attivo, una sessione valida (per esempio `demo@spesa.test`) e una riga in `admins`. Dopo `npm run db:reset`:
 
 ```bash
 docker exec -i supabase_db_spesa psql -U postgres -d postgres -c \
-  "insert into public.admins (user_id) select id from auth.users where email = 'demo@spesa.test'"
+  "insert into public.admins (user_id) select id from auth.users where email = 'demo@spesa.test' on conflict do nothing"
 ```
+
+Poi `npm run dev:web` e apri <http://localhost:5173/admin> da connesso.
 
 Per leggere gli aggregati fingendo una sessione autenticata:
 
@@ -332,7 +342,7 @@ La suite unit gira con Vitest e jsdom:
 npm run test
 ```
 
-Copre la logica dei `src/lib/*` (auth, impostazioni, categorie, quantità, ordinamento, cache, push, realtime, route, SEO, tema, account) e gli hook con stato proprio (`useShoppingList`, `useDocumentMeta`, `useOnlineStatus`). I componenti e i flussi completi sono coperti dagli e2e.
+Copre la logica dei `src/lib/*` (auth, admin, impostazioni, categorie, quantità, ordinamento, cache, push, realtime, route, SEO, tema, account) e gli hook con stato proprio (`useShoppingList`, `useDocumentMeta`, `useOnlineStatus`). I componenti e i flussi completi sono coperti dagli e2e.
 
 Regole quando si aggiunge codice:
 
@@ -476,25 +486,32 @@ Le major si affrontano una alla volta, mai insieme a un task funzionale.
 
 La build viene misurata, non solo stampata: un plugin in `vite.config.ts` (`bundle-budget`) somma il peso gzip dei file JS e CSS e **fa fallire `npm run build`** se supera i limiti di `src/lib/bundle-budget.ts`. Poiché `npm run verify` finisce con la build, la regressione rompe la CI.
 
-Stato al 17 novembre 2026 (`npm run build`):
+Stato al 17 novembre 2026 (`npm run build`), dopo l'aggiunta del pannello admin:
 
 | Voce | Prima del lazy-load | Con lazy-load |
 | --- | --- | --- |
-| JS iniziale dalla landing | 358.77 kB · 96.1 kB gzip | 320.62 kB · **87.65 kB gzip** |
+| JS iniziale dalla landing | 358.77 kB · 96.1 kB gzip | 321.73 kB · **87.90 kB gzip** |
 | Chunk app caricato entrando nell'area riservata | incluso nel JS iniziale | 42.67 kB · 13.34 kB gzip |
-| Totale JS dopo aver aperto l'app | 358.77 kB · 96.1 kB gzip | 363.29 kB · 100.99 kB gzip |
-| CSS | 46.95 kB · 9.19 kB gzip | invariato |
+| Totale JS dopo aver aperto l'app | 358.77 kB · 96.1 kB gzip | 364.40 kB · 101.24 kB gzip |
+| Chunk admin caricato aprendo `/admin` | — | 5.92 kB · 2.26 kB gzip |
+| Totale JS dopo aver aperto il pannello admin | — | 370.32 kB · 103.50 kB gzip |
+| CSS | 46.95 kB · 9.19 kB gzip | 48.42 kB · 9.40 kB gzip |
 
-Il guadagno sulla landing è di circa **8.5 kB gzip**; il chunk dell'app viene
-scaricato solo entrando nell'area riservata. Il totale dopo aver aperto l'app
-cresce di circa 4.9 kB gzip perché i chunk separati hanno un piccolo overhead
-di compressione. Il chunk Supabase resta separato e invariato (225.35 kB ·
-59.15 kB gzip), quindi il browser può riutilizzarlo tra deploy. `precache.json`
-include anche i chunk dinamici: il service worker li salva all'installazione,
-così l'app resta apribile offline anche dopo un deploy.
+Il guadagno sulla landing è di circa **8.2 kB gzip**; il chunk dell'app viene
+scaricato solo entrando nell'area riservata e quello del pannello solo aprendo
+`/admin`. Il totale dopo aver aperto l'app cresce di circa 5.1 kB gzip perché i
+chunk separati hanno un piccolo overhead di compressione. Il chunk Supabase
+resta separato e invariato (225.35 kB · 59.15 kB gzip), quindi il browser può
+riutilizzarlo tra deploy. `precache.json` include anche i chunk dinamici: il
+service worker li salva all'installazione, così l'app resta apribile offline
+anche dopo un deploy.
+
+La landing cresce di circa 0.25 kB gzip rispetto a prima del pannello: il
+routing lazy (`useLazyModule`) e la rotta `admin` vivono nel chunk iniziale,
+mentre la pagina (2.26 kB gzip) e i suoi stili restano fuori.
 
 Limiti attuali: **JS 115 kB gzip** (sommando tutti i chunk, inclusi quelli
-lazy), **CSS 12 kB gzip**. Il bundle misurato usa circa l'88% del budget JS.
+lazy), **CSS 12 kB gzip**. Il bundle misurato usa circa il 90% del budget JS.
 Se una PR supera il limite, la build spiega di quanto: se la crescita è voluta,
 alza il numero in `src/lib/bundle-budget.ts` e scrivi il motivo nella PR. Non
 entrano nel budget i font (`.woff2` con `unicode-range`: il browser scarica

@@ -31,7 +31,7 @@ export interface BundleReport {
 }
 
 /**
- * Limiti in kB di gzip, al 15 novembre 2026 (JS 101.0, CSS 9.2 misurati con
+ * Limiti in kB di gzip, al 17 novembre 2026 (JS 101.1, CSS 9.2 misurati con
  * `npm run build`, includendo i chunk lazy). Circa il 14% di margine: un
  * aumento più grande va giustificato, non nascosto.
  */

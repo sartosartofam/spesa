@@ -77,6 +77,13 @@ function metaFor(route: AppRoute): DocumentMeta {
       robots: 'noindex, nofollow',
     }
   }
+  if (route === 'admin') {
+    return {
+      title: 'Salute del progetto | Spesa',
+      description: 'Pannello admin in sola lettura: stato del progetto e aggregati.',
+      robots: 'noindex, nofollow',
+    }
+  }
   return {
     title: 'Pagina non trovata | Spesa',
     description: 'La pagina richiesta non esiste.',
@@ -95,59 +102,71 @@ function LoadingPage({ label = 'Carico la sessione…' }: { label?: string }) {
 }
 
 type AppComponent = ComponentType<AppProps>
+type AdminComponent = ComponentType<Record<string, never>>
 
 /**
- * `App` (lista, dialog, impostazioni) è la parte pesante del bundle: la
- * carichiamo solo per chi entra davvero nell'area riservata, così la landing
- * pubblica non la scarica. Il chunk dinamico è elencato in `precache.json`,
+ * Caricamento su richiesta di un chunk separato.
+ *
+ * `App` (lista, dialog, impostazioni) è la parte pesante del bundle e il
+ * pannello admin non deve esistere finché non serve: nessuno dei due pesa
+ * sulla landing pubblica. I chunk dinamici sono elencati in `precache.json`,
  * che il service worker legge all'installazione: senza quel manifest, chi apre
  * l'app offline dopo un deploy nuovo resterebbe sulla schermata di caricamento.
  */
-let appImport: Promise<AppComponent> | null = null
-
-function loadApp(): Promise<AppComponent> {
-  appImport ??= import('./app')
-    .then((module) => module.App)
-    .catch((error: unknown) => {
+function lazyModule<T>(load: () => Promise<T>): () => Promise<T> {
+  let pending: Promise<T> | null = null
+  return () => {
+    pending ??= load().catch((error: unknown) => {
       // Un errore di rete non deve restare in cache per sempre: azzeriamo la
       // promessa, così "Riprova" prova davvero a riscaricare il chunk.
-      appImport = null
+      pending = null
       throw error
     })
-  return appImport
+    return pending
+  }
 }
 
-interface LazyApp {
-  App: AppComponent | null
+const loadApp = lazyModule<AppComponent>(() => import('./app').then((module) => module.App))
+
+const loadAdminPage = lazyModule<AdminComponent>(() =>
+  import('./pages/AdminPage').then((module) => module.AdminPage),
+)
+
+interface LazyModule<T> {
+  module: T | null
   error: string | null
   retry: () => void
 }
 
-function useLazyApp(enabled: boolean): LazyApp {
-  const [App, setApp] = useState<AppComponent | null>(null)
+function useLazyModule<T>(
+  load: () => Promise<T>,
+  enabled: boolean,
+  errorMessage: string,
+): LazyModule<T> {
+  const [module, setModule] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    if (!enabled || App) return
+    if (!enabled || module) return
     let cancelled = false
     setError(null)
 
-    void loadApp()
+    void load()
       .then((loaded) => {
-        if (!cancelled) setApp(() => loaded)
+        if (!cancelled) setModule(() => loaded)
       })
       .catch(() => {
         if (cancelled) return
-        setError('Non riesco a scaricare la lista. Controlla la connessione e riprova.')
+        setError(errorMessage)
       })
 
     return () => {
       cancelled = true
     }
-  }, [enabled, App, attempt])
+  }, [enabled, module, attempt, load, errorMessage])
 
-  return { App, error, retry: () => setAttempt((value) => value + 1) }
+  return { module, error, retry: () => setAttempt((value) => value + 1) }
 }
 
 interface FamilyErrorPageProps {
@@ -219,9 +238,23 @@ export function Root() {
   const [familyError, setFamilyError] = useState<string | null>(null)
   const [familyAttempt, setFamilyAttempt] = useState(0)
   const loggingOut = useRef(false)
-  const lazyApp = useLazyApp(auth.status === 'authenticated')
+  const lazyApp = useLazyModule(
+    loadApp,
+    auth.status === 'authenticated',
+    'Non riesco a scaricare la lista. Controlla la connessione e riprova.',
+  )
+  const adminRoute = route === 'admin'
+  const lazyAdmin = useLazyModule(
+    loadAdminPage,
+    adminRoute && auth.status === 'authenticated',
+    'Non riesco a scaricare il pannello. Controlla la connessione e riprova.',
+  )
 
-  useDocumentMeta(metaFor(route))
+  // Chi non è autenticato e apre `/admin` vede la 404: anche titolo e metadati
+  // devono essere quelli della 404, così la pagina non si annuncia.
+  const documentRoute: AppRoute = adminRoute && auth.status === 'anonymous' ? 'not-found' : route
+
+  useDocumentMeta(metaFor(documentRoute))
 
   useEffect(() => subscribeSystemColorScheme(refreshThemeColor), [])
 
@@ -379,7 +412,7 @@ export function Root() {
         />
       )
     }
-    const App = lazyApp.App
+    const App = lazyApp.module
     if (!App || familyReadyFor !== auth.user?.id) return <LoadingPage label="Carico la lista…" />
     return (
       <App
@@ -394,6 +427,31 @@ export function Root() {
         onDeleteAccount={handleDeleteAccount}
       />
     )
+  }
+
+  if (route === 'admin') {
+    // Chi non è autenticato non deve nemmeno sapere che `/admin` esiste: stessa
+    // 404 della landing, senza redirect al login.
+    if (auth.status !== 'authenticated') return <NotFoundPage />
+    if (lazyAdmin.error) {
+      return (
+        <div class="auth-page">
+          <main class="auth-card" aria-labelledby="admin-load-error-title">
+            <p class="landing__eyebrow">Pannello admin</p>
+            <h1 id="admin-load-error-title">Non riesco ad aprire il pannello</h1>
+            <p class="alert" role="alert">
+              {lazyAdmin.error}
+            </p>
+            <button class="button button--primary" type="button" onClick={lazyAdmin.retry}>
+              Riprova
+            </button>
+          </main>
+        </div>
+      )
+    }
+    const AdminPage = lazyAdmin.module
+    if (!AdminPage) return <LoadingPage label="Carico il pannello…" />
+    return <AdminPage />
   }
 
   return <NotFoundPage />

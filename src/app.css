@@ -3170,3 +3170,122 @@ code {
   opacity: 1;
   transform: scale(1);
 }
+
+/* ---------- Pannello admin (/admin) ---------- */
+/* Sola lettura, aggregati. Stili locali a questa pagina: condividono variabili,
+   raggi e tipografia del resto dell'app, nessun componente nuovo. */
+
+.admin-page {
+  min-height: 100dvh;
+  padding: 1.25rem 1rem 2.5rem;
+  background: var(--bg);
+}
+
+.admin {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+.admin__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin__head h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.admin__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin__grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .admin__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-card--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-card h2 {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.admin-card .button {
+  align-self: flex-start;
+}
+
+.admin-card__value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.admin-card__value--mono {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.admin-counts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+}
+
+.admin-counts__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.admin-counts__row:last-child {
+  border-bottom: 0;
+}
+
+.admin-counts dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.admin-counts dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
