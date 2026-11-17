@@ -270,9 +270,44 @@ Lo script fa upsert in ordine di dipendenza e stampa i conteggi per tabella. Il 
 
 - **`auth.users` non è nell'export**: lo schema `auth` non è percorribile via REST, nemmeno con `service_role`. Dopo un restore reale vanno ricreati gli account Auth con gli stessi id (admin API) e fatta ripartire la password con l'email di reset.
 - `rate_limits` non è nell'export: è contatore runtime, non dato.
+- `admins` non è nell'export: l'assegnazione dell'admin è manuale e va rifatta a mano dopo un restore (vedi "Pannello admin" qui sotto).
 - Le email dei membri ci sono (per il restore), ma nel normale uso l'app non mostra mai email altrimenti.
 
 Il cron di produzione (deploy della function, secret, upload settimanale, monitoraggio) è un'azione umana descritta in [SECURITY.md](SECURITY.md) → "Backup ed export" e in [ROADMAP.md](ROADMAP.md) → Fase 3. Mai `service_role` sul Pi: chiama solo la function col token.
+
+### Pannello admin (fetta 1, sola lettura)
+
+Il pannello è "vanilla": una tabella `admins`, due RPC `security definer` e nessun servizio esterno. La fetta 1 espone solo aggregati a chi è admin; la rotta `/admin` arriva con il task frontend separato.
+
+- `admins (user_id, created_at)`: RLS attiva, nessuna policy, `revoke all` ad `anon` e `authenticated`. Le righe le inserisce solo chi ha accesso al database, quindi con SQL editor o CLI, anche in produzione. Un admin non può nominare altri admin dall'app.
+- `is_admin()`: `security definer`, `stable`, `search_path = ''`, eseguibile dai soli `authenticated`. Risponde solo sul chiamante, mai l'elenco.
+- `admin_overview()`: `security definer`, restituisce un `jsonb` con timestamp di generazione, ultima migrazione applicata, ultimo ping `keepalive` e conteggi aggregati (famiglie, membri, articoli in lista e nello storico, subscription push, inviti attivi/usati/scaduti, righe `rate_limits`). Nessun nome, nota o email. Chi non è admin riceve `42501` e nessun dato.
+
+Per assegnare l'admin in locale, dopo `npm run db:reset`:
+
+```bash
+docker exec -i supabase_db_spesa psql -U postgres -d postgres -c \
+  "insert into public.admins (user_id) select id from auth.users where email = 'demo@spesa.test'"
+```
+
+Per leggere gli aggregati fingendo una sessione autenticata:
+
+```bash
+docker exec -i supabase_db_spesa psql -U postgres -d postgres <<'SQL'
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', (select id from auth.users where email = 'demo@spesa.test'), 'role', 'authenticated')::text,
+  false
+);
+set role authenticated;
+select public.is_admin();
+select jsonb_pretty(public.admin_overview());
+SQL
+```
+
+`npx supabase test db` copre i tre casi: `anon` senza accesso, utente normale senza aggregati e admin con conteggi corretti (`supabase/tests/admin_panel.test.sql`).
+
+Limiti dichiarati: `admins` non è nell'export (dopo un restore va reinserita a mano); non c'è un rate limit dedicato sulle RPC admin, che sono in sola lettura e richiedono comunque una riga in `admins`; non esiste una UI per nominare admin.
 
 ### SEO, Open Graph e sitemap
 

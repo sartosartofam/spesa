@@ -3,6 +3,22 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       families: {
         Row: {
           created_at: string
@@ -267,6 +283,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_overview: { Args: Record<PropertyKey, never>; Returns: Json }
       consume_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
@@ -281,6 +298,7 @@ export type Database = {
       current_family_id: { Args: Record<PropertyKey, never>; Returns: string }
       delete_current_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       ensure_current_family: { Args: Record<PropertyKey, never>; Returns: string }
+      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
       leave_family: {
         Args: { p_family_id: string }
         Returns: {
