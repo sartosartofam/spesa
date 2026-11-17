@@ -441,16 +441,16 @@ Le major si affrontano una alla volta, mai insieme a un task funzionale.
 
 La build viene misurata, non solo stampata: un plugin in `vite.config.ts` (`bundle-budget`) somma il peso gzip dei file JS e CSS e **fa fallire `npm run build`** se supera i limiti di `src/lib/bundle-budget.ts`. Poiché `npm run verify` finisce con la build, la regressione rompe la CI.
 
-Stato al 15 novembre 2026 (`npm run build`):
+Stato al 17 novembre 2026 (`npm run build`):
 
 | Voce | Prima del lazy-load | Con lazy-load |
 | --- | --- | --- |
-| JS iniziale dalla landing | 358.77 kB · 96.1 kB gzip | 318.00 kB · **87.03 kB gzip** |
-| Chunk app caricato entrando nell'area riservata | incluso nel JS iniziale | 44.24 kB · 13.93 kB gzip |
-| Totale JS dopo aver aperto l'app | 358.77 kB · 96.1 kB gzip | 362.24 kB · 100.96 kB gzip |
+| JS iniziale dalla landing | 358.77 kB · 96.1 kB gzip | 320.62 kB · **87.65 kB gzip** |
+| Chunk app caricato entrando nell'area riservata | incluso nel JS iniziale | 42.67 kB · 13.34 kB gzip |
+| Totale JS dopo aver aperto l'app | 358.77 kB · 96.1 kB gzip | 363.29 kB · 100.99 kB gzip |
 | CSS | 46.95 kB · 9.19 kB gzip | invariato |
 
-Il guadagno sulla landing è di circa **9 kB gzip**; il chunk dell'app viene
+Il guadagno sulla landing è di circa **8.5 kB gzip**; il chunk dell'app viene
 scaricato solo entrando nell'area riservata. Il totale dopo aver aperto l'app
 cresce di circa 4.9 kB gzip perché i chunk separati hanno un piccolo overhead
 di compressione. Il chunk Supabase resta separato e invariato (225.35 kB ·
