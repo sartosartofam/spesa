@@ -6,6 +6,7 @@ export type AppRoute =
   | 'reset-password'
   | 'privacy'
   | 'app'
+  | 'admin'
   | 'not-found'
 
 /**
@@ -15,6 +16,7 @@ export type AppRoute =
  * History API. `/app` e i suoi sottopercorsi sono privati; `/` è la landing
  * pubblica indicizzabile, `/login` e `/register` sono le pagine di autenticazione.
  * `/forgot-password` e `/reset-password` completano il recupero password.
+ * `/admin` è la pagina riservata all'admin: privata, `noindex` e non linkata.
  */
 export function routeFromPath(pathname: string): AppRoute {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
@@ -26,12 +28,13 @@ export function routeFromPath(pathname: string): AppRoute {
   if (path === '/reset-password') return 'reset-password'
   if (path === '/privacy') return 'privacy'
   if (path === '/app' || path.startsWith('/app/')) return 'app'
+  if (path === '/admin' || path.startsWith('/admin/')) return 'admin'
   return 'not-found'
 }
 
 /** True per le viste che richiedono una sessione autenticata. */
 export function isPrivateRoute(route: AppRoute): boolean {
-  return route === 'app'
+  return route === 'app' || route === 'admin'
 }
 
 /** Naviga lato client e notifica gli hook che ascoltano `popstate`. */

@@ -36,6 +36,13 @@ describe('routeFromPath', () => {
     expect(routeFromPath('/app/impostazioni/negozi')).toBe('app')
   })
 
+  it('riconosce la pagina admin, che resta fuori dalla navigazione', () => {
+    expect(routeFromPath('/admin')).toBe('admin')
+    expect(routeFromPath('/admin/')).toBe('admin')
+    expect(routeFromPath('/admin/salute')).toBe('admin')
+    expect(routeFromPath('/administrator')).toBe('not-found')
+  })
+
   it('marca i path sconosciuti come not-found', () => {
     expect(routeFromPath('/qualcosa')).toBe('not-found')
     expect(routeFromPath('/login-extra')).toBe('not-found')
@@ -43,8 +50,9 @@ describe('routeFromPath', () => {
 })
 
 describe('isPrivateRoute', () => {
-  it('considera privata solo l’area app', () => {
+  it('considera private l’area app e il pannello admin', () => {
     expect(isPrivateRoute('app')).toBe(true)
+    expect(isPrivateRoute('admin')).toBe(true)
     expect(isPrivateRoute('landing')).toBe(false)
     expect(isPrivateRoute('login')).toBe(false)
     expect(isPrivateRoute('register')).toBe(false)
