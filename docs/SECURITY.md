@@ -141,6 +141,23 @@ Il Web Push è **spento per scelta** (decisione 3 novembre 2026): senza `VITE_VA
 - [ ] Provare l'opt-in e la consegna da almeno due dispositivi reali, incluso un iPhone con la PWA installata.
 - [ ] Verificare che una subscription revocata non riceva più notifiche.
 
+### Pannello admin
+
+Fetta 1 (issue #109): monitoraggio in sola lettura, senza servizi esterni.
+
+Cosa è già nel codice:
+
+- [x] Tabella `admins (user_id)` con RLS attiva, nessuna policy e `revoke all` ad `anon`/`authenticated`: le righe si inseriscono solo con SQL/CLI, mai dal client.
+- [x] `is_admin()` `security definer`, `stable`, `search_path = ''`, eseguibile dai soli `authenticated`, espone solo un booleano sul chiamante.
+- [x] `admin_overview()` `security definer` che restituisce solo aggregati e timestamp; chi non è admin riceve `42501`. Nessun nome, nota, email o chiave push nel payload.
+- [x] Test pgTAP per `anon`, utente normale e admin (`supabase/tests/admin_panel.test.sql`).
+
+Da fare quando il pannello arriva in produzione:
+
+- [ ] Assegnare l'admin a mano con SQL/CLI (`insert into public.admins ...`) e ricordare che dopo un restore la riga va reinserita: `admins` non è nell'export.
+- [ ] Verificare con un utente non admin che `/admin` non riveli l'esistenza del pannello (rotta `noindex`, non linkata, `NotFoundPage` per chi non è admin) e che la RPC risponda `42501`.
+- [ ] Ruotare l'elenco degli admin quando un account cambia titolare: la riga sparisce da sola solo se l'utente viene cancellato (`on delete cascade`).
+
 ### Segnalazioni e incidenti
 
 - [ ] Aprire un canale di segnalazione sicurezza (anche solo un indirizzo email) e indicarlo nel repository.

@@ -11,13 +11,13 @@ Stato al 17 novembre 2026: fase 1 implementata e verificata in locale su `dev`; 
 | Area | Cosa c'è |
 | --- | --- |
 | Database | enum `item_status` (`to_buy`/`bought`), tabelle `families`, `members`, `items`, `push_subscriptions`, `family_invites`, `user_settings`, `rate_limits`, `keepalive`; indici, trigger `updated_at`/`bought_at`, `replica identity full` su `items` per i DELETE realtime |
-| RLS | RLS su tutte le tabelle, policy per famiglia, push e impostazioni self-only; inviti accessibili solo via RPC; `rate_limits` invisibile ai ruoli API. 287 asserzioni pgTAP |
+| RLS | RLS su tutte le tabelle, policy per famiglia, push e impostazioni self-only; inviti accessibili solo via RPC; `rate_limits` invisibile ai ruoli API; pannello admin in sola lettura (`admins`, `is_admin()`, `admin_overview()`). 317 asserzioni pgTAP |
 | Auth | email + password, registrazione pubblica con conferma, recupero password, famiglia personale al primo accesso (`ensure_current_family`), inviti monouso con codice hashato, uscita e cambio famiglia con successione dell'owner |
 | Dati | repository mock e Supabase dietro la stessa interfaccia, realtime su `items`, merge amichevole dei duplicati lato client + vincolo unique lato database |
 | Urgenza e push | flag `urgent` con priorità in lista; Edge Function `send-push` completa ma **spenta** (manca `VITE_VAPID_PUBLIC_KEY`), con rate limit 12 richieste/minuto per utente |
 | PWA | manifest, icone, service worker (network-first sulle navigazioni, cache-first sugli asset), ultima lista in lettura offline, banner offline, nessuna coda di scrittura |
 | Backup | Edge Function `export` con token dedicato e script di restore locale; restore di prova riuscito su tutte le tabelle esportate |
-| Test | 233 unit, 55 e2e mock (in CI), 6 e2e backend contro Supabase locale, 287 asserzioni pgTAP |
+| Test | 233 unit, 55 e2e mock (in CI), 6 e2e backend contro Supabase locale, 317 asserzioni pgTAP |
 
 ## Fase 2 — Rifiniture (completata, salvo backlog)
 
@@ -63,7 +63,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 
 ## Backlog (idee, non impegni)
 
-- **Pannello di controllo admin** (idea in lavorazione, bozza in issue #109): prima fetta di sola lettura su keepalive, conteggi aggregati e ultima migrazione, con una tabella `admins` popolata a mano dall'umano; i feature flag per spegnere una feature durante i test restano da decidere. Tutto "vanilla": Postgres, RPC `security definer` e UI Preact esistenti, nessun servizio esterno. La issue raccoglie vincoli di sicurezza e domande ancora aperte: chi vuole lavorarci parte da lì.
+- **Pannello di controllo admin** (issue #109): la fetta 1 lato dati è fatta — tabella `admins` popolata a mano, `is_admin()` e `admin_overview()` in sola lettura con test pgTAP. Resta la pagina `/admin` (rotta `noindex`, chunk lazy, `NotFoundPage` per chi non è admin), da fare in un branch `feat/frontend-*`. I feature flag per spegnere una feature durante i test restano da decidere. Tutto "vanilla": Postgres, RPC `security definer` e UI Preact esistenti, nessun servizio esterno.
 - Fase 2 del prodotto: faccende domestiche.
 - Magic link al posto (o in aggiunta) di email + password (ADR-0002).
 - Multi-famiglia per utente (oggi un utente = una famiglia, con cambio via invito).
