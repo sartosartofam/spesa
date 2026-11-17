@@ -2,7 +2,7 @@
 
 Webapp familiare per la lista della spesa condivisa, mobile-first e installabile come PWA.
 
-**Stato al 14 novembre 2026.** Fase 1 (lista della spesa) implementata e verificata in locale su `dev`: schema, RLS, auth, inviti, realtime, PWA, export. Backend Supabase cloud e progetto Vercel configurati. Non ancora attivi in produzione: keepalive, backup automatico e la prima promozione su `main`, che è ancora fermo all'initial commit.
+**Stato.** Fase 1 (lista della spesa) implementata e verificata in locale su `dev`: schema, RLS, auth, inviti, realtime, PWA, export. Backend Supabase cloud e progetto Vercel configurati. Non ancora attivi in produzione: keepalive, backup automatico e la prima promozione su `main`, che è ancora fermo all'initial commit.
 
 Cosa manca e in che ordine: [docs/ROADMAP.md](docs/ROADMAP.md) → Fase 3. Bloccanti di sicurezza: [docs/SECURITY.md](docs/SECURITY.md).
 
@@ -33,7 +33,7 @@ Cosa manca e in che ordine: [docs/ROADMAP.md](docs/ROADMAP.md) → Fase 3. Blocc
 ├── e2e/                         # Playwright con dati mock (gira in CI)
 ├── e2e-backend/                 # Playwright contro lo stack Supabase locale
 ├── scripts/                     # dev, database, seed, doctor, backup, keepalive
-├── docs/                        # ROADMAP, DECISIONS, SETUP, SECURITY
+├── docs/                        # ROADMAP, DECISIONS, SETUP, SECURITY + archivio storico
 └── .github/workflows/           # ci.yml, keepalive.yml
 ```
 

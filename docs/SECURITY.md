@@ -2,8 +2,6 @@
 
 Cosa è già protetto nel codice e cosa resta da fare **prima del go-live**. Le azioni marcate come umane richiedono accesso a Supabase Cloud, Vercel o GitHub e non vanno eseguite dagli agenti.
 
-Ultimo aggiornamento: 14 novembre 2026.
-
 **Stato attuale.** Progetto Supabase cloud e progetto Vercel configurati. Non ancora attivi: keepalive (il progetto è in pausa, nessun ping in funzione), backup automatico, branch protection e deploy di produzione (`main` è fermo all'initial commit). La sequenza delle azioni è in `docs/ROADMAP.md` → Fase 3.
 
 ## Cosa è già nel repository
@@ -11,6 +9,7 @@ Ultimo aggiornamento: 14 novembre 2026.
 - RLS attiva su tutte le tabelle `public`; le policy filtrano per `family_id` o per il membro corrente.
 - `family_invites` non è leggibile né scrivibile direttamente dai ruoli API: creazione e riscatto passano solo dalle RPC `security definer`.
 - Le funzioni `security definer` hanno `search_path = ''` e privilegi limitati.
+- Pannello admin in sola lettura: `admins` con RLS attiva, nessuna policy e nessun grant ad `anon`/`authenticated`; `is_admin()` e `admin_overview()` espongono solo un booleano sul chiamante e aggregati senza dati personali. La pagina `/admin` è `noindex`, non linkata e mostra solo numeri (dettagli nella sezione "Pannello admin").
 - `members.email` non è esposta al client; l'email serve solo per inviti e deduplica interna.
 - I codici invito sono token bearer da 128 bit. Nel database resta solo lo SHA-256 (`family_invites.code_hash`), mai il codice in chiaro.
 - Al massimo 10 inviti attivi per famiglia; la creazione è serializzata con un advisory lock.
