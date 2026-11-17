@@ -17,7 +17,7 @@ Stato al 17 novembre 2026: fase 1 implementata e verificata in locale su `dev`; 
 | Urgenza e push | flag `urgent` con priorità in lista; Edge Function `send-push` completa ma **spenta** (manca `VITE_VAPID_PUBLIC_KEY`), con rate limit 12 richieste/minuto per utente |
 | PWA | manifest, icone, service worker (network-first sulle navigazioni, cache-first sugli asset), ultima lista in lettura offline, banner offline, nessuna coda di scrittura |
 | Backup | Edge Function `export` con token dedicato e script di restore locale; restore di prova riuscito su tutte le tabelle esportate |
-| Test | 233 unit, 55 e2e mock (in CI), 6 e2e backend contro Supabase locale, 317 asserzioni pgTAP |
+| Test | 258 unit, 57 e2e mock (in CI), 6 e2e backend contro Supabase locale, 317 asserzioni pgTAP |
 
 ## Fase 2 — Rifiniture (completata, salvo backlog)
 
@@ -63,7 +63,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 
 ## Backlog (idee, non impegni)
 
-- **Pannello di controllo admin** (issue #109): la fetta 1 lato dati è fatta — tabella `admins` popolata a mano, `is_admin()` e `admin_overview()` in sola lettura con test pgTAP. Resta la pagina `/admin` (rotta `noindex`, chunk lazy, `NotFoundPage` per chi non è admin), da fare in un branch `feat/frontend-*`. I feature flag per spegnere una feature durante i test restano da decidere. Tutto "vanilla": Postgres, RPC `security definer` e UI Preact esistenti, nessun servizio esterno.
+- **Pannello di controllo admin** (issue #109): la fetta 1 è completa — dati (`admins` popolata a mano, `is_admin()` e `admin_overview()` in sola lettura con test pgTAP) e pagina `/admin` (rotta `noindex`, chunk lazy, `NotFoundPage` per chi non è admin, solo aggregati, aggiornamento manuale). Restano da decidere i feature flag per spegnere una feature durante i test (fetta 2, che richiede tabella dedicata, hook client e audit log) e, solo se servirà, una UI per nominare admin, che oggi è una riga SQL. Tutto "vanilla": Postgres, RPC `security definer` e UI Preact esistenti, nessun servizio esterno.
 - Fase 2 del prodotto: faccende domestiche.
 - Magic link al posto (o in aggiunta) di email + password (ADR-0002).
 - Multi-famiglia per utente (oggi un utente = una famiglia, con cambio via invito).
