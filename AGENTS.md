@@ -10,12 +10,12 @@ Webapp familiare per la lista della spesa condivisa (fase 1: solo spesa; fase 2:
 - Backend/DB/Auth: Supabase (Postgres + Auth + REST + Realtime + RLS).
 - Hosting: Vercel, deploy automatico da `main`; preview per le PR.
 - Codebase: GitHub.
-- Keepalive: due ping giornalieri indipendenti (Raspberry Pi + GitHub Actions).
+- Keepalive: due ping indipendenti (Raspberry Pi lun/mer/ven + GitHub Actions giornaliero).
 - Backup: export settimanale su Cloudflare R2 / Backblaze B2 (ADR-0003).
 
-Stato: la fase 1 è implementata e verificata in locale su `dev`; Supabase cloud e Vercel sono configurati; keepalive, backup e prima promozione su `main` non sono ancora attivi. Lo stato corrente sta solo in `docs/ROADMAP.md`: non duplicarlo altrove.
+Stato: la fase 1 è implementata e verificata in locale su `dev`; Supabase cloud e Vercel sono configurati; schema applicativo nel cloud, keepalive, backup e prima promozione su `main` non sono ancora attivi. Lo stato corrente sta solo in `docs/ROADMAP.md`: non duplicarlo altrove.
 
-Nota: il workflow `keepalive` può risultare rosso perché il progetto Supabase è in pausa (nessun ping attivo). Non è un incidente da indagare e non richiede un task.
+Nota: il workflow `keepalive` può risultare rosso perché lo schema non è ancora applicato al cloud (`404`, `PGRST205`). Non è un incidente da indagare e non richiede un task.
 
 Leggere anche `docs/DECISIONS.md` (decisioni vincolanti) e `docs/ROADMAP.md` (stato e prossimi task).
 

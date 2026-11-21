@@ -61,6 +61,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 - **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.
 - **`npm run test:e2e:backend` non gira in CI**: va lanciato a mano quando cambia il livello dati.
 - **Keepalive rosso ogni notte** finché lo schema non è applicato al cloud (`404`, `PGRST205`): sintomo atteso, non un incidente.
+- **`keepalive.last_ping` non si muove**: la colonna ha solo `default now()` e il ping è una `SELECT`, quindi resta al timestamp di inserimento e `/admin` mostra un'età che cresce anche quando i ping funzionano. Fix da decidere: RPC `security definer` che aggiorna il timestamp (con migrazione e test pgTAP) oppure ripensare il significato della colonna.
 
 ## Backlog (idee, non impegni)
 
