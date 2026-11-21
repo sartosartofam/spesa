@@ -439,6 +439,25 @@ Il repository mock propaga l'errore di `localStorage.setItem` (storage pieno o b
 
 A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con `npm run db:stop`.
 
+### Rate limit sulle aggiunte
+
+Le aggiunte di articoli sono limitate a **30 al minuto per utente**. Il limite è un trigger `before insert` su `items` (`20261121090000_items_add_rate_limit.sql`) che riusa `consume_rate_limit()` e la tabella `rate_limits`: chiave `items-add:<user_id>`, finestra di 60 secondi. Oltre la soglia il database alza un'eccezione con SQLSTATE `PT429`, che PostgREST traduce in HTTP 429; `toDataError()` la mappa in «Hai fatto troppe aggiunte in poco tempo. Riprova tra poco.», quindi il dialog resta aperto con il testo conservato.
+
+Cosa non è limitato, per scelta:
+
+- **modifiche e cambio di stato**: il merge dei duplicati passa da un `update`, quindi unire un articolo esistente non consuma budget;
+- **seed, restore e `service_role`**: senza un `sub` nel JWT (`auth.uid()` nullo) il trigger lascia passare, così un ripristino non può essere bloccato da un contatore runtime;
+- i tentativi respinti non consumano budget: l'eccezione fa rollback dell'incremento, quindi il contatore resta alla soglia finché la finestra non scade.
+
+Per provarlo in locale serve una sessione autenticata: dopo `npm run db:reset` e `npm run dev:web`, aggiungi articoli dall'app; alla trentunesima aggiunta entro un minuto compare l'errore. Per riprovare subito senza aspettare la finestra:
+
+```bash
+docker exec -i supabase_db_spesa psql -U postgres -d postgres \
+  -c "delete from public.rate_limits where key like 'items-add:%'"
+```
+
+Test: `supabase/tests/items_add_rate_limit.test.sql` (le prime 30 passano, la trentunesima risponde `PT429`, un secondo utente non è penalizzato, senza JWT nessun limite, `rate_limits` resta illeggibile ai ruoli API).
+
 ### Worktree paralleli
 
 `supabase start` usa `project_id = "spesa"` e porte fisse (54321, 54322, 54323, 54324). Due worktree non possono girare insieme con la stessa configurazione: il secondo fallisce per conflitto di porte.

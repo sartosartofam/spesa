@@ -10,6 +10,7 @@ Cosa è già protetto nel codice e cosa resta da fare **prima del go-live**. Le 
 - `family_invites` non è leggibile né scrivibile direttamente dai ruoli API: creazione e riscatto passano solo dalle RPC `security definer`.
 - Le funzioni `security definer` hanno `search_path = ''` e privilegi limitati.
 - Pannello admin in sola lettura: `admins` con RLS attiva, nessuna policy e nessun grant ad `anon`/`authenticated`; `is_admin()` e `admin_overview()` espongono solo un booleano sul chiamante e aggregati senza dati personali. La pagina `/admin` è `noindex`, non linkata e mostra solo numeri (dettagli nella sezione "Pannello admin").
+- Le aggiunte di articoli sono limitate a 30 al minuto per utente: trigger `security definer` su `items` che risponde `PT429` oltre la soglia, con il contatore in `rate_limits` (invisibile ai ruoli API). Le modifiche non consumano budget; seed, restore e `service_role` restano esenti.
 - `members.email` non è esposta al client; l'email serve solo per inviti e deduplica interna.
 - I codici invito sono token bearer da 128 bit. Nel database resta solo lo SHA-256 (`family_invites.code_hash`), mai il codice in chiaro.
 - Al massimo 10 inviti attivi per famiglia; la creazione è serializzata con un advisory lock.
