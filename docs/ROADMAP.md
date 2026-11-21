@@ -43,7 +43,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 
 1. [x] **Riattivare il progetto Supabase.** Il progetto risponde di nuovo: DNS e API attivi.
 2. [ ] **Applicare le migrazioni al cloud.** Oggi nessuna delle 19 migrazioni risulta applicata: ogni tabella risponde `PGRST205` (schema cache vuota), `keepalive` compresa. Senza schema non funzionano né l'app né i due ping. Il flusso di release si sceglie in `docs/SECURITY.md` → "Supabase Cloud"; il push lo esegue l'umano, non un agente.
-3. [ ] **Aggiornare i secret del keepalive** con il ref attuale del progetto: i secret `SUPABASE_URL`/`SUPABASE_ANON_KEY` su GitHub puntano ancora al progetto vecchio.
+3. [ ] **Verificare i secret del keepalive** contro il ref attuale del progetto: se il progetto è stato ricreato, `SUPABASE_URL`/`SUPABASE_ANON_KEY` su GitHub puntano ancora a quello vecchio.
 4. [ ] **Attivare il keepalive.** Il cron sul Raspberry Pi è configurato e validato a meno della risposta HTTP (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`); mancano il workflow GitHub Actions e il primo ping verde, che dipende dal punto 2. Due ping indipendenti, così il progetto non si risospende.
 5. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti.
 6. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
