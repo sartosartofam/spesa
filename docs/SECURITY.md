@@ -76,7 +76,8 @@ where table_schema = 'public'
 - [ ] Verificare che `SUPABASE_URL` e `SUPABASE_ANON_KEY` nei repository secrets puntino al progetto reale: i valori attuali fanno fallire il ping con `Could not resolve host`.
 - [ ] Avviare il cron sul Raspberry Pi (`scripts/keepalive/ping.sh`) e il workflow GitHub Actions: due ping indipendenti, così il guasto di uno non spegne il progetto.
 - [ ] Controllare il primo ping verde e poi una volta a settimana che il workflow resti verde.
-- [ ] Mai `service_role` sul Pi né in Actions: il ping usa solo la chiave pubblica.
+- [ ] Controllare che `last_ping` avanzi: il ping del Pi chiama la RPC `ping_keepalive()`, eseguibile solo da `anon`, che registra il battito (al massimo una volta al minuto) e restituisce il valore. Se il campo resta fermo mentre il workflow è verde, il cron del Pi non sta girando; il pannello admin mostra lo stesso dato come `keepaliveLastPing`.
+- [ ] Mai `service_role` sul Pi né in Actions: il ping usa solo la chiave pubblica. `anon` non ha `update` su `keepalive`: l'unico modo per scrivere `last_ping` è la RPC, che tocca una colonna di una riga.
 
 Nota: finché il progetto è in pausa e i ping non sono attivi, il workflow `keepalive` risulta rosso ogni notte. È il sintomo atteso, non un incidente da indagare.
 

@@ -62,7 +62,8 @@ select is(
         'restore_item',
         'delete_current_account',
         'is_admin',
-        'admin_overview'
+        'admin_overview',
+        'ping_keepalive'
       )
       and (
         has_function_privilege('anon', p.oid, 'execute')
