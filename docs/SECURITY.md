@@ -78,7 +78,7 @@ where table_schema = 'public'
 - [ ] Controllare il primo ping verde (cron e workflow) e poi una volta a settimana che il workflow resti verde.
 - [ ] Mai `service_role` sul Pi né in Actions: il ping usa solo la chiave pubblica.
 
-Nota: finché lo schema non è applicato al cloud, sia il cron del Pi sia il workflow `keepalive` falliscono con `404` (`PGRST205`). È il sintomo atteso, non un incidente da indagare.
+Nota: finché lo schema non è applicato al cloud, sia il cron del Pi sia il workflow `keepalive` falliscono con `404` (`PGRST205`). È il sintomo atteso, non un incidente da indagare. Inoltre GitHub disattiva i workflow schedulati dopo 60 giorni senza attività del repository (su repository pubblici): in un periodo di fermo il cron del Pi resta l'unico dei due ping che continua a girare.
 
 ### Privacy e dati personali
 
