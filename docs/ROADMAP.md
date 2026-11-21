@@ -41,25 +41,26 @@ Aperto in fase 2:
 
 Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la sequenza.
 
-1. [ ] **Riattivare il progetto Supabase.** È in pausa: il piano free sospende dopo ~7 giorni di inattività e un progetto in pausa non risolve più il DNS. Si riattiva dal dashboard.
-2. [ ] **Aggiornare i secret del keepalive** con il ref attuale del progetto: i secret `SUPABASE_URL`/`SUPABASE_ANON_KEY` puntano a un progetto che non risolve più.
-3. [ ] **Attivare il keepalive**: cron sul Raspberry Pi (`scripts/keepalive/ping.sh`) e workflow GitHub Actions. Due ping indipendenti, così il progetto non si risospende.
-4. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti.
-5. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
-6. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
-7. [ ] **Vercel**: variabili pubbliche reali, Node 24, dominio definitivo e `VITE_SITE_URL`, conferma email e SMTP provati con un indirizzo vero, preview verificato.
-8. [ ] **Job CI per gli e2e backend** (blocco pronto in `docs/SETUP.md` → "E2e con backend reale").
-9. [ ] **Politica password a 8 caratteri con composizione**: oggi il locale richiede 12 caratteri senza requisiti. Prima del go-live si passa a `minimum_password_length = 8` e `password_requirements = lower_upper_letters_digits_symbols`, allineando `supabase/config.toml`, i messaggi in `src/lib/auth.ts` e nelle pagine di registrazione/reset, le password demo di seed ed e2e e i test. Dettaglio in `docs/SECURITY.md` → "Supabase Cloud".
-10. [ ] **Promozione `dev` → `main`**: sarà il primo deploy in assoluto, `main` è ancora fermo all'initial commit. Solo dopo i punti precedenti.
+1. [x] **Riattivare il progetto Supabase.** Il progetto risponde di nuovo: DNS e API attivi.
+2. [ ] **Applicare le migrazioni al cloud.** Oggi nessuna delle 19 migrazioni risulta applicata: ogni tabella risponde `PGRST205` (schema cache vuota), `keepalive` compresa. Senza schema non funzionano né l'app né i due ping. Il flusso di release si sceglie in `docs/SECURITY.md` → "Supabase Cloud"; il push lo esegue l'umano, non un agente.
+3. [ ] **Aggiornare i secret del keepalive** con il ref attuale del progetto: i secret `SUPABASE_URL`/`SUPABASE_ANON_KEY` su GitHub puntano ancora al progetto vecchio.
+4. [ ] **Attivare il keepalive.** Il cron sul Raspberry Pi è configurato e validato a meno della risposta HTTP (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`); mancano il workflow GitHub Actions e il primo ping verde, che dipende dal punto 2. Due ping indipendenti, così il progetto non si risospende.
+5. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti.
+6. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
+7. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
+8. [ ] **Vercel**: variabili pubbliche reali, Node 24, dominio definitivo e `VITE_SITE_URL`, conferma email e SMTP provati con un indirizzo vero, preview verificato.
+9. [ ] **Job CI per gli e2e backend** (blocco pronto in `docs/SETUP.md` → "E2e con backend reale").
+10. [ ] **Politica password a 8 caratteri con composizione**: oggi il locale richiede 12 caratteri senza requisiti. Prima del go-live si passa a `minimum_password_length = 8` e `password_requirements = lower_upper_letters_digits_symbols`, allineando `supabase/config.toml`, i messaggi in `src/lib/auth.ts` e nelle pagine di registrazione/reset, le password demo di seed ed e2e e i test. Dettaglio in `docs/SECURITY.md` → "Supabase Cloud".
+11. [ ] **Promozione `dev` → `main`**: sarà il primo deploy in assoluto, `main` è ancora fermo all'initial commit. Solo dopo i punti precedenti.
 
 ## Debito noto e scelte rinviate
 
-- **Politica password rinviata alla Fase 3**: nel locale restano 12 caratteri senza composizione per non rompere seed, utenti demo e test; prima del go-live si scende a 8 con requisiti di composizione (punto 9 della Fase 3).
+- **Politica password rinviata alla Fase 3**: nel locale restano 12 caratteri senza composizione per non rompere seed, utenti demo e test; prima del go-live si scende a 8 con requisiti di composizione (punto 10 della Fase 3).
 - **Web Push spento per scelta** (decisione 3 novembre 2026): il codice resta feature-gated e silenzioso; le chiavi VAPID non vengono generate finché non serve.
 - **`main` mai deployato**: la prima promozione va trattata come un rilascio, non come un merge di routine.
 - **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.
 - **`npm run test:e2e:backend` non gira in CI**: va lanciato a mano quando cambia il livello dati.
-- **Keepalive rosso ogni notte** finché il progetto è in pausa e i ping non sono attivi: sintomo atteso, non un incidente.
+- **Keepalive rosso ogni notte** finché lo schema non è applicato al cloud (`404`, `PGRST205`): sintomo atteso, non un incidente.
 
 ## Backlog (idee, non impegni)
 
