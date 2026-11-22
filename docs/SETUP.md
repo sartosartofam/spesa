@@ -271,7 +271,28 @@ Lo script fa upsert in ordine di dipendenza e stampa i conteggi per tabella. Il 
 - **`auth.users` non è nell'export**: lo schema `auth` non è percorribile via REST, nemmeno con `service_role`. Dopo un restore reale vanno ricreati gli account Auth con gli stessi id (admin API) e fatta ripartire la password con l'email di reset.
 - `rate_limits` non è nell'export: è contatore runtime, non dato.
 - `admins` non è nell'export: l'assegnazione dell'admin è manuale e va rifatta a mano dopo un restore (vedi "Pannello admin" qui sotto).
+- **Un restore ripetuto riscrive `updated_at`**: l'upsert su una riga già presente passa da un `UPDATE`, quindi il trigger `updated_at` mette l'ora corrente al posto del valore del backup. Non si perdono dati e non si duplicano righe, ma i timestamp di modifica diventano quelli del restore. Su un restore in tabelle vuote (il caso vero, dopo una perdita) i timestamp sono preservati: è quello che il drill verifica.
 - Le email dei membri ci sono (per il restore), ma nel normale uso l'app non mostra mai email altrimenti.
+
+#### Drill automatico
+
+Il ripristino di prova non è più una verifica manuale una tantum: `scripts/backup/drill.sh` rifà tutto il giro e fallisce se il risultato non torna.
+
+```bash
+npm run test:backup
+```
+
+Cosa fa, solo sullo stack locale (rifiuta URL non locali):
+
+1. `npm run db:reset`, quindi dati demo e utenti Auth;
+2. avvia la function `export` con un token usa-e-getta in una directory temporanea `700`;
+3. controlla che l'accesso sia protetto (`401` senza token e con token errato);
+4. esporta e confronta i conteggi dell'export con quelli del database;
+5. **cancella** le sette tabelle di `public` (non `auth`) e verifica che siano vuote;
+6. ripristina con `restore-local.mjs`;
+7. confronta lo stato ripristinato con quello di partenza, riga per riga e colonna per colonna, e controlla che `auth.users` non sia cambiata.
+
+Esce `0` solo se il round-trip è identico. Il confronto non guarda solo i conteggi: una colonna persa dall'export o un `null` sbagliato nel restore fa fallire il drill. È distruttivo sullo stack locale (è il punto: simula la perdita dei dati), quindi non va lanciato se hai dati locali che ti servono. Non gira in CI: richiede l'edge runtime e qualche minuto, come `test:e2e:backend`.
 
 Il cron di produzione (deploy della function, secret, upload settimanale, monitoraggio) è un'azione umana descritta in [SECURITY.md](SECURITY.md) → "Backup ed export" e in [ROADMAP.md](ROADMAP.md) → Fase 3. Mai `service_role` sul Pi: chiama solo la function col token.
 
@@ -485,6 +506,7 @@ npm run verify           # lint + typecheck + unit + build
 npm run test             # unit (Vitest)
 npm run test:e2e         # Playwright mock (prima: npx playwright install chromium)
 npm run test:e2e:backend # Playwright contro lo stack locale
+npm run test:backup      # drill export -> restore contro lo stack locale
 npm run db:types         # rigenera i tipi TypeScript da Supabase locale
 npx supabase test db     # test pgTAP / RLS
 ```

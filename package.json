@@ -20,6 +20,7 @@
     "test:watch": "NODE_OPTIONS=--no-experimental-webstorage vitest",
     "test:e2e": "playwright test",
     "test:e2e:backend": "playwright test --config playwright.backend.config.ts",
+    "test:backup": "bash scripts/backup/drill.sh",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
     "db:start": "bash scripts/db-start.sh",
     "db:stop": "supabase stop",
