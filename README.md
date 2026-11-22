@@ -2,7 +2,7 @@
 
 Webapp familiare per la lista della spesa condivisa, mobile-first e installabile come PWA.
 
-**Stato.** Fase 1 (lista della spesa) implementata e verificata in locale su `dev`: schema, RLS, auth, inviti, realtime, PWA, export. Backend Supabase cloud e progetto Vercel configurati. Non ancora attivi in produzione: keepalive, backup automatico e la prima promozione su `main`, che è ancora fermo all'initial commit.
+**Stato.** Fase 1 (lista della spesa) implementata e verificata in locale su `dev`: schema, RLS, auth, inviti, realtime, PWA, export. Backend Supabase cloud e progetto Vercel configurati; schema applicativo applicato al cloud (22 migrazioni, registro e schema allineati) e keepalive attivo. Non ancora attivi in produzione: backup automatico e la prima promozione su `main`, che è ancora fermo all'initial commit.
 
 Cosa manca e in che ordine: [docs/ROADMAP.md](docs/ROADMAP.md) → Fase 3. Bloccanti di sicurezza: [docs/SECURITY.md](docs/SECURITY.md).
 
@@ -121,18 +121,20 @@ Regole e ruoli: [AGENTS.md](AGENTS.md). Decisioni: [docs/DECISIONS.md](docs/DECI
 
 Supabase Free mette in pausa un progetto dopo circa 7 giorni senza attività, e un progetto in pausa non risolve più il DNS: l'app smette di funzionare finché non lo si riattiva dal dashboard.
 
-Sono previsti due ping indipendenti che interrogano la tabella `keepalive` (`select` su `/rest/v1/keepalive`, non un health check: solo una query reale resetta il timer):
+Sono attivi due ping indipendenti che fanno una query reale sul database (non un health check: solo un'attività vera resetta il timer):
 
-1. **Raspberry Pi**, cron giornaliero: `scripts/keepalive/ping.sh`.
-2. **GitHub Actions**, workflow schedulato: `.github/workflows/keepalive.yml`.
+1. **Raspberry Pi**, cron lun/mer/ven: copia di `scripts/keepalive/ping.sh` in `/mnt/hdd1T/projects/spesa/keepalive/`, che chiama la RPC `ping_keepalive()` e registra `keepalive.last_ping`.
+2. **GitHub Actions**, workflow giornaliero: `.github/workflows/keepalive.yml`, che legge `/rest/v1/keepalive`.
 
-**Stato: non ancora attivi.** Nessuno dei due ping è in funzione, quindi il progetto cloud si sospende da solo e il workflow `keepalive` risulta rosso ogni notte: è il sintomo atteso, non un guasto. L'ordine per attivarli è in [docs/ROADMAP.md](docs/ROADMAP.md) → Fase 3 (riattivare il progetto, verificare i secret, avviare i due ping).
+**Stato: attivo.** Progetto riattivato, schema applicato al cloud (22 migrazioni) e workflow verde il 22 novembre 2026; il cron del Pi è configurato e il suo primo giro è lunedì 23 novembre. I due ping agiscono in modo diverso di proposito: solo quello del Pi scrive `last_ping`, quindi se il campo resta fermo mentre il workflow è verde il problema è il cron del Pi, non il progetto.
 
-Esempio di crontab sul Pi:
+Sul Pi non gira una copia del repo: accanto a `ping.sh` ci sono un env file con permessi `600` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) e un wrapper che carica le variabili e verifica che l'HDD sia montato. Crontab:
 
 ```
-0 3 * * * /path/to/spesa/scripts/keepalive/ping.sh >> /var/log/spesa-keepalive.log 2>&1
+0 3 * * 1,3,5 /mnt/hdd1T/projects/spesa/keepalive/run.sh >> /mnt/hdd1T/projects/spesa/keepalive/keepalive.log 2>&1
 ```
+
+La copia sul Pi **non si aggiorna da sola**: quando `scripts/keepalive/ping.sh` cambia va sostituita a mano, confrontando l'hash con `sha256sum`. Deve essere la versione che chiama `POST /rest/v1/rpc/ping_keepalive`: con la vecchia `select` il progetto resta sveglio ma `last_ping` non avanza.
 
 ## Backup
 

@@ -2,7 +2,7 @@
 
 Cosa è già protetto nel codice e cosa resta da fare **prima del go-live**. Le azioni marcate come umane richiedono accesso a Supabase Cloud, Vercel o GitHub e non vanno eseguite dagli agenti.
 
-**Stato attuale.** Progetto Supabase cloud e progetto Vercel configurati. Non ancora attivi: keepalive (il progetto è in pausa, nessun ping in funzione), backup automatico, branch protection e deploy di produzione (`main` è fermo all'initial commit). La sequenza delle azioni è in `docs/ROADMAP.md` → Fase 3.
+**Stato attuale.** Progetto Supabase cloud riattivato, schema applicativo allineato (22 migrazioni: registro e schema coerenti) e keepalive attivo (workflow GitHub verde il 22 novembre 2026, cron del Pi configurato). Progetto Vercel configurato. Non ancora attivi: backup automatico, branch protection e deploy di produzione (`main` è fermo all'initial commit). La sequenza delle azioni è in `docs/ROADMAP.md` → Fase 3.
 
 ## Cosa è già nel repository
 
@@ -37,8 +37,8 @@ La protezione di quei dati dipende da RLS, TLS, accesso minimo al database e bac
 
 ### Supabase Cloud
 
-- [ ] **Riattivare il progetto** dal dashboard: con il piano free un progetto inattivo per ~7 giorni va in pausa e il DNS smette di risolvere (l'app in produzione mostrerebbe solo errori di rete). Non si perdono dati.
-- [ ] Applicare le migrazioni con il flusso di release scelto. Non usare `supabase db push` da una macchina di sviluppo senza autorizzazione.
+- [x] **Riattivare il progetto** dal dashboard: con il piano free un progetto inattivo per ~7 giorni va in pausa e il DNS smette di risolvere (l'app in produzione mostrerebbe solo errori di rete). Non si perdono dati. Il progetto risponde di nuovo.
+- [x] Applicare le migrazioni al cloud: **22 migrazioni applicate il 22 novembre 2026** con `supabase db push --linked`. Registro e schema allineati (`db push --dry-run` risponde «up to date») e verificati: 9 tabelle con RLS attiva su tutte, 15 policy, 5 trigger, indici (compreso l'unicità con `coalesce(category, 'Altro')`), `anon` che legge solo `keepalive`. Nessun seed caricato: `families`, `members` e `items` sono vuote. Il push resta un'azione umana: gli agenti non hanno accesso al cloud, e non va usato `db reset --linked`.
 - [ ] Impostare il **Site URL** sul dominio finale e aggiungere solo redirect URL esatti (niente wildcard) per login, conferma email e reset password.
 - [ ] Attivare la conferma email e provarla con un indirizzo reale.
 - [ ] Configurare SMTP proprio (SPF, DKIM, DMARC) al posto dell'invio di default. Verificare che le email non finiscano in spam.
@@ -51,7 +51,7 @@ La protezione di quei dati dipende da RLS, TLS, accesso minimo al database e bac
 - [ ] Impostare backup/PITR secondo il piano scelto e verificare la retention.
 - [ ] Applicare SSL/TLS obbligatorio e, se possibile, network restrictions.
 - [ ] Fare una review RLS con **due famiglie reali/fittizie** e con `anon`: nessun dato deve trapelare tra famiglie.
-- [ ] Controllare che `keepalive` resti leggibile solo in `select` da `anon`.
+- [ ] Controllare che `keepalive` resti leggibile solo in `select` da `anon` (da verificare dopo il push delle migrazioni).
 - [ ] Se migri un database già esistente, revoca gli inviti attivi creati prima dell'hardening: restano validi fino alla scadenza per compatibilità, ma erano codici da 12 hex.
 - [ ] Nei log applicativi non far comparire codici invito, token, password o email complete.
 
@@ -73,13 +73,15 @@ where table_schema = 'public'
 
 ### Keepalive
 
-- [ ] Verificare che `SUPABASE_URL` e `SUPABASE_ANON_KEY` nei repository secrets puntino al progetto reale: i valori attuali fanno fallire il ping con `Could not resolve host`.
-- [ ] Avviare il cron sul Raspberry Pi (`scripts/keepalive/ping.sh`) e il workflow GitHub Actions: due ping indipendenti, così il guasto di uno non spegne il progetto.
-- [ ] Controllare il primo ping verde e poi una volta a settimana che il workflow resti verde.
+- [x] Cron sul Raspberry Pi configurato: copia di `ping.sh` in `/mnt/hdd1T/projects/spesa/keepalive/`, env file con permessi `600` e wrapper con guardia sul mount; gira lun/mer/ven alle 03:00 e scrive in `keepalive.log`.
+- [x] Verificare che `SUPABASE_URL` e `SUPABASE_ANON_KEY` nei repository secrets puntino al progetto reale: il workflow del 22 novembre 2026 ha risposto con il contenuto di `keepalive`, quindi i secret sono allineati al ref attuale.
+- [x] Avviare il workflow GitHub Actions: prima esecuzione manuale verde il 22 novembre 2026, insieme alla schedulazione giornaliera.
+- [ ] Controllare il primo ping del cron del Pi (prossima esecuzione lunedì 23 novembre 2026) e poi una volta a settimana che il workflow resti verde.
 - [ ] Controllare che `last_ping` avanzi: il ping del Pi chiama la RPC `ping_keepalive()`, eseguibile solo da `anon`, che registra il battito (al massimo una volta al minuto) e restituisce il valore. Se il campo resta fermo mentre il workflow è verde, il cron del Pi non sta girando; il pannello admin mostra lo stesso dato come `keepaliveLastPing`.
 - [ ] Mai `service_role` sul Pi né in Actions: il ping usa solo la chiave pubblica. `anon` non ha `update` su `keepalive`: l'unico modo per scrivere `last_ping` è la RPC, che tocca una colonna di una riga.
 
-Nota: finché il progetto è in pausa e i ping non sono attivi, il workflow `keepalive` risulta rosso ogni notte. È il sintomo atteso, non un incidente da indagare.
+Nota: la copia di `ping.sh` sul Pi non si aggiorna da sola. Deve essere la versione che chiama `POST /rest/v1/rpc/ping_keepalive`: con la vecchia `select` il progetto resta sveglio ma `last_ping` non avanza.
+Nota: GitHub disattiva i workflow schedulati dopo 60 giorni senza attività del repository (su repository pubblici): in un periodo di fermo il cron del Pi resta l'unico dei due ping che continua a girare.
 
 ### Privacy e dati personali
 
