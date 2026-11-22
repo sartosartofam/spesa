@@ -11,13 +11,13 @@ Stato al 17 novembre 2026: fase 1 implementata e verificata in locale su `dev`; 
 | Area | Cosa c'è |
 | --- | --- |
 | Database | enum `item_status` (`to_buy`/`bought`), tabelle `families`, `members`, `items`, `push_subscriptions`, `family_invites`, `user_settings`, `rate_limits`, `keepalive`; indici, trigger `updated_at`/`bought_at`, `replica identity full` su `items` per i DELETE realtime |
-| RLS | RLS su tutte le tabelle, policy per famiglia, push e impostazioni self-only; inviti accessibili solo via RPC; `rate_limits` invisibile ai ruoli API; pannello admin in sola lettura (`admins`, `is_admin()`, `admin_overview()`). 317 asserzioni pgTAP |
+| RLS | RLS su tutte le tabelle, policy per famiglia, push e impostazioni self-only; inviti accessibili solo via RPC; `rate_limits` invisibile ai ruoli API; `keepalive` in sola lettura per `anon` e pingabile solo via RPC `ping_keepalive()`; pannello admin in sola lettura (`admins`, `is_admin()`, `admin_overview()`). 337 asserzioni pgTAP |
 | Auth | email + password, registrazione pubblica con conferma, recupero password, famiglia personale al primo accesso (`ensure_current_family`), inviti monouso con codice hashato, uscita e cambio famiglia con successione dell'owner |
 | Dati | repository mock e Supabase dietro la stessa interfaccia, realtime su `items`, merge amichevole dei duplicati lato client + vincolo unique lato database |
 | Urgenza e push | flag `urgent` con priorità in lista; Edge Function `send-push` completa ma **spenta** (manca `VITE_VAPID_PUBLIC_KEY`), con rate limit 12 richieste/minuto per utente |
 | PWA | manifest, icone, service worker (network-first sulle navigazioni, cache-first sugli asset), ultima lista in lettura offline, banner offline, nessuna coda di scrittura |
 | Backup | Edge Function `export` con token dedicato e script di restore locale; restore di prova riuscito su tutte le tabelle esportate |
-| Test | 258 unit, 57 e2e mock (in CI), 6 e2e backend contro Supabase locale, 317 asserzioni pgTAP |
+| Test | 259 unit, 57 e2e mock (in CI), 6 e2e backend contro Supabase locale, 337 asserzioni pgTAP |
 
 ## Fase 2 — Rifiniture (completata, salvo backlog)
 
@@ -35,7 +35,7 @@ Aperto in fase 2:
 
 - [ ] Badge in-app per notifiche perse (iOS): utile solo se il Web Push verrà attivato.
 - [ ] Sentry free tier (opzionale, richiede un DSN come secret).
-- [ ] Rate limit anti-abuso sulle aggiunte (oggi il limite è su Auth e sul push).
+- [x] Rate limit anti-abuso sulle aggiunte: 30 aggiunte al minuto per utente, con trigger `security definer` su `items` e risposta `PT429`.
 
 ## Fase 3 — Go-live (azioni umane, in questo ordine)
 

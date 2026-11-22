@@ -30,6 +30,7 @@ const MESSAGES = {
   duplicate: 'Esiste già un articolo con questi dati.',
   relation: 'La famiglia o il membro collegato non esiste più.',
   session: 'Sessione scaduta: accedi di nuovo.',
+  limit: 'Hai fatto troppe aggiunte in poco tempo. Riprova tra poco.',
   network: 'Connessione assente: controlla la rete e riprova.',
   fallback: 'Non è stato possibile completare l’operazione. Riprova.',
 } as const
@@ -69,6 +70,10 @@ export function toDataError(error: unknown): Error {
       return new Error(MESSAGES.relation, { cause: error })
     case 'PGRST301':
       return new Error(MESSAGES.session, { cause: error })
+    // `PT429` arriva dal rate limit sulle aggiunte (trigger su `items`):
+    // PostgREST traduce il prefisso `PT` nel codice HTTP 429.
+    case 'PT429':
+      return new Error(MESSAGES.limit, { cause: error })
     default:
       return new Error(MESSAGES.fallback, { cause: error })
   }

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
 select is(
   (
@@ -148,6 +148,35 @@ select throws_ok(
   '23505',
   'duplicate key value violates unique constraint "items_family_status_identity_key"',
   'un aggiornamento non può creare un duplicato'
+);
+
+-- `category` NULL e `Altro` sono la stessa identità, come nel client
+-- (`normalizeCategory()`): una riga inserita senza categoria non deve poter
+-- duplicare l'articolo che l'app mostra in "Altro".
+select lives_ok(
+  $$ insert into public.items (id, family_id, name, category, status)
+     values (
+       '00000000-0000-4000-8000-000000009107',
+       '00000000-0000-4000-8000-000000000001',
+       'Caffè',
+       null,
+       'to_buy'
+     ) $$,
+  'un articolo senza categoria è ammesso'
+);
+
+select throws_ok(
+  $$ insert into public.items (id, family_id, name, category, status)
+     values (
+       '00000000-0000-4000-8000-000000009108',
+       '00000000-0000-4000-8000-000000000001',
+       ' caffè ',
+       'Altro',
+       'to_buy'
+     ) $$,
+  '23505',
+  'duplicate key value violates unique constraint "items_family_status_identity_key"',
+  'categoria assente e Altro sono lo stesso articolo'
 );
 
 select * from finish();

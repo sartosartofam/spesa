@@ -291,7 +291,19 @@ La pagina `/admin` è il client di quelle due RPC (`src/lib/admin.ts` + `src/pag
 - chi non è admin (o non ha una sessione) vede la 404: la rotta è `noindex` e la RPC nega comunque i dati;
 - in modalità mock/demo la pagina spiega che il pannello ha senso solo con i dati Supabase e rimanda a `/app`.
 
-Per aprirla in locale serve uno stack attivo, una sessione valida (per esempio `demo@spesa.test`) e una riga in `admins`. Dopo `npm run db:reset`:
+Il keepalive mostrato è `keepalive.last_ping`, cioè l'ultimo battito registrato dalla RPC `ping_keepalive()` che il cron del Pi chiama ogni notte (al massimo una volta al minuto). Se il valore resta fermo significa che il cron del Pi non sta girando, **non** che il progetto cloud sia morto: il ping del workflow GitHub Actions tiene comunque sveglio il progetto ma non scrive il campo.
+
+Per provare il ping in locale, con lo stack attivo:
+
+```bash
+export SUPABASE_URL=$(grep '^VITE_SUPABASE_URL=' .env.local | cut -d= -f2-)
+export SUPABASE_ANON_KEY=$(grep '^VITE_SUPABASE_PUBLISHABLE_KEY=' .env.local | cut -d= -f2-)
+bash scripts/keepalive/ping.sh
+```
+
+Risponde il timestamp registrato e aggiorna `keepalive.last_ping`. Due chiamate ravvicinate restituiscono lo stesso valore: il battito si riscrive al massimo una volta al minuto.
+
+Per aprire il pannello in locale serve uno stack attivo, una sessione valida (per esempio `demo@spesa.test`) e una riga in `admins`. Dopo `npm run db:reset`:
 
 ```bash
 docker exec -i supabase_db_spesa psql -U postgres -d postgres -c \
@@ -438,6 +450,25 @@ Test:
 Il repository mock propaga l'errore di `localStorage.setItem` (storage pieno o bloccato) invece di ignorarlo: in modalità demo una modifica non salvata sul dispositivo viene segnalata, non simulata come riuscita.
 
 A fine lavoro lo stack resta acceso come per `npm run dev`: spegnerlo con `npm run db:stop`.
+
+### Rate limit sulle aggiunte
+
+Le aggiunte di articoli sono limitate a **30 al minuto per utente**. Il limite è un trigger `before insert` su `items` (`20261121090000_items_add_rate_limit.sql`) che riusa `consume_rate_limit()` e la tabella `rate_limits`: chiave `items-add:<user_id>`, finestra di 60 secondi. Oltre la soglia il database alza un'eccezione con SQLSTATE `PT429`, che PostgREST traduce in HTTP 429; `toDataError()` la mappa in «Hai fatto troppe aggiunte in poco tempo. Riprova tra poco.», quindi il dialog resta aperto con il testo conservato.
+
+Cosa non è limitato, per scelta:
+
+- **modifiche e cambio di stato**: il merge dei duplicati passa da un `update`, quindi unire un articolo esistente non consuma budget;
+- **seed, restore e `service_role`**: senza un `sub` nel JWT (`auth.uid()` nullo) il trigger lascia passare, così un ripristino non può essere bloccato da un contatore runtime;
+- i tentativi respinti non consumano budget: l'eccezione fa rollback dell'incremento, quindi il contatore resta alla soglia finché la finestra non scade.
+
+Per provarlo in locale serve una sessione autenticata: dopo `npm run db:reset` e `npm run dev:web`, aggiungi articoli dall'app; alla trentunesima aggiunta entro un minuto compare l'errore. Per riprovare subito senza aspettare la finestra:
+
+```bash
+docker exec -i supabase_db_spesa psql -U postgres -d postgres \
+  -c "delete from public.rate_limits where key like 'items-add:%'"
+```
+
+Test: `supabase/tests/items_add_rate_limit.test.sql` (le prime 30 passano, la trentunesima risponde `PT429`, un secondo utente non è penalizzato, senza JWT nessun limite, `rate_limits` resta illeggibile ai ruoli API).
 
 ### Worktree paralleli
 

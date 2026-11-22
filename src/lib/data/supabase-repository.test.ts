@@ -477,4 +477,12 @@ describe('supabase items repository', () => {
     expect(error.message).toBe('Esiste già un articolo con questi dati.')
     expect(error.message).not.toContain('items_family_status_identity_key')
   })
+
+  it('traduce il rate limit sulle aggiunte in un invito a riprovare', () => {
+    const error = toDataError({
+      code: 'PT429',
+      message: 'Troppe aggiunte in poco tempo. Riprova tra poco.',
+    })
+    expect(error.message).toBe('Hai fatto troppe aggiunte in poco tempo. Riprova tra poco.')
+  })
 })
