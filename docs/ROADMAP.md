@@ -69,3 +69,5 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 - Magic link al posto (o in aggiunta) di email + password (ADR-0002).
 - Multi-famiglia per utente (oggi un utente = una famiglia, con cambio via invito).
 - Codice invito durante la registrazione: campo opzionale per collegare il nuovo account direttamente alla famiglia esistente come `member`, dopo la conferma email, senza creare prima una famiglia personale. Definire anche il comportamento per codici non validi o scaduti.
+- **Avviso di beta al primo rilascio**: dire nel footer (o dove serve) che il progetto è una beta, non una 1.0, così chi lo usa sa che è giovane e che le cose possono cambiare. Da decidere la dicitura e se mostrare un numero di versione.
+- **Nome definitivo al posto di "spesa"**: oggi è un nome di lavoro. Sceglierne uno prima del rilascio pubblico, sapendo che tocca manifest e icone della PWA, titolo e metadati SEO, dominio e `VITE_SITE_URL`, oltre ai documenti.
