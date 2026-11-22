@@ -45,7 +45,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 2. [x] **Applicare le migrazioni al cloud.** 22 migrazioni applicate il 22 novembre 2026 con `supabase db push --linked`: registro allineato (`db push --dry-run` risponde «up to date») e schema verificato (9 tabelle con RLS attiva, 15 policy, 5 trigger, indici), senza caricare il seed. Il push resta un'azione umana: gli agenti non hanno accesso al cloud e non va usato `db reset --linked`.
 3. [x] **Verificare i secret del keepalive.** Il workflow ha risposto con il contenuto di `keepalive`: `SUPABASE_URL` e `SUPABASE_ANON_KEY` puntano al progetto attuale.
 4. [x] **Attivare il keepalive.** Workflow GitHub Actions verde il 22 novembre 2026; cron sul Raspberry Pi configurato (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`), con il primo giro lunedì 23 novembre da controllare a mano. Due ping indipendenti, così il progetto non si risospende.
-5. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti.
+5. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti. Il giro export → restore è già coperto da `npm run test:backup` (drill locale, `scripts/backup/drill.sh`): qui resta solo l'attivazione in cloud.
 6. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
 7. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
 8. [ ] **Vercel**: variabili pubbliche reali, Node 24, dominio definitivo e `VITE_SITE_URL`, conferma email e SMTP provati con un indirizzo vero, preview verificato.
