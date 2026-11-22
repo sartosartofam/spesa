@@ -13,9 +13,9 @@ Webapp familiare per la lista della spesa condivisa (fase 1: solo spesa; fase 2:
 - Keepalive: due ping indipendenti (Raspberry Pi lun/mer/ven + GitHub Actions giornaliero).
 - Backup: export settimanale su Cloudflare R2 / Backblaze B2 (ADR-0003).
 
-Stato: la fase 1 è implementata e verificata in locale su `dev`; Supabase cloud e Vercel sono configurati; schema applicativo nel cloud, keepalive, backup e prima promozione su `main` non sono ancora attivi. Lo stato corrente sta solo in `docs/ROADMAP.md`: non duplicarlo altrove.
+Stato: la fase 1 è implementata e verificata in locale su `dev`; Supabase cloud e Vercel sono configurati; schema applicativo applicato al cloud (22 migrazioni, registro e schema allineati) e keepalive attivo; backup e prima promozione su `main` non sono ancora attivi. Lo stato corrente sta solo in `docs/ROADMAP.md`: non duplicarlo altrove.
 
-Nota: il workflow `keepalive` può risultare rosso perché lo schema non è ancora applicato al cloud (`404`, `PGRST205`). Non è un incidente da indagare e non richiede un task.
+Nota: se il workflow `keepalive` è rosso non è rumore. Significa che un ping o i secret si sono rotti, e un progetto free inattivo per ~7 giorni va in pausa: va segnalato, non ignorato.
 
 Leggere anche `docs/DECISIONS.md` (decisioni vincolanti) e `docs/ROADMAP.md` (stato e prossimi task).
 
@@ -112,7 +112,7 @@ admins (user_id, created_at)
 - `family_invites` non è accessibile dal client: solo dalle RPC `create_family_invite()` e `redeem_family_invite(code)`.
 - `user_settings` è self-only (una riga per utente autenticato).
 - `rate_limits` ha RLS attiva e nessuna policy: la usa solo il `service_role` tramite `consume_rate_limit`.
-- `keepalive` è pubblica in sola lettura (`select` ad `anon`), niente altro.
+- `keepalive` è leggibile da `anon` (`select`) e scrivibile solo tramite la RPC `ping_keepalive()`, che aggiorna `last_ping` (una colonna, una riga) al massimo una volta al minuto.
 - `admins` non è un ruolo di famiglia (`members.role` resta `owner`/`member`): RLS attiva, nessuna policy e nessun grant ad `anon` e `authenticated`. La riga la inserisce solo l'umano con SQL/CLI, anche in produzione; il client la legge solo tramite le RPC `is_admin()` e `admin_overview()` in sola lettura. Non è nell'export: dopo un restore va reinserita a mano.
 
 ## Comandi utili

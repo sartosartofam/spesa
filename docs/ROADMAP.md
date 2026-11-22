@@ -4,7 +4,7 @@
 
 Se sei l'umano e vuoi sapere cosa devi fare, la risposta è **Fase 3**, nell'ordine dato. Se sei un agente e l'umano te lo chiede, leggi la Fase 3 (e `docs/SECURITY.md` per il dettaglio) e rispondi con il primo punto non spuntato.
 
-Stato al 17 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; restano le azioni umane della fase 3 e la prima promozione su `main`.
+Stato al 22 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; schema applicativo applicato al cloud (22 migrazioni) e keepalive attivo. Restano le azioni umane della fase 3 (backup, RLS review, branch protection, Vercel, job CI, password) e la prima promozione su `main`.
 
 ## Fase 1 — MVP lista della spesa (completata)
 
@@ -42,9 +42,9 @@ Aperto in fase 2:
 Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la sequenza.
 
 1. [x] **Riattivare il progetto Supabase.** Il progetto risponde di nuovo: DNS e API attivi.
-2. [ ] **Applicare le migrazioni al cloud.** Oggi nessuna delle 19 migrazioni risulta applicata: ogni tabella risponde `PGRST205` (schema cache vuota), `keepalive` compresa. Senza schema non funzionano né l'app né i due ping. Il flusso di release si sceglie in `docs/SECURITY.md` → "Supabase Cloud"; il push lo esegue l'umano, non un agente.
-3. [ ] **Verificare i secret del keepalive** contro il ref attuale del progetto: se il progetto è stato ricreato, `SUPABASE_URL`/`SUPABASE_ANON_KEY` su GitHub puntano ancora a quello vecchio.
-4. [ ] **Attivare il keepalive.** Il cron sul Raspberry Pi è configurato e validato a meno della risposta HTTP (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`); mancano il workflow GitHub Actions e il primo ping verde, che dipende dal punto 2. Due ping indipendenti, così il progetto non si risospende.
+2. [x] **Applicare le migrazioni al cloud.** 22 migrazioni applicate il 22 novembre 2026 con `supabase db push --linked`: registro allineato (`db push --dry-run` risponde «up to date») e schema verificato (9 tabelle con RLS attiva, 15 policy, 5 trigger, indici), senza caricare il seed. Il push resta un'azione umana: gli agenti non hanno accesso al cloud e non va usato `db reset --linked`.
+3. [x] **Verificare i secret del keepalive.** Il workflow ha risposto con il contenuto di `keepalive`: `SUPABASE_URL` e `SUPABASE_ANON_KEY` puntano al progetto attuale.
+4. [x] **Attivare il keepalive.** Workflow GitHub Actions verde il 22 novembre 2026; cron sul Raspberry Pi configurato (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`), con il primo giro lunedì 23 novembre da controllare a mano. Due ping indipendenti, così il progetto non si risospende.
 5. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti.
 6. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
 7. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
@@ -60,8 +60,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 - **`main` mai deployato**: la prima promozione va trattata come un rilascio, non come un merge di routine.
 - **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.
 - **`npm run test:e2e:backend` non gira in CI**: va lanciato a mano quando cambia il livello dati.
-- **Keepalive rosso ogni notte** finché lo schema non è applicato al cloud (`404`, `PGRST205`): sintomo atteso, non un incidente.
-- **`keepalive.last_ping` non si muove**: la colonna ha solo `default now()` e il ping è una `SELECT`, quindi resta al timestamp di inserimento e `/admin` mostra un'età che cresce anche quando i ping funzionano. Fix da decidere: RPC `security definer` che aggiorna il timestamp (con migrazione e test pgTAP) oppure ripensare il significato della colonna.
+- **Workflow schedulati disattivati dopo 60 giorni di inattività** (repository pubblici): in un periodo di fermo il cron del Pi resta l'unico dei due ping.
 
 ## Backlog (idee, non impegni)
 
