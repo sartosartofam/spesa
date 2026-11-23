@@ -14,7 +14,7 @@ Cosa è già protetto nel codice e cosa resta da fare **prima del go-live**. Le 
 - `members.email` non è esposta al client; l'email serve solo per inviti e deduplica interna.
 - I codici invito sono token bearer da 128 bit. Nel database resta solo lo SHA-256 (`family_invites.code_hash`), mai il codice in chiaro.
 - Al massimo 10 inviti attivi per famiglia; la creazione è serializzata con un advisory lock.
-- Password minima 12 caratteri, senza requisiti di composizione (scelta locale: prima del go-live scende a 8 con composizione, vedi sotto).
+- Password minima 8 caratteri con maiuscola, minuscola, numero e simbolo (`lower_upper_letters_digits_symbols`): lo applica lo stack locale, lo ricontrolla il server e il client anticipa l'errore con `validatePassword` (`src/lib/auth.ts`).
 - `secure_password_change` attivo nella configurazione locale.
 - Il messaggio per un'email già registrata è generico, per limitare l'enumerazione degli account.
 - Header di sicurezza in `vercel.json`: CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP e CORP.
@@ -42,7 +42,7 @@ La protezione di quei dati dipende da RLS, TLS, accesso minimo al database e bac
 - [ ] Impostare il **Site URL** sul dominio finale e aggiungere solo redirect URL esatti (niente wildcard) per login, conferma email e reset password.
 - [ ] Attivare la conferma email e provarla con un indirizzo reale.
 - [ ] Configurare SMTP proprio (SPF, DKIM, DMARC) al posto dell'invio di default. Verificare che le email non finiscano in spam.
-- [ ] **Politica password**: attivare `secure_password_change` e impostare `minimum_password_length = 8` con `password_requirements = lower_upper_letters_digits_symbols`. Il locale oggi richiede 12 caratteri senza composizione: prima del go-live va allineato `supabase/config.toml`, aggiornati i messaggi 12 → 8 in `src/lib/auth.ts`, `RegisterPage` e `ResetPasswordPage`, e riscritte le password demo (`scripts/seed-auth.mjs`, `e2e/support/auth.ts`, `e2e-backend/support/backend.ts`) insieme ai relativi test.
+- [ ] **Politica password nella dashboard**: impostare `minimum_password_length = 8` e `password_requirements = lower_upper_letters_digits_symbols`, e verificare che `secure_password_change` sia attivo. Il repo è già allineato (23 novembre 2026): `supabase/config.toml`, `validatePassword` in `src/lib/auth.ts`, i due form, le password demo di seed ed e2e e i test. Manca solo l'interruttore nel cloud, che il `config.toml` non tocca.
 - [ ] Tenere disattivati anonymous sign-in e manual linking.
 - [ ] Attivare un captcha (Turnstile o hCaptcha) su signup/login.
 - [ ] Tarare i rate limit Auth. I valori locali (30 email/ora, 30 signup/5 min, 150 refresh/5 min) sono pensati per lo sviluppo, non per la produzione.

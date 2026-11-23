@@ -386,8 +386,8 @@ test('la registrazione pubblica normalizza l’email e chiede la conferma', asyn
   await page.getByLabel('Nome', { exact: true }).fill('Ada')
   await page.getByLabel('Nome della famiglia').fill('Famiglia Ada')
   await page.getByLabel('Email').fill('  Ada@Example.Test  ')
-  await page.getByLabel('Password', { exact: true }).fill('password-sicura')
-  await page.getByLabel('Conferma password').fill('password-sicura')
+  await page.getByLabel('Password', { exact: true }).fill('Password1!')
+  await page.getByLabel('Conferma password').fill('Password1!')
   await page.getByRole('button', { name: 'Crea account' }).click()
 
   await expect(page.getByRole('heading', { name: 'Controlla la tua email' })).toBeVisible()
@@ -402,7 +402,7 @@ test('la registrazione pubblica normalizza l’email e chiede la conferma', asyn
   })
 })
 
-test('la registrazione rifiuta password sotto 12 caratteri senza chiamare il server', async ({
+test('la registrazione rifiuta password che non rispettano i requisiti senza chiamare il server', async ({
   page,
 }) => {
   await page.goto('/register')
@@ -410,11 +410,13 @@ test('la registrazione rifiuta password sotto 12 caratteri senza chiamare il ser
   await page.getByLabel('Nome', { exact: true }).fill('Ada')
   await page.getByLabel('Nome della famiglia').fill('Famiglia Ada')
   await page.getByLabel('Email').fill('ada@example.test')
-  await page.getByLabel('Password', { exact: true }).fill('corta123')
-  await page.getByLabel('Conferma password').fill('corta123')
+  await page.getByLabel('Password', { exact: true }).fill('Corta1!')
+  await page.getByLabel('Conferma password').fill('Corta1!')
   await page.getByRole('button', { name: 'Crea account' }).click()
 
-  await expect(page.getByRole('alert')).toContainText('La password deve avere almeno 12 caratteri.')
+  await expect(page.getByRole('alert')).toContainText(
+    'La password deve avere almeno 8 caratteri e contenere maiuscola, minuscola, numero e simbolo.',
+  )
   await expect(page).toHaveURL(/\/register$/)
 })
 
@@ -424,7 +426,7 @@ test('la registrazione rifiuta password diverse senza chiamare il server', async
   await page.getByLabel('Nome', { exact: true }).fill('Ada')
   await page.getByLabel('Nome della famiglia').fill('Famiglia Ada')
   await page.getByLabel('Email').fill('ada@example.test')
-  await page.getByLabel('Password', { exact: true }).fill('password-sicura')
+  await page.getByLabel('Password', { exact: true }).fill('Password1!')
   await page.getByLabel('Conferma password').fill('password-diversa')
   await page.getByRole('button', { name: 'Crea account' }).click()
 
@@ -481,13 +483,13 @@ test('dal link di recupero si imposta una nuova password', async ({ page }) => {
   await page.goto('/reset-password')
 
   await expect(page.getByRole('heading', { name: 'Imposta una nuova password' })).toBeVisible()
-  await page.getByLabel('Nuova password', { exact: true }).fill('password-nuova-123')
-  await page.getByLabel('Conferma nuova password').fill('password-nuova-123')
+  await page.getByLabel('Nuova password', { exact: true }).fill('Password1!')
+  await page.getByLabel('Conferma nuova password').fill('Password1!')
   await page.getByRole('button', { name: 'Aggiorna password' }).click()
 
   await expect(page.getByRole('heading', { name: 'Password aggiornata' })).toBeVisible()
   await expect(page.getByRole('status')).toContainText('La nuova password è attiva')
-  expect(updatedPassword).toBe('password-nuova-123')
+  expect(updatedPassword).toBe('Password1!')
 
   await page.getByRole('link', { name: 'Vai alla lista' }).click()
   await expect(page).toHaveURL(/\/app$/)
@@ -506,12 +508,14 @@ test('il form di reset rifiuta password corte o diverse senza chiamare il server
   await signInAsDemo(page)
   await page.goto('/reset-password')
 
-  await page.getByLabel('Nuova password', { exact: true }).fill('corta123')
-  await page.getByLabel('Conferma nuova password').fill('corta123')
+  await page.getByLabel('Nuova password', { exact: true }).fill('Corta1!')
+  await page.getByLabel('Conferma nuova password').fill('Corta1!')
   await page.getByRole('button', { name: 'Aggiorna password' }).click()
-  await expect(page.getByRole('alert')).toContainText('La password deve avere almeno 12 caratteri.')
+  await expect(page.getByRole('alert')).toContainText(
+    'La password deve avere almeno 8 caratteri e contenere maiuscola, minuscola, numero e simbolo.',
+  )
 
-  await page.getByLabel('Nuova password', { exact: true }).fill('password-nuova-123')
+  await page.getByLabel('Nuova password', { exact: true }).fill('Password1!')
   await page.getByLabel('Conferma nuova password').fill('password-diversa')
   await page.getByRole('button', { name: 'Aggiorna password' }).click()
   await expect(page.getByRole('alert')).toContainText('Le password non coincidono.')

@@ -8,6 +8,32 @@ export function passwordResetRedirectUrl(origin: string): string {
   return `${origin.replace(/\/+$/, '')}/reset-password`
 }
 
+/** Lunghezza minima, allineata a `minimum_password_length` in supabase/config.toml. */
+export const PASSWORD_MIN_LENGTH = 8
+
+/** Requisiti mostrati sotto il campo password, identici nei due form. */
+export const PASSWORD_REQUIREMENTS =
+  'Almeno 8 caratteri, con maiuscola, minuscola, numero e simbolo.'
+
+/** Errore di validazione della password. */
+export const PASSWORD_ERROR =
+  'La password deve avere almeno 8 caratteri e contenere maiuscola, minuscola, numero e simbolo.'
+
+/**
+ * Applica gli stessi requisiti di Supabase (`minimum_password_length = 8`,
+ * `password_requirements = lower_upper_letters_digits_symbols`) prima della
+ * chiamata di rete, così l'errore è immediato. Il server ricontrolla comunque:
+ * qui basta non essere più severi di lui.
+ */
+export function validatePassword(password: string): string | null {
+  if (password.length < PASSWORD_MIN_LENGTH) return PASSWORD_ERROR
+  if (!/[a-z]/.test(password)) return PASSWORD_ERROR
+  if (!/[A-Z]/.test(password)) return PASSWORD_ERROR
+  if (!/[0-9]/.test(password)) return PASSWORD_ERROR
+  if (!/[^A-Za-z0-9]/.test(password)) return PASSWORD_ERROR
+  return null
+}
+
 interface UserWithDisplayName {
   user_metadata?: Record<string, unknown> | null
 }
@@ -35,7 +61,7 @@ export function mapAuthError(error: unknown): string {
     return 'La nuova password deve essere diversa da quella attuale.'
   }
   if (/password.*(at least|length|weak|short)|weak_password/i.test(message)) {
-    return 'La password deve avere almeno 12 caratteri.'
+    return PASSWORD_ERROR
   }
   if (/signups? not allowed|signup.*disabled|signup_disabled/i.test(message)) {
     return 'Le registrazioni sono chiuse. Contatta chi gestisce l’app.'

@@ -11,7 +11,7 @@ import { expect, type Page } from '@playwright/test'
  */
 
 export const DEMO_EMAIL = 'demo@spesa.test'
-export const DEMO_PASSWORD = 'spesa-demo-123'
+export const DEMO_PASSWORD = 'Spesa-demo-123!'
 
 /**
  * Prefisso degli articoli creati dai test. Il teardown globale cancella tutti

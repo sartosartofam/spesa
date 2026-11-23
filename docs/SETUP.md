@@ -105,16 +105,18 @@ Le email sono fittizie e restano sulla macchina. Non usare indirizzi reali nei t
 
 `npm run db:reset` applica migrazioni e `supabase/seed.sql`, poi crea gli utenti Auth demo con `scripts/seed-auth.mjs`. I dati sono fittizi e valgono solo per lo stack locale.
 
-| Utente               | Password         | Ruolo  |
-| -------------------- | ---------------- | ------ |
-| `demo@spesa.test`    | `spesa-demo-123` | owner  |
-| `partner@spesa.test` | `spesa-demo-123` | member |
+| Utente               | Password          | Ruolo  |
+| -------------------- | ----------------- | ------ |
+| `demo@spesa.test`    | `Spesa-demo-123!` | owner  |
+| `partner@spesa.test` | `Spesa-demo-123!` | member |
 
 La famiglia demo si chiama `Famiglia Demo` e contiene articoli in lista, urgenti e nello storico. Per ricreare solo gli utenti Auth dopo un `supabase db reset` eseguito senza lo script npm:
 
 ```bash
 npm run db:seed
 ```
+
+Se lo stack locale esiste da prima del 23 novembre 2026, gli utenti demo hanno ancora la password vecchia: `npm run db:seed` la aggiorna senza toccare i dati, perché `ensureUser` rifà la password anche sugli utenti che esistono già.
 
 Lo script usa la `service_role` locale, rifiuta URL non locali e non stampa la chiave. Non usarlo mai contro la produzione.
 
@@ -124,20 +126,20 @@ La registrazione è aperta. Da `/register` si crea un account con nome, nome del
 
 - `[auth] enable_signup = true`;
 - `[auth.email] enable_confirmations = true`;
-- `minimum_password_length = 12`;
+- `minimum_password_length = 8` con `password_requirements = "lower_upper_letters_digits_symbols"`;
 - `[auth.email] secure_password_change = true`.
 
 Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: il messaggio finisce in **Mailpit** (<http://127.0.0.1:54324>, vedi [Email locali](#email-locali-mailpit)). Apri l'ultimo messaggio e clicca il link. Dopo la conferma accedi da `/login`.
 
 Al primo accesso autenticato il frontend chiama la RPC `ensure_current_family()`: se l'utente non ha ancora una membership, crea una famiglia personale e lo inserisce come `owner`. La funzione è idempotente, quindi ricaricare o riaprire l'app non duplica la famiglia. Le email vengono normalizzate (trim + lowercase) nel client e dal trigger sul database.
 
-In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana: la checklist è in [SECURITY.md](SECURITY.md). **La conferma email va testata con un indirizzo reale prima della promozione su `main`**; fino ad allora i test si fanno in locale con Mailpit. Il minimo locale resta 12 caratteri senza requisiti di composizione, per non complicare seed e test; in produzione scende a 8 caratteri **con** requisiti di composizione, vedi [SECURITY.md](SECURITY.md) → "Supabase Cloud".
+In produzione l'attivazione di signup, conferma email e SMTP è un'azione umana: la checklist è in [SECURITY.md](SECURITY.md). **La conferma email va testata con un indirizzo reale prima della promozione su `main`**; fino ad allora i test si fanno in locale con Mailpit. La politica password è la stessa in locale e in produzione — 8 caratteri con maiuscola, minuscola, numero e simbolo — e vive in due posti da tenere allineati: `supabase/config.toml` (che il locale applica davvero) e la dashboard Supabase per il cloud, vedi [SECURITY.md](SECURITY.md) → "Supabase Cloud". Il controllo lato client è in `src/lib/auth.ts` → `validatePassword`.
 
 ### Recupero password
 
 Da `/login`, il link **Password dimenticata?** apre `/forgot-password`. Inserendo l'email, Supabase invia un link di recupero che riporta a `/reset-password`. In locale l'email si legge su Mailpit (<http://127.0.0.1:54324>), come per la conferma.
 
-Il link contiene una sessione temporanea di recovery. La pagina `/reset-password` chiede una nuova password di almeno 12 caratteri e la salva con `updateUser`. Se il link è scaduto o manca la sessione, la pagina invita a richiederne uno nuovo. Per sicurezza il link è `noindex` e non viene mai mostrato nella UI.
+Il link contiene una sessione temporanea di recovery. La pagina `/reset-password` chiede una nuova password con gli stessi requisiti della registrazione e la salva con `updateUser`. Se il link è scaduto o manca la sessione, la pagina invita a richiederne uno nuovo. Per sicurezza il link è `noindex` e non viene mai mostrato nella UI.
 
 La configurazione locale include già gli URL di redirect:
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import type { SignUpInput, SignUpResult } from '../hooks/useAuth'
-import { mapAuthError, normalizeEmail } from '../lib/auth'
+import { mapAuthError, normalizeEmail, PASSWORD_REQUIREMENTS, validatePassword } from '../lib/auth'
 import { navigate } from '../lib/routes'
 
 interface RegisterPageProps {
@@ -33,8 +33,9 @@ export function RegisterPage({ onSignUp, initialError }: RegisterPageProps) {
       setError('Inserisci il nome della famiglia.')
       return
     }
-    if (password.length < 12) {
-      setError('La password deve avere almeno 12 caratteri.')
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
     if (password !== confirmPassword) {
@@ -177,7 +178,7 @@ export function RegisterPage({ onSignUp, initialError }: RegisterPageProps) {
               aria-describedby="register-password-hint"
             />
             <span class="hint" id="register-password-hint">
-              Almeno 12 caratteri.
+              {PASSWORD_REQUIREMENTS}
             </span>
           </div>
 

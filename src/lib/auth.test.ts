@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { mapAuthError, normalizeEmail, passwordResetRedirectUrl, userDisplayName } from './auth'
+import {
+  mapAuthError,
+  normalizeEmail,
+  PASSWORD_ERROR,
+  passwordResetRedirectUrl,
+  userDisplayName,
+  validatePassword,
+} from './auth'
 
 describe('normalizeEmail', () => {
   it('toglie spazi e porta tutto in minuscolo', () => {
@@ -50,10 +57,13 @@ describe('mapAuthError', () => {
     )
   })
 
-  it('traduce password troppo corta', () => {
+  it('traduce password debole', () => {
     expect(mapAuthError(new Error('Password should be at least 12 characters'))).toBe(
-      'La password deve avere almeno 12 caratteri.',
+      PASSWORD_ERROR,
     )
+    expect(
+      mapAuthError(new Error('Password should contain at least one character of each: abc')),
+    ).toBe(PASSWORD_ERROR)
   })
 
   it('chiede una password diversa da quella attuale', () => {
@@ -94,5 +104,32 @@ describe('mapAuthError', () => {
 
   it('ha un fallback generico', () => {
     expect(mapAuthError(new Error('boom'))).toBe('Operazione non riuscita. Riprova.')
+  })
+})
+
+describe('validatePassword', () => {
+  it('accetta una password con tutti i requisiti', () => {
+    expect(validatePassword('Spesa-demo-123!')).toBeNull()
+    expect(validatePassword('Password1!')).toBeNull()
+  })
+
+  it('rifiuta una password troppo corta', () => {
+    expect(validatePassword('Corta1!')).toBe(PASSWORD_ERROR)
+  })
+
+  it('rifiuta una password senza maiuscola', () => {
+    expect(validatePassword('spesa-demo-123!')).toBe(PASSWORD_ERROR)
+  })
+
+  it('rifiuta una password senza minuscola', () => {
+    expect(validatePassword('SPESA-DEMO-123!')).toBe(PASSWORD_ERROR)
+  })
+
+  it('rifiuta una password senza numero', () => {
+    expect(validatePassword('Spesa-demo-abc!')).toBe(PASSWORD_ERROR)
+  })
+
+  it('rifiuta una password senza simbolo', () => {
+    expect(validatePassword('SpesaDemo123')).toBe(PASSWORD_ERROR)
   })
 })

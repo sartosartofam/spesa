@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 
 const FAMILY_ID = '00000000-0000-4000-8000-000000000001'
-const PASSWORD = 'spesa-demo-123'
+const PASSWORD = 'Spesa-demo-123!'
 
 const TEST_USERS = [
   {
