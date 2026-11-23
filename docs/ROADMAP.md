@@ -17,7 +17,7 @@ Stato al 22 novembre 2026: fase 1 implementata e verificata in locale su `dev`; 
 | Urgenza e push | flag `urgent` con priorità in lista; Edge Function `send-push` completa ma **spenta** (manca `VITE_VAPID_PUBLIC_KEY`), con rate limit 12 richieste/minuto per utente |
 | PWA | manifest, icone, service worker (network-first sulle navigazioni, cache-first sugli asset), ultima lista in lettura offline, banner offline, nessuna coda di scrittura |
 | Backup | Edge Function `export` con token dedicato e script di restore locale; restore di prova riuscito su tutte le tabelle esportate |
-| Test | 259 unit, 57 e2e mock (in CI), 6 e2e backend contro Supabase locale, 337 asserzioni pgTAP |
+| Test | 265 unit, 57 e2e mock (in CI), 6 e2e backend contro Supabase locale, 337 asserzioni pgTAP |
 
 ## Fase 2 — Rifiniture (completata, salvo backlog)
 
