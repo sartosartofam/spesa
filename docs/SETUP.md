@@ -59,13 +59,47 @@ npm run env:local    # scrive .env.local con URL e anon key locali
 npm run db:reset     # applica migrazioni + seed
 ```
 
-- Studio: <http://127.0.0.1:54323>
+- Studio (database, utenti, log): <http://127.0.0.1:54323>
 - API: <http://127.0.0.1:54321>
-- Mail locale (conferma email e magic link): <http://127.0.0.1:54324>
+- **Mailpit** (email locali: conferma registrazione, recupero password): <http://127.0.0.1:54324> — vedi [Email locali](#email-locali-mailpit)
 
 Le chiavi locali sono pubbliche e rigenerabili: non sono secret di produzione. `npm run env:local` evita di copiarle a mano.
 
 Lo stack **non parte al boot**: `npm run db:start` e `npm run dev` lo avviano su richiesta e riportano a `no` la restart policy dei container. Se `db:start` è già attivo risponde in meno di un secondo. A fine lavoro: `npm run db:stop`.
+
+### Email locali (Mailpit)
+
+Le email che in produzione partirebbero davvero — conferma della registrazione, recupero password — in locale non escono dalla macchina: finiscono in **Mailpit**, un client web che le cattura tutte. Non serve SMTP, non serve un indirizzo vero, non serve configurare niente.
+
+**Apri <http://127.0.0.1:54324>.**
+
+| Cosa | Dove |
+| --- | --- |
+| URL | <http://127.0.0.1:54324> |
+| Stack | deve essere attivo (`npm run db:start` o `npm run dev`) |
+| Porta vera, se diversa | `npx supabase status` → `MAILPIT_URL` |
+
+La porta è **54324**. Studio è **54323**: un carattere di differenza, ed è l'errore più comune quando "Mailpit non si apre".
+
+Cosa ci trovi:
+
+| Email | Quando arriva | A cosa serve |
+| --- | --- | --- |
+| Conferma registrazione | dopo `/register` | il link conferma l'account; senza, il login risponde «Email non confermata» |
+| Recupero password | dopo `/forgot-password` | il link riporta a `/reset-password` con una sessione temporanea |
+
+Il link di conferma passa dall'API locale (`127.0.0.1:54321/auth/v1/verify`) e poi atterra su `http://localhost:5173` con la sessione nel frammento dell'URL: quindi **Vite deve essere acceso**. Con `npm run dev` hai stack e Vite insieme, ed è il modo più semplice. Con Vite spento il browser non riesce ad aprire la pagina di atterraggio (l'account risulta comunque confermato).
+
+L'oggetto dell'email è in inglese («Confirm your email address»): sono i template di default di Supabase, non una configurazione sbagliata.
+
+Se la casella è vuota:
+
+- lo stack è spento, oppure non hai ancora generato un'email (signup o recupero password) da quando Mailpit esiste;
+- stai cercando in Studio: lì non ci sono. Mailpit è un'altra pagina, sulla porta 54324.
+
+Le email **non** spariscono con `npm run db:reset` né con un riavvio dei container: restano finché non le cancelli con **Delete all** (verificato il 23 novembre 2026). Attenzione al caso opposto: dopo un `db:reset` gli utenti Auth sono ricreati da zero, quindi i link delle email vecchie rispondono `otp_expired`. Se un link non funziona non è rotto: l'account a cui apparteneva non esiste più, rifai il signup.
+
+Le email sono fittizie e restano sulla macchina. Non usare indirizzi reali nei test locali.
 
 ### Seed e utenti di test
 
@@ -93,7 +127,7 @@ La registrazione è aperta. Da `/register` si crea un account con nome, nome del
 - `minimum_password_length = 12`;
 - `[auth.email] secure_password_change = true`.
 
-Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: apri <http://127.0.0.1:54324>, prendi l'ultimo messaggio e clicca il link. Dopo la conferma accedi da `/login`.
+Dopo il signup Supabase invia un'email di conferma. In locale non serve SMTP: il messaggio finisce in **Mailpit** (<http://127.0.0.1:54324>, vedi [Email locali](#email-locali-mailpit)). Apri l'ultimo messaggio e clicca il link. Dopo la conferma accedi da `/login`.
 
 Al primo accesso autenticato il frontend chiama la RPC `ensure_current_family()`: se l'utente non ha ancora una membership, crea una famiglia personale e lo inserisce come `owner`. La funzione è idempotente, quindi ricaricare o riaprire l'app non duplica la famiglia. Le email vengono normalizzate (trim + lowercase) nel client e dal trigger sul database.
 
@@ -624,6 +658,7 @@ Se `doctor` segnala errori, sistemali prima di iniziare a lavorare: gli agenti s
 | `permission denied ... docker.sock` | utente fuori dal gruppo docker         | `sudo usermod -aG docker $USER`, rientra |
 | `supabase start` non parte          | Docker spento o immagini non scaricate | `sudo systemctl start docker`, riprova   |
 | `npm run env:local` fallisce        | stack locale non attivo                | `npm run db:start`                       |
+| Mailpit vuota o non si apre         | stack spento, o porta 54323 (Studio)   | stack attivo e <http://127.0.0.1:54324>  |
 | `npm run verify` fallisce su lint   | formattazione                          | `npm run lint:fix`                       |
 | Playwright non trova il browser     | browser non installati                 | `npx playwright install chromium`        |
 | `gh: not logged in`                 | login mancante                         | `gh auth login`                          |
