@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { mapAuthError } from '../lib/auth'
+import { mapAuthError, PASSWORD_REQUIREMENTS, validatePassword } from '../lib/auth'
 import { navigate } from '../lib/routes'
 
 interface ResetPasswordPageProps {
@@ -17,8 +17,9 @@ export function ResetPasswordPage({ onUpdate, sessionAvailable }: ResetPasswordP
   async function submit() {
     setError(null)
 
-    if (password.length < 12) {
-      setError('La password deve avere almeno 12 caratteri.')
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
     if (password !== confirmPassword) {
@@ -102,7 +103,7 @@ export function ResetPasswordPage({ onUpdate, sessionAvailable }: ResetPasswordP
         <p class="landing__eyebrow">Recupero password</p>
         <h1 id="reset-title">Imposta una nuova password</h1>
         <p class="auth-card__intro">
-          Scegli una password di almeno 12 caratteri. Dopo il salvataggio potrai usarla per
+          Scegli una password con i requisiti indicati sotto. Dopo il salvataggio potrai usarla per
           accedere.
         </p>
 
@@ -133,7 +134,7 @@ export function ResetPasswordPage({ onUpdate, sessionAvailable }: ResetPasswordP
               aria-describedby="reset-password-hint"
             />
             <span class="hint" id="reset-password-hint">
-              Almeno 12 caratteri.
+              {PASSWORD_REQUIREMENTS}
             </span>
           </div>
 

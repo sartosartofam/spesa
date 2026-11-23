@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 
 export const DEMO_EMAIL = 'demo@spesa.test'
-export const DEMO_PASSWORD = 'spesa-demo-123'
+export const DEMO_PASSWORD = 'Spesa-demo-123!'
 
 const DEMO_USER = {
   id: '00000000-0000-4000-8000-000000000101',
