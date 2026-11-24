@@ -49,7 +49,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 6. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
 7. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
 8. [ ] **Vercel**: variabili pubbliche reali, Node 24, dominio definitivo e `VITE_SITE_URL`, conferma email e SMTP provati con un indirizzo vero, preview verificato.
-9. [ ] **Job CI per gli e2e backend** (blocco pronto in `docs/SETUP.md` → "E2e con backend reale").
+9. [x] **Job CI per gli e2e backend.** Job `e2e-backend` attivo dal 24 novembre 2026 (PR #127), verde alla prima run in 155 s. Resta da aggiungere il check ai *required* del ruleset: senza, il job può essere aggirato (il merge della #127 è passato mentre lui stava ancora girando).
 10. [ ] **Politica password a 8 caratteri con composizione**: il repo è allineato dal 23 novembre 2026 (`supabase/config.toml`, `validatePassword` in `src/lib/auth.ts`, i due form, le password demo di seed ed e2e, i test), quindi resta solo l'interruttore nella dashboard Supabase: `minimum_password_length = 8`, `password_requirements = lower_upper_letters_digits_symbols`, `secure_password_change` attivo. Dettaglio in `docs/SECURITY.md` → "Supabase Cloud".
 11. [ ] **Promozione `dev` → `main`**: sarà il primo deploy in assoluto, `main` è ancora fermo all'initial commit. Solo dopo i punti precedenti.
 
@@ -58,7 +58,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 - **Web Push spento per scelta** (decisione 3 novembre 2026): il codice resta feature-gated e silenzioso; le chiavi VAPID non vengono generate finché non serve.
 - **`main` mai deployato**: la prima promozione va trattata come un rilascio, non come un merge di routine.
 - **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.
-- **`npm run test:e2e:backend` gira in CI** dal 24 novembre 2026 (job `e2e-backend`), ma resta utile lanciarlo a mano durante lo sviluppo: costa 7-10 minuti di attesa aspettare la CI per un errore di RLS che si vede in 25 secondi in locale.
+- **`npm run test:e2e:backend` gira in CI** dal 24 novembre 2026 (job `e2e-backend`), ma resta utile lanciarlo a mano durante lo sviluppo: costa un paio di minuti di attesa aspettare la CI per un errore di RLS che si vede in 25 secondi in locale.
 - **Workflow schedulati disattivati dopo 60 giorni di inattività** (repository pubblici): in un periodo di fermo il cron del Pi resta l'unico dei due ping.
 
 ## Backlog (idee, non impegni)

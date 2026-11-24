@@ -441,7 +441,7 @@ Gli articoli creati dai test hanno il prefisso `E2E-backend`; un teardown global
 
 La CI esegue due suite Playwright: `e2e` (mock, nessuna rete) e `e2e-backend` (stack Supabase locale). Il job `e2e-backend` in `.github/workflows/ci.yml` fa `supabase start`, `supabase db reset` (migrazioni + seed) e poi `npm run test:e2e:backend`, che crea gli utenti Auth demo, compila l'app in modalità Supabase e la serve sulla porta 4174. Lo stack già attivo non viene riavviato perché `scripts/db-start.sh` è idempotente. In caso di fallimento carica `test-results/` come artefatto (tracce dei retry: in CI il reporter è `github`, quindi `playwright-report/` non esiste).
 
-Il job aggiunge circa 7-10 minuti alla CI. Non è tempo speso male finché il contratto è quello attuale: gli e2e backend sono l'unica prova che RLS, realtime e sessione funzionano davvero tra due browser, e una regressione in quel livello non la vede nessun altro job.
+Il job aggiunge circa 2-3 minuti alla CI (155 secondi la prima run, 24 novembre 2026). Non è tempo speso male finché il contratto è quello attuale: gli e2e backend sono l'unica prova che RLS, realtime e sessione funzionano davvero tra due browser, e una regressione in quel livello non la vede nessun altro job.
 
 Nota sulla CLI: tutti i job che usano Supabase la installano con `supabase/setup-cli@v1` e una **versione pinnata**, la stessa della devDependency in `package.json`. Con `version: latest` ogni run scarica una release diversa, che è sia un rate limit di GitHub sia un modo per far cambiare il comportamento della CI senza che il repository cambi.
 
