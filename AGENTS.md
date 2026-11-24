@@ -61,7 +61,7 @@ Una PR è pronta solo se:
 - `npm run verify` è verde (lint, typecheck, unit, build). La build include il budget gzip del bundle: se lo supera, va giustificato nella PR.
 - Il comportamento nuovo o modificato ha un test.
 - Le modifiche a schema o RLS hanno un test pgTAP (`npx supabase test db`).
-- Le modifiche al livello dati hanno anche `npm run test:e2e:backend` verde (la suite non gira in CI: va lanciata a mano).
+- Le modifiche al livello dati hanno anche `npm run test:e2e:backend` verde. La suite gira in CI (job `e2e-backend`, ~2,5 minuti), ma lanciarla anche a mano mentre sviluppi: 25 secondi in locale contro un paio di minuti di attesa.
 - Non ci sono secret, token, `.env` o dati reali nel diff.
 - Nessuna credenziale o chiamata alla produzione.
 - La PR descrive cosa cambia, come testarlo e cosa resta fuori.
@@ -141,7 +141,7 @@ npm run build          # build in dist/ (include il budget del bundle)
 npm run preview        # serve la build
 npm run test           # unit (Vitest)
 npm run test:e2e       # e2e mock (Playwright, gira in CI)
-npm run test:e2e:backend  # e2e contro Supabase locale (non in CI)
+npm run test:e2e:backend  # e2e contro Supabase locale (anche in CI)
 npx supabase test db   # pgTAP / RLS
 npm run db:start       # avvia lo stack Supabase locale
 npm run db:stop
