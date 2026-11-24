@@ -126,13 +126,15 @@ Sono attivi due ping indipendenti che fanno una query reale sul database (non un
 1. **Raspberry Pi**, cron lun/mer/ven: copia di `scripts/keepalive/ping.sh` in `/mnt/hdd1T/projects/spesa/keepalive/`, che chiama la RPC `ping_keepalive()` e registra `keepalive.last_ping`.
 2. **GitHub Actions**, workflow giornaliero: `.github/workflows/keepalive.yml`, che legge `/rest/v1/keepalive`.
 
-**Stato: attivo.** Progetto riattivato, schema applicato al cloud (22 migrazioni) e workflow verde il 22 novembre 2026; il cron del Pi è configurato e il suo primo giro è lunedì 23 novembre. I due ping agiscono in modo diverso di proposito: solo quello del Pi scrive `last_ping`, quindi se il campo resta fermo mentre il workflow è verde il problema è il cron del Pi, non il progetto.
+**Stato: attivo.** Progetto riattivato, schema applicato al cloud (22 migrazioni) e workflow verde il 22 novembre 2026; il cron del Pi è configurato e il primo giro, lunedì 23 novembre, è passato (`last_ping` avanza). I due ping agiscono in modo diverso di proposito: solo quello del Pi scrive `last_ping`, quindi se il campo resta fermo mentre il workflow è verde il problema è il cron del Pi, non il progetto.
 
-Sul Pi non gira una copia del repo: accanto a `ping.sh` ci sono un env file con permessi `600` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) e un wrapper che carica le variabili e verifica che l'HDD sia montato. Crontab:
+Sul Pi non gira una copia del repo: accanto a `ping.sh` ci sono un env file con permessi `600` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) e un wrapper `run.sh` che carica le variabili, verifica che l'HDD sia montato e scrive nel log una riga datata per ogni giro. Crontab:
 
 ```
 0 3 * * 1,3,5 /mnt/hdd1T/projects/spesa/keepalive/run.sh >> /mnt/hdd1T/projects/spesa/keepalive/keepalive.log 2>&1
 ```
+
+Ogni riga del log comincia con la data locale (`date -Is`), quindi una riga senza data è precedente a questa versione del wrapper. La risposta del ping è il timestamp registrato: `"2026-11-23T03:00:01.840948+00:00"` significa battito riuscito. Un `curl: (22)` con `404` vuol dire che la RPC non risponde a quell'URL (schema non applicato o `SUPABASE_URL` sbagliata), con `401` che la chiave è sbagliata; `(6)` è il DNS che non risolve (progetto in pausa) e `(7)` la connessione rifiutata.
 
 La copia sul Pi **non si aggiorna da sola**: quando `scripts/keepalive/ping.sh` cambia va sostituita a mano, confrontando l'hash con `sha256sum`. Deve essere la versione che chiama `POST /rest/v1/rpc/ping_keepalive`: con la vecchia `select` il progetto resta sveglio ma `last_ping` non avanza.
 

@@ -4,7 +4,7 @@
 
 Se sei l'umano e vuoi sapere cosa devi fare, la risposta è **Fase 3**, nell'ordine dato. Se sei un agente e l'umano te lo chiede, leggi la Fase 3 (e `docs/SECURITY.md` per il dettaglio) e rispondi con il primo punto non spuntato.
 
-Stato al 22 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; schema applicativo applicato al cloud (22 migrazioni) e keepalive attivo. Restano le azioni umane della fase 3 (backup, RLS review, branch protection, Vercel, job CI, password) e la prima promozione su `main`.
+Stato al 24 novembre 2026: fase 1 implementata e verificata in locale su `dev`; Supabase cloud e Vercel configurati; schema applicativo applicato al cloud (22 migrazioni) e keepalive attivo (workflow e cron del Pi verdi). Restano le azioni umane della fase 3 (backup, RLS review, branch protection, Vercel, password) e la prima promozione su `main`.
 
 ## Fase 1 — MVP lista della spesa (completata)
 
@@ -44,7 +44,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 1. [x] **Riattivare il progetto Supabase.** Il progetto risponde di nuovo: DNS e API attivi.
 2. [x] **Applicare le migrazioni al cloud.** 22 migrazioni applicate il 22 novembre 2026 con `supabase db push --linked`: registro allineato (`db push --dry-run` risponde «up to date») e schema verificato (9 tabelle con RLS attiva, 15 policy, 5 trigger, indici), senza caricare il seed. Il push resta un'azione umana: gli agenti non hanno accesso al cloud e non va usato `db reset --linked`.
 3. [x] **Verificare i secret del keepalive.** Il workflow ha risposto con il contenuto di `keepalive`: `SUPABASE_URL` e `SUPABASE_ANON_KEY` puntano al progetto attuale.
-4. [x] **Attivare il keepalive.** Workflow GitHub Actions verde il 22 novembre 2026; cron sul Raspberry Pi configurato (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`), con il primo giro lunedì 23 novembre da controllare a mano. Due ping indipendenti, così il progetto non si risospende.
+4. [x] **Attivare il keepalive.** Workflow GitHub Actions verde il 22 novembre 2026; cron sul Raspberry Pi configurato (lun/mer/ven 03:00, log in `/mnt/hdd1T/projects/spesa/keepalive/`) e primo giro verde lunedì 23 novembre, con `last_ping` che avanza (verificato il 24). Due ping indipendenti, così il progetto non si risospende.
 5. [ ] **Attivare il backup**: deploy della function `export`, secret `EXPORT_TOKEN`, cron settimanale con upload su R2/B2 e monitoraggio dei fallimenti. Il giro export → restore è già coperto da `npm run test:backup` (drill locale, `scripts/backup/drill.sh`): qui resta solo l'attivazione in cloud.
 6. [ ] **RLS review umana** con due famiglie reali o fittizie e con `anon`.
 7. [ ] **Branch protection / ruleset** su `dev` e `main` con i tre check obbligatori (qualità, pgTAP, e2e).
