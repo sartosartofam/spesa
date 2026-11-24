@@ -58,7 +58,7 @@ Per i dettagli e i controlli di sicurezza: `docs/SECURITY.md`. Qui c'è solo la 
 - **Web Push spento per scelta** (decisione 3 novembre 2026): il codice resta feature-gated e silenzioso; le chiavi VAPID non vengono generate finché non serve.
 - **`main` mai deployato**: la prima promozione va trattata come un rilascio, non come un merge di routine.
 - **Major delle dipendenze indietro** (Preact 11, Vite 8, Vitest 5, TypeScript 7, CLI Supabase 3, jsdom 31): una alla volta, con verifica manuale. Tabella in `docs/SETUP.md`.
-- **`npm run test:e2e:backend` non gira in CI**: va lanciato a mano quando cambia il livello dati.
+- **`npm run test:e2e:backend` gira in CI** dal 24 novembre 2026 (job `e2e-backend`), ma resta utile lanciarlo a mano durante lo sviluppo: costa 7-10 minuti di attesa aspettare la CI per un errore di RLS che si vede in 25 secondi in locale.
 - **Workflow schedulati disattivati dopo 60 giorni di inattività** (repository pubblici): in un periodo di fermo il cron del Pi resta l'unico dei due ping.
 
 ## Backlog (idee, non impegni)

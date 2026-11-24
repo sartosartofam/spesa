@@ -439,40 +439,11 @@ La suite usa l'utente `demo@spesa.test` del seed e verifica il footer senza "mod
 
 Gli articoli creati dai test hanno il prefisso `E2E-backend`; un teardown globale li cancella dal database locale al termine, compresi quelli rimasti da una run interrotta. Nessun dato reale e nessuna chiamata al cloud.
 
-La CI esegue solo la suite mock (job `e2e`). Il job per quella con backend va aggiunto a mano in `.github/workflows/ci.yml` (file riservato all'umano) ed è tra i punti aperti della Fase 3: `supabase start` e `supabase db reset` preparano stack e dati demo, poi `npm run test:e2e:backend` avvia da sé build e preview. Lo stack già attivo non viene riavviato perché `scripts/db-start.sh` è idempotente.
+La CI esegue due suite Playwright: `e2e` (mock, nessuna rete) e `e2e-backend` (stack Supabase locale). Il job `e2e-backend` in `.github/workflows/ci.yml` fa `supabase start`, `supabase db reset` (migrazioni + seed) e poi `npm run test:e2e:backend`, che crea gli utenti Auth demo, compila l'app in modalità Supabase e la serve sulla porta 4174. Lo stack già attivo non viene riavviato perché `scripts/db-start.sh` è idempotente. In caso di fallimento carica `test-results/` come artefatto (tracce dei retry: in CI il reporter è `github`, quindi `playwright-report/` non esiste).
 
-Blocco pronto da incollare sotto `jobs:` nello stesso file:
+Il job aggiunge circa 7-10 minuti alla CI. Non è tempo speso male finché il contratto è quello attuale: gli e2e backend sono l'unica prova che RLS, realtime e sessione funzionano davvero tra due browser, e una regressione in quel livello non la vede nessun altro job.
 
-```yaml
-  e2e-backend:
-    name: Playwright (backend locale)
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: supabase start
-      - run: supabase db reset
-      - run: npm run test:e2e:backend
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-backend-traces
-          path: test-results/
-          retention-days: 7
-      - if: always()
-        run: supabase stop --no-backup
-```
-
-In CI il reporter è `github`, quindi non viene generato `playwright-report/`: l'artefatto utile è `test-results/` (tracce dei retry).
+Nota sulla CLI: tutti i job che usano Supabase la installano con `supabase/setup-cli@v1` e una **versione pinnata**, la stessa della devDependency in `package.json`. Con `version: latest` ogni run scarica una release diversa, che è sia un rate limit di GitHub sia un modo per far cambiare il comportamento della CI senza che il repository cambi.
 
 ### Accessibilità e tastiera
 
